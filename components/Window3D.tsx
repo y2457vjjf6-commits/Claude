@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Environment, Float, OrbitControls, RoundedBox } from "@react-three/drei";
+import { Float, OrbitControls, RoundedBox } from "@react-three/drei";
 import { Suspense, useMemo, useRef } from "react";
 import * as THREE from "three";
 
@@ -84,14 +84,12 @@ function WindowFrame() {
       {/* glass */}
       <mesh position={[0, 0, -0.05]}>
         <planeGeometry args={[2.9, 3.5]} />
-        <meshPhysicalMaterial
+        <meshStandardMaterial
           color="#cfe8ff"
           transparent
-          opacity={0.25}
-          roughness={0.05}
-          metalness={0}
-          transmission={0.9}
-          thickness={0.5}
+          opacity={0.3}
+          roughness={0.1}
+          metalness={0.1}
         />
       </mesh>
     </group>
@@ -117,11 +115,11 @@ export default function Window3D() {
       gl={{ antialias: true, alpha: true }}
     >
       <Suspense fallback={null}>
-        <ambientLight intensity={0.7} />
-        <directionalLight position={[4, 6, 5]} intensity={1.4} castShadow />
-        <directionalLight position={[-5, -2, 3]} intensity={0.4} color={BRAND} />
+        <ambientLight intensity={0.9} />
+        <hemisphereLight intensity={0.5} groundColor="#dddddd" />
+        <directionalLight position={[4, 6, 5]} intensity={1.6} />
+        <directionalLight position={[-5, -2, 3]} intensity={0.5} color={BRAND} />
         <Scene />
-        <Environment preset="city" />
         <OrbitControls
           enableZoom={false}
           enablePan={false}

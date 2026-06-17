@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const Window3D = dynamic(() => import("@/components/Window3D"), {
   ssr: false,
@@ -105,7 +106,9 @@ export default function Hero() {
           transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
           className="relative h-[360px] md:h-[560px]"
         >
-          <Window3D />
+          <ErrorBoundary>
+            <Window3D />
+          </ErrorBoundary>
           <p className="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-ink-muted">
             Przeciągnij, aby obrócić ↔
           </p>

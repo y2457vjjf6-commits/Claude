@@ -34,6 +34,14 @@ python3 -m http.server 8000
 | `styles.css` | Wygląd interfejsu                     |
 | `app.js`     | Logika: dane, widok, import/eksport   |
 
+## Integracja z Facebook Lead Ads
+
+CRM może automatycznie importować leady z formularzy Facebook/Instagram Lead Ads.
+Wymaga to uruchomienia backendu z katalogu [`../server`](../server) (Node, bez
+zależności). Gdy front-end jest serwowany przez ten backend, w pasku narzędzi
+pojawia się przycisk **↻ Lead Ads** pobierający nowe leady. Szczegóły konfiguracji
+(token, webhook, formularze) znajdziesz w `server/README.md`.
+
 ## Dane
 
 Kontakty są przechowywane w `localStorage` pod kluczem `crm.contacts.v1`

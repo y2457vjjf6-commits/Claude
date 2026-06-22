@@ -214,6 +214,48 @@
     reader.readAsText(file);
   }
 
+  // --- Integracja z backendem (Facebook Lead Ads) ------------------------
+  // Jeśli front-end jest serwowany przez backend (server/server.js), wykryj
+  // jego API i włącz przycisk synchronizacji leadów.
+  const API_BASE = /^https?:/.test(location.protocol) ? "" : "http://localhost:3000";
+
+  async function detectBackend() {
+    try {
+      const r = await fetch(`${API_BASE}/api/health`, { signal: AbortSignal.timeout(2000) });
+      if (r.ok) document.getElementById("fbSyncBtn").hidden = false;
+    } catch {
+      /* backend niedostępny – pomijamy */
+    }
+  }
+
+  async function syncLeadAds() {
+    const btn = document.getElementById("fbSyncBtn");
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = "Synchronizacja...";
+    try {
+      // Poproś backend o pobranie najnowszych leadów z Graph API (jeśli skonfigurowano formularze)
+      await fetch(`${API_BASE}/api/sync`, { method: "POST" }).catch(() => {});
+      const leads = await (await fetch(`${API_BASE}/api/leads`)).json();
+
+      const known = new Set(contacts.map((c) => c.leadId).filter(Boolean));
+      let added = 0;
+      for (const lead of leads) {
+        if (known.has(lead.leadId)) continue;
+        contacts.push(Object.assign({ id: uid() }, lead));
+        added++;
+      }
+      if (added > 0) save();
+      render();
+      alert(added > 0 ? `Zaimportowano ${added} nowych leadów z Facebook Lead Ads.` : "Brak nowych leadów.");
+    } catch (e) {
+      alert("Nie udało się pobrać leadów: " + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  }
+
   // --- Zdarzenia ---------------------------------------------------------
   function bind() {
     document.getElementById("addBtn").addEventListener("click", () => openModal(null));
@@ -265,6 +307,7 @@
       });
     });
 
+    document.getElementById("fbSyncBtn").addEventListener("click", syncLeadAds);
     document.getElementById("exportBtn").addEventListener("click", exportData);
     document.getElementById("importInput").addEventListener("change", (e) => {
       if (e.target.files[0]) importData(e.target.files[0]);
@@ -276,4 +319,5 @@
   load();
   bind();
   render();
+  detectBackend();
 })();

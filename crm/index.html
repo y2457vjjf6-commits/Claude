@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prosty CRM</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>📇 Prosty CRM</h1>
+    <div class="topbar-actions">
+      <input type="search" id="search" placeholder="Szukaj kontaktu..." aria-label="Szukaj" />
+      <button id="exportBtn" class="btn btn-ghost" title="Eksportuj dane do pliku JSON">Eksport</button>
+      <label class="btn btn-ghost" title="Importuj dane z pliku JSON">
+        Import
+        <input type="file" id="importInput" accept="application/json" hidden />
+      </label>
+      <button id="addBtn" class="btn btn-primary">+ Nowy kontakt</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="stats" id="stats" aria-label="Statystyki"></section>
+
+    <div class="toolbar">
+      <div class="filters" id="stageFilters"></div>
+      <span class="count" id="count"></span>
+    </div>
+
+    <section class="table-wrap">
+      <table class="contacts" id="contactsTable">
+        <thead>
+          <tr>
+            <th data-sort="name">Nazwa</th>
+            <th data-sort="company">Firma</th>
+            <th data-sort="email">E-mail</th>
+            <th data-sort="phone">Telefon</th>
+            <th data-sort="stage">Etap</th>
+            <th data-sort="value">Wartość</th>
+            <th class="col-actions"></th>
+          </tr>
+        </thead>
+        <tbody id="contactsBody"></tbody>
+      </table>
+      <p class="empty" id="emptyState" hidden>Brak kontaktów. Dodaj pierwszy kontakt, aby zacząć.</p>
+    </section>
+  </main>
+
+  <!-- Modal formularza -->
+  <div class="modal-backdrop" id="modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h2 id="modalTitle">Nowy kontakt</h2>
+      <form id="contactForm">
+        <input type="hidden" id="contactId" />
+        <div class="form-grid">
+          <label>Imię i nazwisko *
+            <input type="text" id="f-name" required />
+          </label>
+          <label>Firma
+            <input type="text" id="f-company" />
+          </label>
+          <label>E-mail
+            <input type="email" id="f-email" />
+          </label>
+          <label>Telefon
+            <input type="tel" id="f-phone" />
+          </label>
+          <label>Etap
+            <select id="f-stage">
+              <option value="lead">Lead</option>
+              <option value="kontakt">Kontakt</option>
+              <option value="oferta">Oferta</option>
+              <option value="wygrany">Wygrany</option>
+              <option value="przegrany">Przegrany</option>
+            </select>
+          </label>
+          <label>Wartość (PLN)
+            <input type="number" id="f-value" min="0" step="0.01" />
+          </label>
+          <label class="full">Notatki
+            <textarea id="f-notes" rows="3"></textarea>
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="cancelBtn">Anuluj</button>
+          <button type="submit" class="btn btn-primary">Zapisz</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

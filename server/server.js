@@ -31,6 +31,16 @@ const FORM_IDS = (process.env.META_FORM_IDS || "")
   .map((s) => s.trim())
   .filter(Boolean);
 
+// Opcjonalne mapowanie pól niestandardowych formularza na pola kontaktu CRM.
+// Format JSON, np.: {"budzet":"value","miasto":"company","nazwa_firmy":"company"}
+// Dozwolone cele: name, company, email, phone, value, notes.
+let FIELD_MAP = {};
+try {
+  FIELD_MAP = JSON.parse(process.env.META_FIELD_MAP || "{}");
+} catch (e) {
+  console.warn("META_FIELD_MAP nie jest poprawnym JSON – pomijam:", e.message);
+}
+
 const CRM_DIR = path.join(__dirname, "..", "crm");
 const DATA_FILE = path.join(__dirname, "data", "leads.json");
 
@@ -81,24 +91,60 @@ function graphGet(pathAndQuery) {
   });
 }
 
-/** Zamienia surowego leada z Graph API na kontakt CRM. */
+// Standardowe nazwy pól Meta -> pola kontaktu CRM.
+const STANDARD_FIELDS = {
+  full_name: "name",
+  email: "email",
+  phone_number: "phone",
+  company_name: "company",
+};
+
+/**
+ * Zamienia surowego leada z Graph API na kontakt CRM.
+ * - mapuje pola standardowe oraz zdefiniowane w META_FIELD_MAP,
+ * - wszystkie pozostałe (niezmapowane) pola zachowuje w notatkach,
+ *   dzięki czemu żadne dane z formularza nie przepadają.
+ */
 function leadToContact(raw) {
-  const fields = {};
-  for (const f of raw.field_data || []) {
-    fields[f.name] = (f.values && f.values[0]) || "";
-  }
-  return {
+  const contact = {
     leadId: raw.id,
-    name: fields.full_name || [fields.first_name, fields.last_name].filter(Boolean).join(" ") || "(bez nazwy)",
-    company: fields.company_name || "",
-    email: fields.email || "",
-    phone: fields.phone_number || "",
+    name: "",
+    company: "",
+    email: "",
+    phone: "",
     stage: "lead",
     value: 0,
-    notes: `Z Facebook Lead Ads (formularz ${raw.form_id || "?"}).`,
+    notes: "",
     createdAt: raw.created_time ? new Date(raw.created_time).getTime() : Date.now(),
     source: "facebook_lead_ads",
   };
+
+  const extraLines = [];
+  for (const f of raw.field_data || []) {
+    const value = (f.values && f.values[0]) || "";
+    if (!value) continue;
+    // first_name/last_name są łączone w pole "name" poniżej – nie powielaj ich w notatkach
+    if (f.name === "first_name" || f.name === "last_name") continue;
+    const target = FIELD_MAP[f.name] || STANDARD_FIELDS[f.name];
+    if (target === "value") {
+      contact.value = parseFloat(String(value).replace(/[^\d.,-]/g, "").replace(",", ".")) || 0;
+    } else if (target && target in contact && target !== "leadId") {
+      contact[target] = contact[target] ? `${contact[target]} ${value}` : value;
+    } else {
+      extraLines.push(`${f.name}: ${value}`); // pole niezmapowane -> do notatek
+    }
+  }
+
+  // Obsługa formularzy rozbijających imię na first_name / last_name
+  if (!contact.name) {
+    const fd = Object.fromEntries((raw.field_data || []).map((f) => [f.name, (f.values || [])[0] || ""]));
+    contact.name = [fd.first_name, fd.last_name].filter(Boolean).join(" ").trim();
+  }
+  if (!contact.name) contact.name = "(bez nazwy)";
+
+  const header = `Z Facebook Lead Ads (formularz ${raw.form_id || "?"}).`;
+  contact.notes = [header, ...extraLines].join("\n");
+  return contact;
 }
 
 /** Pobiera szczegóły pojedynczego leada po jego ID. */
@@ -254,10 +300,15 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`CRM + Lead Ads działa na http://localhost:${PORT}`);
-  console.log(`  Webhook:        http://localhost:${PORT}/webhook`);
-  console.log(`  Access token:   ${ACCESS_TOKEN ? "ustawiony" : "BRAK (ustaw META_ACCESS_TOKEN)"}`);
-  console.log(`  Weryfikacja podpisu: ${APP_SECRET ? "włączona" : "wyłączona (ustaw META_APP_SECRET)"}`);
-  console.log(`  Formularze (sync): ${FORM_IDS.length || "brak (ustaw META_FORM_IDS)"}`);
-});
+// Uruchom serwer tylko przy bezpośrednim starcie (pozwala importować funkcje w testach).
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`CRM + Lead Ads działa na http://localhost:${PORT}`);
+    console.log(`  Webhook:        http://localhost:${PORT}/webhook`);
+    console.log(`  Access token:   ${ACCESS_TOKEN ? "ustawiony" : "BRAK (ustaw META_ACCESS_TOKEN)"}`);
+    console.log(`  Weryfikacja podpisu: ${APP_SECRET ? "włączona" : "wyłączona (ustaw META_APP_SECRET)"}`);
+    console.log(`  Formularze (sync): ${FORM_IDS.length || "brak (ustaw META_FORM_IDS)"}`);
+  });
+}
+
+module.exports = { leadToContact };

@@ -39,7 +39,27 @@ Otwórz `http://localhost:3000` – serwer serwuje front-end z `../crm`, a przyc
 | `META_VERIFY_TOKEN`  | Dowolny sekret – ten sam wpisz w panelu webhooka Meta |
 | `META_APP_SECRET`    | App Secret – włącza weryfikację podpisu `X-Hub-Signature-256` |
 | `META_FORM_IDS`      | ID formularzy do `/api/sync` (po przecinku) |
+| `META_FIELD_MAP`     | Mapowanie pól niestandardowych na pola kontaktu (JSON) |
 | `META_GRAPH_VERSION` | Wersja Graph API (domyślnie `v21.0`) |
+
+### Pola formularza
+
+Standardowe pola Lead Ads są mapowane automatycznie:
+
+| Pole Meta      | Pole kontaktu |
+|----------------|---------------|
+| `full_name` (lub `first_name` + `last_name`) | `name` |
+| `email`        | `email`   |
+| `phone_number` | `phone`   |
+| `company_name` | `company` |
+
+**Pola niestandardowe** (własne pytania w formularzu) trafiają automatycznie do
+notatek kontaktu — nic nie przepada. Jeśli chcesz wybrane pole umieścić w
+konkretnym miejscu, użyj `META_FIELD_MAP`, np.:
+
+```bash
+META_FIELD_MAP='{"budzet":"value","nazwa_firmy":"company","miasto":"notes"}'
+```
 
 ## Konfiguracja po stronie Meta
 

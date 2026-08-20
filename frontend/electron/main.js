@@ -5,6 +5,10 @@ const os = require('os');
 
 let mainWindow = null;
 
+// Tło okna (ciemny motyw) wchodzi w marginesy strony przy generowaniu PDF
+// i przy drukowaniu — na czas renderowania dokumentu przestawiamy je na białe.
+const WINDOW_BG = '#1D1813';
+
 const dataFile = () => path.join(app.getPath('userData'), 'dane-wz.json');
 const backupFile = () => path.join(app.getPath('userData'), 'dane-wz.backup.json');
 
@@ -15,7 +19,7 @@ function createWindow() {
     minWidth: 980,
     minHeight: 640,
     title: 'Lechrol WZ',
-    backgroundColor: '#1D1813',
+    backgroundColor: WINDOW_BG,
     autoHideMenuBar: true,
     icon: path.join(__dirname, '..', 'assets', 'icon.png'),
     webPreferences: {
@@ -83,9 +87,20 @@ const PDF_OPTIONS = {
   preferCSSPageSize: true
 };
 
+async function renderDocumentPdf() {
+  mainWindow.setBackgroundColor('#ffffff');
+  try {
+    return await mainWindow.webContents.printToPDF(PDF_OPTIONS);
+  } finally {
+    mainWindow.setBackgroundColor(WINDOW_BG);
+  }
+}
+
 ipcMain.handle('doc:print', async () => {
+  mainWindow.setBackgroundColor('#ffffff');
   return new Promise((resolve) => {
     mainWindow.webContents.print({ silent: false, printBackground: true }, (success, reason) => {
+      mainWindow.setBackgroundColor(WINDOW_BG);
       resolve(success ? { ok: true } : { ok: false, error: reason || 'Anulowano drukowanie' });
     });
   });
@@ -99,7 +114,7 @@ ipcMain.handle('doc:savePdf', async (_ev, suggestedName) => {
   });
   if (canceled || !filePath) return { ok: false, canceled: true };
   try {
-    const pdf = await mainWindow.webContents.printToPDF(PDF_OPTIONS);
+    const pdf = await renderDocumentPdf();
     fs.writeFileSync(filePath, pdf);
     shell.showItemInFolder(filePath);
     return { ok: true, filePath };
@@ -153,7 +168,7 @@ ipcMain.handle('doc:email', async (_ev, payload) => {
   let tmpPath = null;
   try {
     const nodemailer = require('nodemailer');
-    const pdf = await mainWindow.webContents.printToPDF(PDF_OPTIONS);
+    const pdf = await renderDocumentPdf();
     tmpPath = path.join(os.tmpdir(), filename);
     fs.writeFileSync(tmpPath, pdf);
 

@@ -151,6 +151,30 @@ export async function savePdfDocument(doc: WZDocument, settings: Settings, toast
   }
 }
 
+// Treść wiadomości: podmienia {numer} i {odebral}. Gdy szablon nie zawiera
+// {odebral}, a dokument ma wpisanego odbierającego, dopisuje osobny akapit
+// zaraz za tym, który mówi o dokumencie.
+export function buildEmailBody(template: string, doc: WZDocument): string {
+  const received = (doc.receivedBy || '').trim();
+  let text = template.replaceAll('{numer}', doc.number);
+
+  if (text.includes('{odebral}')) {
+    if (received) return text.replaceAll('{odebral}', received);
+    // brak odbierającego — usuń cały wiersz z tym znacznikiem
+    return text
+      .split('\n')
+      .filter((line) => !line.includes('{odebral}'))
+      .join('\n');
+  }
+  if (!received) return text;
+
+  const line = `Towar odebrał: ${received}`;
+  const paragraphs = text.split('\n\n');
+  const idx = paragraphs.findIndex((p) => p.includes(doc.number));
+  paragraphs.splice(idx >= 0 ? idx + 1 : Math.min(1, paragraphs.length), 0, line);
+  return paragraphs.join('\n\n');
+}
+
 export async function emailDocument(
   doc: WZDocument,
   settings: Settings,
@@ -179,7 +203,7 @@ export async function emailDocument(
     smtp,
     to,
     subject: settings.emailSubject.replaceAll('{numer}', doc.number),
-    text: settings.emailBody.replaceAll('{numer}', doc.number),
+    text: buildEmailBody(settings.emailBody, doc),
     filename: pdfFilename(doc)
   });
   if (res.ok) toast(`Wysłano dokument ${doc.number} na adres ${to}.`);

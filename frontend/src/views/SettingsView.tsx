@@ -147,7 +147,7 @@ export default function SettingsView({ state, onPersist, toast }: Props) {
           </label>
         </div>
         <label className="field" style={{ marginTop: 14 }}>
-          <span>Treść wiadomości</span>
+          <span>Treść wiadomości ({'{numer}'} = numer WZ, {'{odebral}'} = kto odebrał)</span>
           <textarea className="input" data-testid="email-body-input" rows={4} value={form.mBody} onChange={(e) => set({ mBody: e.target.value })} />
         </label>
         <div className="actions-bar" style={{ marginTop: 16 }}>

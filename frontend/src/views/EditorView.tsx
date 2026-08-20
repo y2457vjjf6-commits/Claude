@@ -46,7 +46,8 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
       cAddress: d ? d.contractor?.address || '' : '',
       cEmail: d ? d.contractor?.email || '' : '',
       cCode: d ? d.contractor?.code || '' : '',
-      notes: d ? d.notes || '' : ''
+      notes: d ? d.notes || '' : '',
+      receivedBy: d ? d.receivedBy || '' : ''
     };
   }
 
@@ -83,6 +84,9 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
     form.cName.trim(),
     form.cCode
   ).number;
+
+  const selectedEmployees =
+    state.contractors.find((c) => c.id === form.contractorSel)?.employees?.filter((e) => e.name) || [];
 
   const selectContractor = (id: string) => {
     set({ contractorSel: id });
@@ -178,6 +182,7 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
       contractor,
       items: collectItems(),
       notes: form.notes.trim(),
+      receivedBy: form.receivedBy.trim(),
       createdAt: nowIso,
       updatedAt: nowIso
     };
@@ -389,10 +394,36 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
       </div>
 
       <div className="card">
-        <label className="field">
-          <span>Uwagi</span>
-          <textarea className="input" data-testid="notes-input" rows={3} value={form.notes} onChange={(e) => set({ notes: e.target.value })} />
-        </label>
+        <div className="notes-grid">
+          <label className="field">
+            <span>Uwagi</span>
+            <textarea className="input" data-testid="notes-input" rows={3} value={form.notes} onChange={(e) => set({ notes: e.target.value })} />
+          </label>
+          <label className="field">
+            <span>Kto odebrał</span>
+            <input
+              type="text"
+              className="input"
+              data-testid="received-by-input"
+              list="employees-list"
+              placeholder={selectedEmployees.length ? 'Wybierz lub wpisz…' : 'Imię i nazwisko'}
+              value={form.receivedBy}
+              onChange={(e) => set({ receivedBy: e.target.value })}
+            />
+            <datalist id="employees-list">
+              {selectedEmployees.map((emp) => (
+                <option key={emp.id} value={emp.name}>
+                  {emp.role || ''}
+                </option>
+              ))}
+            </datalist>
+            <span className="muted field-hint">
+              {selectedEmployees.length
+                ? 'Podpowiedzi z listy pracowników tego kontrahenta.'
+                : 'Pracowników dodasz w zakładce Kontrahenci — będą tu podpowiadani.'}
+            </span>
+          </label>
+        </div>
       </div>
 
       <div className="actions-bar sticky-actions">

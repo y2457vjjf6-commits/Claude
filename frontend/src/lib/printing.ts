@@ -96,9 +96,15 @@ export function buildPrintHtml(doc: WZDocument, settings: Settings): string {
       <tbody>${rows}</tbody>
     </table>
 
-    <div class="wz-notes">
-      <div class="wz-label">Uwagi</div>
-      <div class="wz-notes-text">${esc(doc.notes)}</div>
+    <div class="wz-bottom">
+      <div class="wz-notes">
+        <div class="wz-label">Uwagi</div>
+        <div class="wz-notes-text">${esc(doc.notes)}</div>
+      </div>
+      <div class="wz-received">
+        <div class="wz-label">Kto odebrał</div>
+        <div class="wz-received-name">${esc(doc.receivedBy)}</div>
+      </div>
     </div>
 
     <div class="wz-signatures">

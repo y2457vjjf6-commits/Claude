@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Search, Plus, Pencil, Trash2, Save, Handshake } from 'lucide-react';
-import { AppState, AskConfirm, Contractor } from '../types';
+import { Search, Plus, Pencil, Trash2, Save, Handshake, X } from 'lucide-react';
+import { AppState, AskConfirm, Contractor, Employee } from '../types';
 import { contractorCode } from '../lib/numbering';
 import { uid } from '../lib/storage';
 
@@ -16,6 +16,7 @@ export default function ContractorsView({ state, onPersist, toast, askConfirm }:
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', nip: '', address: '', email: '', code: '' });
+  const [employees, setEmployees] = useState<Employee[]>([]);
 
   const query = q.trim().toLowerCase();
   const list = state.contractors
@@ -31,6 +32,7 @@ export default function ContractorsView({ state, onPersist, toast, askConfirm }:
   const openForm = (c: Contractor | null) => {
     setEditingId(c?.id || null);
     setForm({ name: c?.name || '', nip: c?.nip || '', address: c?.address || '', email: c?.email || '', code: c?.code || '' });
+    setEmployees(c?.employees ? c.employees.map((e) => ({ ...e })) : []);
     setFormOpen(true);
   };
 
@@ -45,7 +47,10 @@ export default function ContractorsView({ state, onPersist, toast, askConfirm }:
       nip: form.nip.trim(),
       address: form.address.trim(),
       email: form.email.trim(),
-      code: form.code.trim().toUpperCase()
+      code: form.code.trim().toUpperCase(),
+      employees: employees
+        .map((e) => ({ ...e, name: e.name.trim(), role: (e.role || '').trim(), phone: (e.phone || '').trim() }))
+        .filter((e) => e.name)
     };
     const next = structuredClone(state);
     const existing = editingId ? next.contractors.find((c) => c.id === editingId) : null;
@@ -55,6 +60,13 @@ export default function ContractorsView({ state, onPersist, toast, askConfirm }:
     setFormOpen(false);
     toast('Zapisano kontrahenta.');
   };
+
+  const addEmployee = () => setEmployees((arr) => [...arr, { id: uid(), name: '', role: '', phone: '' }]);
+
+  const setEmployee = (id: string, patch: Partial<Employee>) =>
+    setEmployees((arr) => arr.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+
+  const removeEmployee = (id: string) => setEmployees((arr) => arr.filter((e) => e.id !== id));
 
   const deleteContractor = async (id: string) => {
     const c = state.contractors.find((x) => x.id === id);
@@ -179,6 +191,77 @@ export default function ContractorsView({ state, onPersist, toast, askConfirm }:
               />
             </label>
           </div>
+          <div className="employees-block">
+            <div className="employees-head">
+              <span className="field-label">Pracownicy firmy</span>
+              <span className="muted">Podpowiadani w polu „Kto odebrał” przy wystawianiu WZ.</span>
+            </div>
+            {employees.length > 0 && (
+              <table className="table items-table" data-testid="employees-table">
+                <thead>
+                  <tr>
+                    <th>Imię i nazwisko</th>
+                    <th style={{ width: 180 }}>Stanowisko</th>
+                    <th style={{ width: 150 }}>Telefon</th>
+                    <th style={{ width: 44 }}></th>
+                  </tr>
+                </thead>
+                <tbody data-testid="employees-body">
+                  {employees.map((e, i) => (
+                    <tr key={e.id}>
+                      <td>
+                        <input
+                          type="text"
+                          className="input"
+                          data-testid={`employee-name-${i}`}
+                          aria-label="Imię i nazwisko pracownika"
+                          value={e.name}
+                          onChange={(ev) => setEmployee(e.id, { name: ev.target.value })}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          className="input"
+                          data-testid={`employee-role-${i}`}
+                          aria-label="Stanowisko"
+                          value={e.role || ''}
+                          onChange={(ev) => setEmployee(e.id, { role: ev.target.value })}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          className="input"
+                          data-testid={`employee-phone-${i}`}
+                          aria-label="Telefon"
+                          value={e.phone || ''}
+                          onChange={(ev) => setEmployee(e.id, { phone: ev.target.value })}
+                        />
+                      </td>
+                      <td>
+                        <button
+                          className="btn btn-small btn-danger item-remove"
+                          data-testid={`employee-remove-${i}`}
+                          aria-label="Usuń pracownika"
+                          title="Usuń pracownika"
+                          onClick={() => removeEmployee(e.id)}
+                        >
+                          <X className="icon" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {!employees.length && <p className="muted employees-empty">Nie dodano jeszcze żadnego pracownika.</p>}
+            <button className="btn btn-light" data-testid="add-employee-btn" onClick={addEmployee}>
+              <Plus className="icon" />
+              Dodaj pracownika
+            </button>
+          </div>
+
           <div className="actions-bar">
             <button className="btn btn-primary" data-testid="save-contractor-btn" onClick={saveForm}>
               <Save className="icon" />

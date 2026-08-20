@@ -136,12 +136,31 @@
 .wz-items .col-qty { width: 58pt; }
 .wz-items td.col-lp { color: #000; }
 
-/* ---------- Uwagi ---------- */
+/* ---------- Uwagi i odbiór ---------- */
+.wz-bottom {
+  display: flex;
+  gap: 8pt;
+  margin-bottom: 20pt;
+}
+
 .wz-notes {
+  flex: 1;
   border: 1pt solid #000;
   min-height: 44pt;
   padding: 4pt 8pt 6pt;
-  margin-bottom: 20pt;
+}
+
+.wz-received {
+  width: 150pt;
+  border: 1pt solid #000;
+  min-height: 44pt;
+  padding: 4pt 8pt 6pt;
+}
+
+.wz-received-name {
+  font-size: 11pt;
+  font-weight: 700;
+  margin-top: 4pt;
 }
 
 .wz-notes-text { font-size: 10pt; white-space: pre-wrap; }

@@ -704,6 +704,52 @@ input[type='checkbox'] {
   display: none;
 }
 
+/* Uwagi + Kto odebrał w edytorze */
+.notes-grid {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 14px 22px;
+  align-items: start;
+}
+
+.field-hint {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Pracownicy kontrahenta */
+.employees-block {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--hairline);
+}
+
+.employees-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.field-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.employees-empty {
+  margin: 0 0 12px;
+}
+
+@media (max-width: 900px) {
+  .notes-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Ikona ładowania w przyciskach */
 .icon-spin {
   animation: icon-spin 900ms linear infinite;

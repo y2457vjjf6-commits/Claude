@@ -5,6 +5,13 @@ export interface Item {
   order?: string;
 }
 
+export interface Employee {
+  id: string;
+  name: string;
+  role?: string;
+  phone?: string;
+}
+
 export interface Contractor {
   id: string;
   name: string;
@@ -13,6 +20,8 @@ export interface Contractor {
   email?: string;
   /** Własny kod do numeracji (np. „RS”); pusty = automatyczny z nazwy */
   code?: string;
+  /** Pracownicy firmy — podpowiadani w polu „Kto odebrał” */
+  employees?: Employee[];
 }
 
 export interface DocContractor {
@@ -34,6 +43,8 @@ export interface WZDocument {
   contractor: DocContractor;
   items: Item[];
   notes: string;
+  /** Imię i nazwisko osoby odbierającej towar */
+  receivedBy?: string;
   createdAt: string;
   updatedAt: string;
 }

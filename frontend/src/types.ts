@@ -4,6 +4,10 @@ export interface Item {
   qty: string;
 }
 
+export interface ItemRow extends Item {
+  rowId: string;
+}
+
 export interface Contractor {
   id: string;
   name: string;

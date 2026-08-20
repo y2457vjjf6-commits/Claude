@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
-import { Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft } from 'lucide-react';
-import { AppState, AskConfirm, Item, WZDocument } from '../types';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Save, Printer, FileDown, Mail, Trash2, ArrowLeft } from 'lucide-react';
+import { AppState, Item, ItemRow, WZDocument } from '../types';
 import { computeNumberFor } from '../lib/numbering';
 import { uid } from '../lib/storage';
 import { printDocument, savePdfDocument, emailDocument } from '../lib/printing';
+import { ToastFn } from '../hooks/useToastMessage';
+import ItemsEditor from '../components/ItemsEditor';
 
 interface Props {
   state: AppState;
@@ -12,8 +14,21 @@ interface Props {
   onSaved: (id: string) => void;
   onBack: () => void;
   onDelete: (doc: WZDocument) => void;
-  toast: (msg: string, isError?: boolean) => void;
+  toast: ToastFn;
   emailConfirm: (message: string) => Promise<boolean>;
+}
+
+interface EditorForm {
+  dateIssued: string;
+  place: string;
+  orderNo: string;
+  contractorSel: string;
+  saveContractor: boolean;
+  cName: string;
+  cNip: string;
+  cAddress: string;
+  cEmail: string;
+  notes: string;
 }
 
 function todayStr(): string {
@@ -23,119 +38,103 @@ function todayStr(): string {
   );
 }
 
-const EMPTY_ITEM: Item = { name: '', unit: 'szt.', qty: '' };
+function newRow(item?: Item): ItemRow {
+  return { rowId: uid(), name: item?.name || '', unit: item?.unit ?? 'szt.', qty: item?.qty || '' };
+}
 
-export default function EditorView({ state, editingDocId, onPersist, onSaved, onBack, onDelete, toast, emailConfirm }: Props) {
+function toRows(doc: WZDocument | null): ItemRow[] {
+  return doc && doc.items.length ? doc.items.map((it) => newRow(it)) : [newRow()];
+}
+
+function initForm(doc: WZDocument | null, defaultPlace: string): EditorForm {
+  return {
+    dateIssued: doc?.dateIssued || todayStr(),
+    place: doc ? doc.place : defaultPlace,
+    orderNo: doc?.orderNo || '',
+    contractorSel: doc?.contractorId || '',
+    saveContractor: false,
+    cName: doc?.contractor?.name || '',
+    cNip: doc?.contractor?.nip || '',
+    cAddress: doc?.contractor?.address || '',
+    cEmail: doc?.contractor?.email || '',
+    notes: doc?.notes || ''
+  };
+}
+
+function collectItems(rows: ItemRow[]): Item[] {
+  return rows
+    .map((r) => ({ name: r.name.trim(), unit: r.unit.trim(), qty: r.qty.trim() }))
+    .filter((it) => it.name || it.qty);
+}
+
+export default function EditorView({
+  state,
+  editingDocId,
+  onPersist,
+  onSaved,
+  onBack,
+  onDelete,
+  toast,
+  emailConfirm
+}: Props) {
   const doc = editingDocId ? state.documents.find((d) => d.id === editingDocId) || null : null;
-  const initRef = useRef<string | null>('__none__');
+  const initRef = useRef<string | null>(editingDocId);
 
-  const [form, setForm] = useState(() => initForm(doc));
-  const [items, setItems] = useState<Item[]>(() => (doc && doc.items.length ? doc.items.slice() : [{ ...EMPTY_ITEM }]));
-  const focusLast = useRef(false);
-  const itemsBodyRef = useRef<HTMLTableSectionElement>(null);
-
-  function initForm(d: WZDocument | null) {
-    return {
-      dateIssued: d ? d.dateIssued : todayStr(),
-      place: d ? d.place : state.settings.place,
-      orderNo: d ? d.orderNo || '' : '',
-      contractorSel: d?.contractorId || '',
-      saveContractor: false,
-      cName: d ? d.contractor?.name || '' : '',
-      cNip: d ? d.contractor?.nip || '' : '',
-      cAddress: d ? d.contractor?.address || '' : '',
-      cEmail: d ? d.contractor?.email || '' : '',
-      notes: d ? d.notes || '' : ''
-    };
-  }
+  const [form, setForm] = useState<EditorForm>(() => initForm(doc, state.settings.place));
+  const [rows, setRows] = useState<ItemRow[]>(() => toRows(doc));
 
   useEffect(() => {
-    if (initRef.current === '__none__') {
-      initRef.current = editingDocId;
-      return;
-    }
-    if (initRef.current !== editingDocId) {
-      initRef.current = editingDocId;
-      const d = editingDocId ? state.documents.find((x) => x.id === editingDocId) || null : null;
-      setForm(initForm(d));
-      setItems(d && d.items.length ? d.items.slice() : [{ ...EMPTY_ITEM }]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editingDocId]);
+    if (initRef.current === editingDocId) return;
+    initRef.current = editingDocId;
+    const d = editingDocId ? state.documents.find((x) => x.id === editingDocId) || null : null;
+    setForm(initForm(d, state.settings.place));
+    setRows(toRows(d));
+  }, [editingDocId, state.documents, state.settings.place]);
 
-  useEffect(() => {
-    if (focusLast.current && itemsBodyRef.current) {
-      focusLast.current = false;
-      const rows = itemsBodyRef.current.querySelectorAll('tr');
-      const last = rows[rows.length - 1];
-      const input = last?.querySelector<HTMLInputElement>('.item-name');
-      input?.focus();
-    }
-  }, [items.length]);
+  const set = (patch: Partial<EditorForm>): void => setForm((f) => ({ ...f, ...patch }));
 
-  const set = (patch: Partial<typeof form>) => setForm((f) => ({ ...f, ...patch }));
+  const numberPreview = useMemo(
+    () => computeNumberFor(state.documents, editingDocId, form.dateIssued || todayStr(), form.cName.trim()).number,
+    [state.documents, editingDocId, form.dateIssued, form.cName]
+  );
 
-  const numberPreview = computeNumberFor(
-    state.documents,
-    editingDocId,
-    form.dateIssued || todayStr(),
-    form.cName.trim()
-  ).number;
+  const sortedContractors = useMemo(
+    () => state.contractors.slice().sort((a, b) => a.name.localeCompare(b.name, 'pl')),
+    [state.contractors]
+  );
 
-  const selectContractor = (id: string) => {
-    set({ contractorSel: id });
+  const selectContractor = (id: string): void => {
     const c = state.contractors.find((x) => x.id === id);
     if (c) {
-      set({
-        contractorSel: id,
-        cName: c.name,
-        cAddress: c.address || '',
-        cNip: c.nip || '',
-        cEmail: c.email || ''
-      });
+      set({ contractorSel: id, cName: c.name, cAddress: c.address || '', cNip: c.nip || '', cEmail: c.email || '' });
+    } else {
+      set({ contractorSel: id });
     }
   };
 
-  const setItem = (idx: number, patch: Partial<Item>) =>
-    setItems((arr) => arr.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
+  const setRow = (rowId: string, patch: Partial<ItemRow>): void =>
+    setRows((arr) => arr.map((r) => (r.rowId === rowId ? { ...r, ...patch } : r)));
 
-  const addItemRow = () => {
-    focusLast.current = true;
-    setItems((arr) => [...arr, { ...EMPTY_ITEM }]);
-  };
+  const addRow = (): void => setRows((arr) => [...arr, newRow()]);
 
-  const removeItemRow = (idx: number) =>
-    setItems((arr) => {
-      const next = arr.filter((_, i) => i !== idx);
-      return next.length ? next : [{ ...EMPTY_ITEM }];
+  const removeRow = (rowId: string): void =>
+    setRows((arr) => {
+      const next = arr.filter((r) => r.rowId !== rowId);
+      return next.length ? next : [newRow()];
     });
 
-  const onItemKeyDown = (ev: React.KeyboardEvent, idx: number) => {
-    if (ev.key !== 'Enter') return;
-    if (idx === items.length - 1) {
-      ev.preventDefault();
-      addItemRow();
-    }
-  };
-
-  const collectItems = (): Item[] =>
-    items
-      .map((it) => ({ name: it.name.trim(), unit: it.unit.trim(), qty: it.qty.trim() }))
-      .filter((it) => it.name || it.qty);
-
   async function saveDoc(): Promise<WZDocument | null> {
-    const dateStr = form.dateIssued;
-    const name = form.cName.trim();
-    if (!dateStr) {
+    if (!form.dateIssued) {
       toast('Podaj datę wystawienia.', true);
       return null;
     }
+    const name = form.cName.trim();
     if (!name) {
       toast('Podaj nazwę odbiorcy.', true);
       return null;
     }
 
-    const { seq, number } = computeNumberFor(state.documents, editingDocId, dateStr, name);
+    const { seq, number } = computeNumberFor(state.documents, editingDocId, form.dateIssued, name);
     const contractor = {
       name,
       address: form.cAddress.trim(),
@@ -162,12 +161,12 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
       id: editingDocId || uid(),
       number,
       seq,
-      dateIssued: dateStr,
+      dateIssued: form.dateIssued,
       place: form.place.trim(),
       orderNo: form.orderNo.trim(),
       contractorId,
       contractor,
-      items: collectItems(),
+      items: collectItems(rows),
       notes: form.notes.trim(),
       createdAt: nowIso,
       updatedAt: nowIso
@@ -186,19 +185,19 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
     return newDoc;
   }
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<void> => {
     const saved = await saveDoc();
     if (saved) toast(`Zapisano dokument ${saved.number}.`);
   };
-  const handleSavePrint = async () => {
+  const handleSavePrint = async (): Promise<void> => {
     const saved = await saveDoc();
     if (saved) printDocument(saved, state.settings, toast);
   };
-  const handleSavePdf = async () => {
+  const handleSavePdf = async (): Promise<void> => {
     const saved = await saveDoc();
     if (saved) savePdfDocument(saved, state.settings, toast);
   };
-  const handleSaveEmail = async () => {
+  const handleSaveEmail = async (): Promise<void> => {
     const saved = await saveDoc();
     if (saved) emailDocument(saved, state.settings, toast, emailConfirm);
   };
@@ -245,14 +244,11 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
             <span>Wybierz z bazy kontrahentów</span>
             <select className="input" data-testid="contractor-select" value={form.contractorSel} onChange={(e) => selectContractor(e.target.value)}>
               <option value="">— wpisz ręcznie lub wybierz —</option>
-              {state.contractors
-                .slice()
-                .sort((a, b) => a.name.localeCompare(b.name, 'pl'))
-                .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
+              {sortedContractors.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
             </select>
           </label>
           <label className="checkbox-field">
@@ -287,72 +283,7 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
 
       <div className="card">
         <h3 className="card-title">Pozycje</h3>
-        <table className="table items-table">
-          <thead>
-            <tr>
-              <th style={{ width: 44 }} className="th-num">Lp.</th>
-              <th>Nazwa towaru / opis</th>
-              <th style={{ width: 110 }}>Jedn.</th>
-              <th style={{ width: 110 }} className="th-num">Ilość</th>
-              <th style={{ width: 44 }}></th>
-            </tr>
-          </thead>
-          <tbody ref={itemsBodyRef} data-testid="items-body">
-            {items.map((it, i) => (
-              <tr key={i}>
-                <td className="item-lp num">{i + 1}</td>
-                <td>
-                  <input
-                    type="text"
-                    className="input item-name"
-                    data-testid={`item-name-${i}`}
-                    aria-label="Nazwa towaru"
-                    value={it.name}
-                    onChange={(e) => setItem(i, { name: e.target.value })}
-                    onKeyDown={(e) => onItemKeyDown(e, i)}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="text"
-                    className="input item-unit"
-                    data-testid={`item-unit-${i}`}
-                    aria-label="Jednostka"
-                    value={it.unit}
-                    onChange={(e) => setItem(i, { unit: e.target.value })}
-                    onKeyDown={(e) => onItemKeyDown(e, i)}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="text"
-                    className="input item-qty num"
-                    data-testid={`item-qty-${i}`}
-                    aria-label="Ilość"
-                    value={it.qty}
-                    onChange={(e) => setItem(i, { qty: e.target.value })}
-                    onKeyDown={(e) => onItemKeyDown(e, i)}
-                  />
-                </td>
-                <td>
-                  <button
-                    className="btn btn-small btn-danger item-remove"
-                    data-testid={`item-remove-${i}`}
-                    aria-label="Usuń pozycję"
-                    title="Usuń pozycję"
-                    onClick={() => removeItemRow(i)}
-                  >
-                    <X className="icon" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <button className="btn btn-light" data-testid="add-item-btn" onClick={addItemRow}>
-          <Plus className="icon" />
-          Dodaj pozycję <span className="muted">(Enter w ostatnim wierszu)</span>
-        </button>
+        <ItemsEditor rows={rows} onSetRow={setRow} onAddRow={addRow} onRemoveRow={removeRow} />
       </div>
 
       <div className="card">

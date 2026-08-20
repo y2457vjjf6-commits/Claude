@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { X, Printer, FileDown } from 'lucide-react';
 import { Settings, WZDocument } from '../types';
-import { buildPrintHtml } from '../lib/printing';
+import { sanitizedPrintHtml } from '../lib/printing';
 
 interface Props {
   doc: WZDocument;
@@ -12,6 +12,8 @@ interface Props {
 }
 
 export default function PreviewModal({ doc, settings, onClose, onPrint, onPdf }: Props) {
+  const previewHtml = useMemo(() => ({ __html: sanitizedPrintHtml(doc, settings) }), [doc, settings]);
+
   useEffect(() => {
     const onKey = (ev: KeyboardEvent) => {
       if (ev.key === 'Escape') onClose();
@@ -40,11 +42,7 @@ export default function PreviewModal({ doc, settings, onClose, onPrint, onPdf }:
           </button>
         </div>
         <div className="preview-scroll">
-          <div
-            className="preview-page"
-            data-testid="preview-page"
-            dangerouslySetInnerHTML={{ __html: buildPrintHtml(doc, settings) }}
-          />
+          <div className="preview-page" data-testid="preview-page" dangerouslySetInnerHTML={previewHtml} />
         </div>
       </div>
     </div>

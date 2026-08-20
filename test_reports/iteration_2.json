@@ -1,0 +1,23 @@
+{
+  "summary": "Regression + refactor validation of Lechrol WZ SPA passed 100%. Verified: app loads, sidebar nav, '+ Nowa WZ' opens editor with today's date and default place 'Łomianki', live number preview updates as contractor name is typed ('Rolety Siejka' -> 8001/RA/2026). ItemsEditor refactor: Enter in last row adds a new row AND focuses its item-name input; 'Dodaj pozycję' works; X removes row (min 1 stays). CRITICAL stable-rowId check: filled 3 rows (Deska A/B/C), removed the FIRST row — remaining 2 rows kept correct values (Deska B/2 and Deska C/3), confirming stable keys. Save validation toast 'Podaj nazwę odbiorcy.', success toast 'Zapisano dokument <numer>.', title flips to 'Edycja WZ <numer>', Usuń button appears; editing the doc keeps the same number. PreviewModal opens on eye icon, contains number/contractor/items; Escape and X close it; Drukuj triggers window.print (stubbed, counter incremented). DOMPurify XSS test with contractor name '<img src=x onerror=window.__xss=1>Test' and item '<script>window.__xss=2</script>Deska' — window.__xss stayed undefined, no live <script> or <img[onerror]> in preview DOM, content rendered as escaped text (double protection via esc() then DOMPurify). ConfirmDialog (replaces window.confirm): doc-delete shows 'Usunąć dokument <numer>? Tej operacji nie można cofnąć.', Anuluj keeps, Usuń deletes + toast 'Usunięto dokument ...'. Contractor delete confirm shows 'Usunąć kontrahenta „Beta Corp” z bazy? Wystawione dokumenty pozostaną bez zmian.'. In-browser 'Wyślij e-mailem' shows toast 'Wysyłka e-mail dostępna tylko w aplikacji desktopowej.' with NO confirm modal (as expected when wzApi undefined). Kontrahenci add/search work. Ustawienia: place saved and propagated to new WZ. Theme toggle -> data-theme='dark' persists across reload; all docs persisted in localStorage after reload.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Defense-in-depth is good: buildPrintHtml escapes via esc() first and then sanitizedPrintHtml pipes through DOMPurify. Even if esc() were removed accidentally, DOMPurify would still strip <script> and event handler attributes.",
+    "ItemsEditor uses rowId (uid()) as React key — stable across re-renders and confirmed by the 3-row remove-first test. Good refactor.",
+    "useConfirm hook: closeConfirm resolves the promise via the setter callback — safely handles double-close race conditions.",
+    "PreviewModal memoizes sanitized HTML via useMemo keyed on [doc, settings] — avoids re-sanitizing on every render.",
+    "Minor: emailConfirm callback in App.tsx is defined but only used inside the desktop path; in browser mode emailDocument returns before calling it. Fine as-is.",
+    "Minor: EditorView collectItems keeps rows with only qty (no name) — unchanged from prior iteration; product decision."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped by request)", "frontend": "100%"},
+  "test_credentials": "none",
+  "seed_data_creation": "One WZ doc with intentional XSS payload contractor name/item created during test (in localStorage 'lechrol-wz-data' of preview session). Not persisted server-side.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Refactor regression verified. All new data-testids for ConfirmDialog (confirm-overlay/confirm-message/confirm-accept-btn/confirm-cancel-btn) and PreviewModal (preview-overlay/preview-page/preview-title/preview-print-btn/preview-pdf-btn/preview-close-btn) present and functional. Note: when writing an XSS-detection test, don't rely on overriding window.alert to detect XSS — instead check for absence of live <script> / <img[onerror]> nodes in the sanitized DOM and confirm window.__xss stays undefined. Stub window.print via page.add_init_script to avoid the print dialog blocking preview button tests.",
+  "rca of the issue": "No issues found."
+}

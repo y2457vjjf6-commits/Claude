@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, AskConfirm, ViewName, WZDocument } from './types';
-import { loadState, persistState, DEFAULT_STATE } from './lib/storage';
+import { useCallback, useEffect, useState } from 'react';
+import { AppState, ViewName, WZDocument } from './types';
+import { loadState, persistState } from './lib/storage';
 import { printDocument, savePdfDocument, emailDocument } from './lib/printing';
+import { useToastMessage } from './hooks/useToastMessage';
+import { useConfirm } from './hooks/useConfirm';
 import Sidebar from './components/Sidebar';
-import Toast, { ToastState } from './components/Toast';
-import ConfirmDialog, { ConfirmRequest } from './components/ConfirmDialog';
+import Toast from './components/Toast';
+import ConfirmDialog from './components/ConfirmDialog';
 import PreviewModal from './components/PreviewModal';
 import DocumentsView from './views/DocumentsView';
 import EditorView from './views/EditorView';
@@ -15,44 +17,17 @@ export default function App() {
   const [state, setState] = useState<AppState | null>(null);
   const [view, setView] = useState<ViewName>('list');
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
-  const [toastState, setToastState] = useState<ToastState | null>(null);
-  const [confirmReq, setConfirmReq] = useState<ConfirmRequest | null>(null);
   const [previewDoc, setPreviewDoc] = useState<WZDocument | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { toastState, toast } = useToastMessage();
+  const { confirmReq, askConfirm, closeConfirm } = useConfirm();
 
-  const toast = useCallback((msg: string, isError?: boolean) => {
-    setToastState({ msg, isError: !!isError, key: Date.now() });
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToastState(null), isError ? 6000 : 3000);
-  }, []);
-
-  const persist = useCallback(async (next: AppState) => {
+  const persist = useCallback(async (next: AppState): Promise<void> => {
     setState(next);
     await persistState(next);
   }, []);
 
-  const askConfirm = useCallback<AskConfirm>(
-    (message, opts) =>
-      new Promise<boolean>((resolve) =>
-        setConfirmReq({
-          message,
-          confirmLabel: opts?.confirmLabel || 'Usuń',
-          danger: opts?.danger ?? true,
-          resolve
-        })
-      ),
-    []
-  );
-
-  const closeConfirm = useCallback((value: boolean) => {
-    setConfirmReq((req) => {
-      req?.resolve(value);
-      return null;
-    });
-  }, []);
-
   const emailConfirm = useCallback(
-    (message: string) => askConfirm(message, { confirmLabel: 'Wyślij', danger: false }),
+    (message: string): Promise<boolean> => askConfirm(message, { confirmLabel: 'Wyślij', danger: false }),
     [askConfirm]
   );
 
@@ -60,18 +35,18 @@ export default function App() {
     loadState().then(setState);
   }, []);
 
+  const theme = state?.settings.theme === 'dark' ? 'dark' : 'light';
   useEffect(() => {
-    const theme = state?.settings.theme === 'dark' ? 'dark' : 'light';
     document.documentElement.dataset.theme = theme;
-  }, [state?.settings.theme]);
+  }, [theme]);
 
-  const openEditor = useCallback((id: string | null) => {
+  const openEditor = useCallback((id: string | null): void => {
     setEditingDocId(id);
     setView('edit');
   }, []);
 
   useEffect(() => {
-    const onKey = (ev: KeyboardEvent) => {
+    const onKey = (ev: KeyboardEvent): void => {
       if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'n') {
         ev.preventDefault();
         openEditor(null);
@@ -83,15 +58,15 @@ export default function App() {
 
   if (!state) return null;
 
-  const toggleTheme = () => {
+  const toggleTheme = (): void => {
     const next = structuredClone(state);
     next.settings.theme = state.settings.theme === 'light' ? 'dark' : 'light';
     persist(next);
   };
 
-  const deleteDocument = async (doc: WZDocument, backToList: boolean) => {
+  const deleteDocument = async (doc: WZDocument, backToList: boolean): Promise<void> => {
     if (!(await askConfirm(`Usunąć dokument ${doc.number}? Tej operacji nie można cofnąć.`))) return;
-    const next = { ...state, documents: state.documents.filter((d) => d.id !== doc.id) };
+    const next: AppState = { ...state, documents: state.documents.filter((d) => d.id !== doc.id) };
     await persist(next);
     if (backToList) setView('list');
     toast(`Usunięto dokument ${doc.number}.`);
@@ -152,5 +127,3 @@ export default function App() {
     </div>
   );
 }
-
-export { DEFAULT_STATE };

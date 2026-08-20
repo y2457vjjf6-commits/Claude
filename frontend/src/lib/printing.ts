@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 import { Settings, WZDocument } from '../types';
 import { hasApi } from './storage';
 
@@ -110,10 +111,14 @@ export function buildPrintHtml(doc: WZDocument, settings: Settings): string {
   </div>`;
 }
 
+export function sanitizedPrintHtml(doc: WZDocument, settings: Settings): string {
+  return DOMPurify.sanitize(buildPrintHtml(doc, settings));
+}
+
 export function fillPrintArea(doc: WZDocument, settings: Settings): void {
   const area = document.getElementById('print-area');
   if (!area) return;
-  area.innerHTML = buildPrintHtml(doc, settings);
+  area.innerHTML = sanitizedPrintHtml(doc, settings);
 }
 
 export function pdfFilename(doc: WZDocument): string {

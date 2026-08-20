@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Search, Plus, Eye, Pencil, Printer, FileDown, Mail, Trash2, FileText } from 'lucide-react';
 import { WZDocument } from '../types';
 import { formatDatePl } from '../lib/printing';
@@ -15,18 +15,22 @@ interface Props {
 }
 
 export default function DocumentsView({ documents, onEdit, onNewDoc, onPreview, onPrint, onPdf, onEmail, onDelete }: Props) {
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState<string>('');
   const query = q.trim().toLowerCase();
 
-  const docs = documents
-    .slice()
-    .sort((a, b) => b.dateIssued.localeCompare(a.dateIssued) || Number(b.seq) - Number(a.seq))
-    .filter((d) => {
-      if (!query) return true;
-      return [d.number, d.contractor?.name, d.orderNo, d.dateIssued, formatDatePl(d.dateIssued)].some((v) =>
-        String(v || '').toLowerCase().includes(query)
-      );
-    });
+  const docs = useMemo(
+    () =>
+      documents
+        .slice()
+        .sort((a, b) => b.dateIssued.localeCompare(a.dateIssued) || Number(b.seq) - Number(a.seq))
+        .filter((d) => {
+          if (!query) return true;
+          return [d.number, d.contractor?.name, d.orderNo, d.dateIssued, formatDatePl(d.dateIssued)].some((v) =>
+            String(v || '').toLowerCase().includes(query)
+          );
+        }),
+    [documents, query]
+  );
 
   const anyDocs = documents.length > 0;
 

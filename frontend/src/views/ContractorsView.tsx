@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Search, Plus, Pencil, Trash2, Save, Handshake } from 'lucide-react';
 import { AppState, AskConfirm, Contractor } from '../types';
 import { contractorCode } from '../lib/numbering';
@@ -18,12 +18,17 @@ export default function ContractorsView({ state, onPersist, toast, askConfirm }:
   const [form, setForm] = useState({ name: '', nip: '', address: '', email: '' });
 
   const query = q.trim().toLowerCase();
-  const list = state.contractors
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name, 'pl'))
-    .filter(
-      (c) => !query || [c.name, c.nip, c.address, c.email].some((v) => String(v || '').toLowerCase().includes(query))
-    );
+  const list = useMemo(
+    () =>
+      state.contractors
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name, 'pl'))
+        .filter(
+          (c) =>
+            !query || [c.name, c.nip, c.address, c.email].some((v) => String(v || '').toLowerCase().includes(query))
+        ),
+    [state.contractors, query]
+  );
 
   const anyContractors = state.contractors.length > 0;
   const editingContractor = editingId ? state.contractors.find((c) => c.id === editingId) : null;

@@ -38,6 +38,12 @@ Dev desktop: `yarn build && yarn electron` lub `ELECTRON_START_URL=http://localh
 - **Fix krytyczny**: print.css `#app` → `#root` (inaczej UI drukowało się razem z dokumentem w wersji React)
 - Weryfikacja: lokalny Playwright — pełny flow (nowa WZ → zapis 8001/RA/2026 → podgląd z treścią → confirm anuluj/usuń) PASS; build produkcyjny OK
 
+## Zrealizowane (2026-06 / iteracja 3 — code review fixes)
+- XSS: `sanitizedPrintHtml` (DOMPurify) w printing.ts + PreviewModal (useMemo); esc() + DOMPurify = podwójna ochrona (zweryfikowane testem payloadu)
+- Stabilne klucze: wiersze pozycji jako `ItemRow` z `rowId` (uid), wydzielony komponent `components/ItemsEditor.tsx`
+- Hooki: `hooks/useToastMessage.ts`, `hooks/useConfirm.ts` — App.tsx odchudzony; EditorView: initForm/toRows/collectItems na poziomie modułu, poprawne zależności efektów (initRef guard), useMemo (numberPreview, sortedContractors), useMemo dla list w DocumentsView/ContractorsView
+- Testing agent iteracja 2: **100% pass** (regresja + stable-keys + XSS + confirm/preview modale)
+
 ## Backlog / P1-P2
 - P2: eksport kontrahentów do CSV
 

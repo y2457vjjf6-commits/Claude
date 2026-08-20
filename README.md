@@ -34,9 +34,11 @@ wszystkie dane zapisywane są lokalnie na komputerze.
 Wymagany [Node.js](https://nodejs.org) LTS (18+).
 
 ```bash
-npm install        # instalacja zależności (Electron, nodemailer)
-npm start          # uruchomienie aplikacji
-npm test           # testy numeracji dokumentów
+cd frontend
+yarn install       # instalacja zależności
+yarn start         # wersja przeglądarkowa (http://localhost:3000)
+yarn electron      # okno desktopowe (najpierw: yarn build)
+yarn test          # testy numeracji dokumentów
 ```
 
 ## Gotowy program dla Windows (.exe)
@@ -54,7 +56,7 @@ Repozytorium ma skonfigurowaną automatyczną budowę w GitHub Actions
 Budowa lokalna (wymaga Windows albo Linuksa z wine):
 
 ```bash
-npm run dist
+cd frontend && yarn dist
 ```
 
 W katalogu `dist/` powstanie przenośny plik `.exe` (portable).
@@ -76,13 +78,16 @@ Temat i treść wiadomości można dostosować — `{numer}` zostanie zastąpion
 
 ## Struktura projektu
 
+Interfejs to aplikacja React + TypeScript (Tailwind, shadcn/ui) opakowana w Electron —
+przeniesiona z projektu „wz-electron-ui” zbudowanego w Emergent i scalona z tym repozytorium.
+
 ```
-main.js               proces główny Electron: okno, zapis danych, druk/PDF, e-mail (nodemailer)
-preload.js            bezpieczny mostek IPC (contextBridge)
-renderer/index.html   interfejs: lista WZ, edytor, kontrahenci, ustawienia
-renderer/app.js       logika aplikacji (stan, widoki, drukowanie)
-renderer/numbering.js numeracja dokumentów (współdzielona z testami)
-renderer/styles.css   style ekranowe (układ biurowy, pomarańczowe akcenty)
-renderer/print.css    czarno-biały szablon wydruku A4 wg wzoru Lechrol
-tests/                testy jednostkowe numeracji
+frontend/electron/main.js      proces główny Electron: okno, zapis danych, druk/PDF, e-mail
+frontend/electron/preload.js   bezpieczny mostek IPC (contextBridge)
+frontend/src/App.tsx           główny komponent (widoki, motyw, skróty klawiszowe)
+frontend/src/views/            lista WZ, edytor, kontrahenci, ustawienia
+frontend/src/lib/numbering.ts  numeracja dokumentów (z testami numbering.test.ts)
+frontend/src/lib/printing.ts   szablon wydruku A4 wg wzoru Lechrol
+frontend/src/lib/storage.ts    zapis stanu (plik JSON w Electronie / localStorage w przeglądarce)
+frontend/src/index.css         tokeny motywu jasnego i ciemnego
 ```

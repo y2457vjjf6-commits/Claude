@@ -12,6 +12,8 @@
 }
 
 #print-area {
+  color-scheme: light;   /* dokument zawsze jasny, niezależnie od motywu aplikacji */
+  background: #fff;
   color: #000;
   font-family: Arial, "Segoe UI", sans-serif;
   font-size: 10.5pt;
@@ -34,11 +36,6 @@
   font-size: 22pt;
   font-weight: 800;
   letter-spacing: 3pt;
-}
-
-.wz-logo-sub {
-  font-size: 7.5pt;
-  letter-spacing: 2pt;
   margin-bottom: 6pt;
 }
 

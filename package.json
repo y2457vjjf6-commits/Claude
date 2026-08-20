@@ -9,7 +9,7 @@
   "scripts": {
     "start": "electron .",
     "test": "node tests/numbering.test.js",
-    "dist": "electron-builder --win portable"
+    "dist": "electron-builder --win portable --publish never"
   },
   "dependencies": {
     "nodemailer": "^6.9.14"
@@ -22,7 +22,9 @@
     "appId": "pl.lechrol.wz",
     "productName": "Lechrol WZ",
     "win": {
-      "target": ["portable"]
+      "target": ["portable"],
+      "icon": "assets/icon.ico",
+      "artifactName": "Lechrol-WZ-${version}.${ext}"
     },
     "files": [
       "main.js",

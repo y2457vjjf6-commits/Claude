@@ -6,6 +6,7 @@
 
 const DEFAULT_STATE = {
   settings: {
+    theme: 'dark',
     seller: {
       name: 'ZPHU Lechrol Jacek Wajcht',
       address: 'ul. Leśna 6, 05-092 Łomianki',
@@ -99,6 +100,10 @@ function docById(id) {
   return state.documents.find((d) => d.id === id) || null;
 }
 
+function applyTheme() {
+  document.documentElement.dataset.theme = state.settings.theme === 'light' ? 'light' : 'dark';
+}
+
 // ============================== Nawigacja ==============================
 
 function showView(name) {
@@ -117,7 +122,7 @@ function renderDocsList() {
   const tbody = $('#docsTable tbody');
   const docs = state.documents
     .slice()
-    .sort((a, b) => (b.dateIssued + b.number).localeCompare(a.dateIssued + a.number))
+    .sort((a, b) => b.dateIssued.localeCompare(a.dateIssued) || (Number(b.seq) - Number(a.seq)))
     .filter((d) => {
       if (!q) return true;
       return [d.number, d.contractor?.name, d.orderNo, d.dateIssued, formatDatePl(d.dateIssued)]
@@ -340,7 +345,6 @@ function fillPrintArea(doc) {
     <div class="wz-header">
       <div>
         <div class="wz-logo-name">LECHROL</div>
-        <div class="wz-logo-sub">POLSKI PRODUCENT</div>
         <div class="wz-seller-lines">
           ${esc(s.name)}<br>
           ${esc(s.address)}<br>
@@ -562,6 +566,11 @@ async function saveSettings() {
 
 function bindEvents() {
   $$('.nav-btn').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
+  $('#btnTheme').addEventListener('click', async () => {
+    state.settings.theme = state.settings.theme === 'light' ? 'dark' : 'light';
+    applyTheme();
+    await persist();
+  });
   $('#btnNewDoc').addEventListener('click', () => openEditor(null));
   $('#btnEmptyNewDoc').addEventListener('click', () => openEditor(null));
   document.addEventListener('keydown', (ev) => {
@@ -665,6 +674,7 @@ function bindEvents() {
 
 (async function init() {
   await loadState();
+  applyTheme();
   bindEvents();
   if (hasApi) {
     const loc = await window.wzApi.dataLocation();

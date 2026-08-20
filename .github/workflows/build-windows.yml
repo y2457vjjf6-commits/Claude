@@ -1,0 +1,36 @@
+name: Budowa Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, claude/wztek-app-requirements-an0qwl]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Pobranie kodu
+        uses: actions/checkout@v4
+
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalacja zależności
+        run: npm ci
+
+      - name: Testy
+        run: npm test
+
+      - name: Budowa przenośnego .exe
+        run: npm run dist
+
+      - name: Publikacja artefaktu
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lechrol-WZ-windows
+          path: dist/*.exe
+          if-no-files-found: error
+          retention-days: 90

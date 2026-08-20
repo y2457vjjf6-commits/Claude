@@ -15,6 +15,8 @@ function createWindow() {
     minWidth: 980,
     minHeight: 640,
     title: 'Lechrol WZ',
+    backgroundColor: '#16130f',
+    autoHideMenuBar: true,
     icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -69,11 +71,11 @@ ipcMain.handle('data:location', async () => dataFile());
 
 // ---------- Drukowanie / PDF ----------
 
+// Marginesy pochodzą z reguły @page w print.css (preferCSSPageSize)
 const PDF_OPTIONS = {
   pageSize: 'A4',
   printBackground: true,
-  preferCSSPageSize: true,
-  margins: { marginType: 'none' }
+  preferCSSPageSize: true
 };
 
 ipcMain.handle('doc:print', async () => {

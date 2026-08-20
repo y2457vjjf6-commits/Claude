@@ -26,6 +26,8 @@ wszystkie dane zapisywane są lokalnie na komputerze.
   w chwili wysyłki).
 - **Archiwum z wyszukiwarką** — lista wszystkich WZ z filtrowaniem po numerze,
   odbiorcy, numerze zamówienia i dacie.
+- **Ciemny motyw** (domyślny) z przełącznikiem jasny/ciemny w pasku górnym;
+  wybór jest zapamiętywany. Wydruk zawsze pozostaje czarno-biały na białym tle.
 
 ## Uruchomienie (dla programisty)
 
@@ -37,14 +39,25 @@ npm start          # uruchomienie aplikacji
 npm test           # testy numeracji dokumentów
 ```
 
-## Budowa wersji dla Windows
+## Gotowy program dla Windows (.exe)
+
+Repozytorium ma skonfigurowaną automatyczną budowę w GitHub Actions
+(plik `.github/workflows/build-windows.yml`). Po każdej zmianie na gałęzi głównej
+(oraz na żądanie — przycisk „Run workflow”) powstaje przenośny plik
+`Lechrol-WZ-<wersja>.exe`:
+
+1. Wejdź na GitHubie w zakładkę **Actions → Budowa Windows EXE**.
+2. Otwórz ostatnie zielone uruchomienie.
+3. Na dole, w sekcji **Artifacts**, pobierz `Lechrol-WZ-windows`.
+4. Rozpakuj i skopiuj `.exe` na dowolny komputer z Windows — działa bez instalacji.
+
+Budowa lokalna (wymaga Windows albo Linuksa z wine):
 
 ```bash
 npm run dist
 ```
 
-W katalogu `dist/` powstanie przenośny plik `.exe` (portable) — wystarczy skopiować go
-na komputer docelowy i uruchomić, bez instalacji.
+W katalogu `dist/` powstanie przenośny plik `.exe` (portable).
 
 ## Gdzie są moje dane?
 

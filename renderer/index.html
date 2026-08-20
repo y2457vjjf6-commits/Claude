@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="pl" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <title>Lechrol WZ</title>
@@ -24,6 +24,8 @@
     <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
     <symbol id="i-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></symbol>
     <symbol id="i-back" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
   </defs>
 </svg>
 
@@ -31,7 +33,7 @@
   <header class="topbar">
     <div class="brand">
       <div class="brand-logo">LECHROL</div>
-      <div class="brand-sub">Polski producent · Wydania zewnętrzne</div>
+      <div class="brand-sub">Wydania zewnętrzne (WZ)</div>
     </div>
     <nav class="nav">
       <button class="nav-btn active" data-view="list"><svg class="icon"><use href="#i-file"/></svg>Dokumenty WZ</button>
@@ -39,6 +41,10 @@
       <button class="nav-btn" data-view="settings"><svg class="icon"><use href="#i-settings"/></svg>Ustawienia</button>
     </nav>
     <div class="topbar-actions">
+      <button id="btnTheme" class="btn btn-light" aria-label="Przełącz jasny/ciemny motyw" title="Jasny / ciemny motyw" style="margin-right:8px">
+        <svg class="icon icon-sun"><use href="#i-sun"/></svg>
+        <svg class="icon icon-moon"><use href="#i-moon"/></svg>
+      </button>
       <button id="btnNewDoc" class="btn btn-primary" title="Ctrl+N"><svg class="icon"><use href="#i-plus"/></svg>Nowa WZ</button>
     </div>
   </header>

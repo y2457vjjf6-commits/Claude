@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Lechrol WZ</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="print.css">
+</head>
+<body>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo">LECHROL</div>
+      <div class="brand-sub">POLSKI PRODUCENT · Wydania zewnętrzne (WZ)</div>
+    </div>
+    <nav class="nav">
+      <button class="nav-btn active" data-view="list">Dokumenty WZ</button>
+      <button class="nav-btn" data-view="contractors">Kontrahenci</button>
+      <button class="nav-btn" data-view="settings">Ustawienia</button>
+    </nav>
+    <button id="btnNewDoc" class="btn btn-primary">+ Nowa WZ</button>
+  </header>
+
+  <main class="content">
+
+    <!-- ===== Lista dokumentów ===== -->
+    <section id="view-list" class="view">
+      <div class="toolbar">
+        <input id="searchDocs" type="search" class="input search"
+               placeholder="Szukaj: numer, kontrahent, nr zamówienia, data (RRRR-MM-DD)…">
+        <span id="docsCount" class="muted"></span>
+      </div>
+      <table class="table" id="docsTable">
+        <thead>
+          <tr>
+            <th style="width:130px">Numer</th>
+            <th style="width:110px">Data</th>
+            <th>Odbiorca</th>
+            <th style="width:150px">Nr zamówienia</th>
+            <th style="width:70px">Pozycje</th>
+            <th style="width:260px">Akcje</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p id="docsEmpty" class="empty hidden">Brak dokumentów. Kliknij „+ Nowa WZ”, aby wystawić pierwszy dokument.</p>
+    </section>
+
+    <!-- ===== Edytor WZ ===== -->
+    <section id="view-edit" class="view hidden">
+      <div class="edit-head">
+        <h2 id="editTitle">Nowa WZ</h2>
+        <div class="doc-number">Numer: <strong id="numberPreview">—</strong></div>
+      </div>
+
+      <div class="card">
+        <div class="grid3">
+          <label class="field">
+            <span>Data wystawienia</span>
+            <input type="date" id="fDate" class="input">
+          </label>
+          <label class="field">
+            <span>Miejsce wystawienia</span>
+            <input type="text" id="fPlace" class="input">
+          </label>
+          <label class="field">
+            <span>Nr zamówienia / umowy</span>
+            <input type="text" id="fOrderNo" class="input">
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Odbiorca / Nabywca</h3>
+        <div class="grid2">
+          <label class="field">
+            <span>Wybierz z bazy kontrahentów</span>
+            <select id="fContractorSelect" class="input">
+              <option value="">— wpisz ręcznie lub wybierz —</option>
+            </select>
+          </label>
+          <label class="checkbox-field">
+            <input type="checkbox" id="fSaveContractor">
+            <span>Zapisz / zaktualizuj tego odbiorcę w bazie kontrahentów</span>
+          </label>
+        </div>
+        <div class="grid2">
+          <label class="field">
+            <span>Firma / Imię i nazwisko *</span>
+            <input type="text" id="fCName" class="input">
+          </label>
+          <label class="field">
+            <span>NIP</span>
+            <input type="text" id="fCNip" class="input">
+          </label>
+          <label class="field">
+            <span>Adres</span>
+            <input type="text" id="fCAddress" class="input">
+          </label>
+          <label class="field">
+            <span>E-mail (do wysyłki WZ)</span>
+            <input type="email" id="fCEmail" class="input">
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Pozycje</h3>
+        <table class="table items-table">
+          <thead>
+            <tr>
+              <th style="width:44px">Lp.</th>
+              <th>Nazwa towaru / opis</th>
+              <th style="width:110px">Jedn.</th>
+              <th style="width:110px">Ilość</th>
+              <th style="width:44px"></th>
+            </tr>
+          </thead>
+          <tbody id="itemsBody"></tbody>
+        </table>
+        <button id="btnAddItem" class="btn btn-light">+ Dodaj pozycję</button>
+      </div>
+
+      <div class="card">
+        <label class="field">
+          <span>Uwagi</span>
+          <textarea id="fNotes" class="input" rows="3"></textarea>
+        </label>
+      </div>
+
+      <div class="actions-bar">
+        <button id="btnSaveDoc" class="btn btn-primary">Zapisz</button>
+        <button id="btnSavePrint" class="btn">Zapisz i drukuj</button>
+        <button id="btnSavePdf" class="btn">Zapisz PDF</button>
+        <button id="btnSaveEmail" class="btn">Wyślij e-mailem</button>
+        <span class="spacer"></span>
+        <button id="btnDeleteDoc" class="btn btn-danger hidden">Usuń dokument</button>
+        <button id="btnBack" class="btn btn-light">Wróć do listy</button>
+      </div>
+    </section>
+
+    <!-- ===== Kontrahenci ===== -->
+    <section id="view-contractors" class="view hidden">
+      <div class="toolbar">
+        <input id="searchContractors" type="search" class="input search" placeholder="Szukaj kontrahenta…">
+        <button id="btnNewContractor" class="btn btn-primary">+ Dodaj kontrahenta</button>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Firma / Imię</th>
+            <th style="width:150px">NIP</th>
+            <th>Adres</th>
+            <th style="width:220px">E-mail</th>
+            <th style="width:80px">Kod</th>
+            <th style="width:160px">Akcje</th>
+          </tr>
+        </thead>
+        <tbody id="contractorsBody"></tbody>
+      </table>
+      <p id="contractorsEmpty" class="empty hidden">Brak kontrahentów w bazie.</p>
+
+      <div id="contractorForm" class="card hidden">
+        <h3 id="contractorFormTitle">Nowy kontrahent</h3>
+        <div class="grid2">
+          <label class="field"><span>Firma / Imię i nazwisko *</span><input type="text" id="cfName" class="input"></label>
+          <label class="field"><span>NIP</span><input type="text" id="cfNip" class="input"></label>
+          <label class="field"><span>Adres</span><input type="text" id="cfAddress" class="input"></label>
+          <label class="field"><span>E-mail</span><input type="email" id="cfEmail" class="input"></label>
+        </div>
+        <div class="actions-bar">
+          <button id="btnSaveContractor" class="btn btn-primary">Zapisz kontrahenta</button>
+          <button id="btnCancelContractor" class="btn btn-light">Anuluj</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Ustawienia ===== -->
+    <section id="view-settings" class="view hidden">
+      <div class="card">
+        <h3>Dane sprzedawcy / wydającego (nagłówek dokumentu)</h3>
+        <div class="grid2">
+          <label class="field"><span>Nazwa firmy</span><input type="text" id="sName" class="input"></label>
+          <label class="field"><span>NIP</span><input type="text" id="sNip" class="input"></label>
+          <label class="field"><span>Adres</span><input type="text" id="sAddress" class="input"></label>
+          <label class="field"><span>Telefon</span><input type="text" id="sPhone" class="input"></label>
+          <label class="field"><span>Strona www</span><input type="text" id="sWww" class="input"></label>
+          <label class="field"><span>Domyślne miejsce wystawienia</span><input type="text" id="sPlace" class="input"></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Poczta e-mail (wysyłka WZ jako PDF)</h3>
+        <p class="muted">Opcjonalne. Wymaga dostępu do internetu w chwili wysyłki. Dane logowania do skrzynki
+           nadawczej (SMTP) znajdziesz u swojego dostawcy poczty.</p>
+        <div class="grid2">
+          <label class="field"><span>Serwer SMTP (np. smtp.gmail.com)</span><input type="text" id="mHost" class="input"></label>
+          <label class="field"><span>Port (587 lub 465)</span><input type="number" id="mPort" class="input" placeholder="587"></label>
+          <label class="field"><span>Login (adres e-mail)</span><input type="text" id="mUser" class="input"></label>
+          <label class="field"><span>Hasło</span><input type="password" id="mPass" class="input"></label>
+          <label class="field"><span>Nadawca (pole „Od”)</span><input type="text" id="mFrom" class="input" placeholder="np. biuro@lechrol.pl"></label>
+          <label class="field"><span>Temat wiadomości ({numer} = numer WZ)</span><input type="text" id="mSubject" class="input"></label>
+        </div>
+        <label class="field"><span>Treść wiadomości</span><textarea id="mBody" class="input" rows="4"></textarea></label>
+      </div>
+
+      <div class="actions-bar">
+        <button id="btnSaveSettings" class="btn btn-primary">Zapisz ustawienia</button>
+        <span id="dataLocation" class="muted"></span>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+</div>
+
+<!-- Obszar wydruku — wypełniany przed drukowaniem, widoczny tylko na wydruku/PDF -->
+<div id="print-area" aria-hidden="true"></div>
+
+<script src="numbering.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

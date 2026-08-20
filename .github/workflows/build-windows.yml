@@ -5,6 +5,9 @@ on:
   push:
     branches: [main, claude/wztek-app-requirements-an0qwl]
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -34,3 +37,30 @@ jobs:
           path: dist/*.exe
           if-no-files-found: error
           retention-days: 90
+
+      - name: Publikacja w Releases
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v$(node -p "require('./package.json').version")-build${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" dist/*.exe \
+            --title "Lechrol WZ ${TAG}" \
+            --notes "Przenośny program dla Windows — pobierz plik .exe poniżej, skopiuj na komputer i uruchom (bez instalacji)." \
+            --latest
+
+      - name: Gałąź windows-exe (pobieranie przez git)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          mkdir exe-branch
+          cp dist/*.exe exe-branch/
+          cd exe-branch
+          git init -b windows-exe
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add .
+          git commit -m "Lechrol WZ - przenośny exe (automatyczna budowa ${GITHUB_RUN_NUMBER})"
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" windows-exe

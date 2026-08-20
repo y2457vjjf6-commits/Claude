@@ -137,6 +137,12 @@ ipcMain.handle('doc:email', async (_ev, payload) => {
   } catch (err) {
     return { ok: false, error: String(err.message || err) };
   } finally {
-    if (tmpPath) { try { fs.unlinkSync(tmpPath); } catch {} }
+    if (tmpPath) {
+      try {
+        fs.unlinkSync(tmpPath);
+      } catch (cleanupErr) {
+        console.error('Nie udało się usunąć pliku tymczasowego PDF:', tmpPath, cleanupErr);
+      }
+    }
   }
 });

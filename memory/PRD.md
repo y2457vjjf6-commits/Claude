@@ -44,6 +44,12 @@ Dev desktop: `yarn build && yarn electron` lub `ELECTRON_START_URL=http://localh
 - Hooki: `hooks/useToastMessage.ts`, `hooks/useConfirm.ts` — App.tsx odchudzony; EditorView: initForm/toRows/collectItems na poziomie modułu, poprawne zależności efektów (initRef guard), useMemo (numberPreview, sortedContractors), useMemo dla list w DocumentsView/ContractorsView
 - Testing agent iteracja 2: **100% pass** (regresja + stable-keys + XSS + confirm/preview modale)
 
+## Zrealizowane (2026-06 / iteracja 4 — code review pass 2)
+- Dekompozycja: `lib/documents.ts` (DocumentForm, initDocumentForm, collectItems, upsertDocument/upsertContractor — logika zapisu poza EditorView), `printing.ts` buildPrintHtml rozbite na headerHtml/metaHtml/partiesHtml/itemsTableHtml/footerHtml, ItemsEditor → podkomponent ItemRowEditor, ContractorsView → `components/ContractorForm.tsx` (remount przez key) + ContractorTable, SettingsView → SellerCard/EmailCard + toForm/applyForm
+- electron/main.js: pusty catch przy sprzątaniu tmp PDF → console.error
+- Fałszywe alarmy skanera (odrzucone świadomie): innerHTML/dangerouslySetInnerHTML już sanityzowane DOMPurify; "brakujące zależności hooków" to settery Reacta, funkcje modułowe i parametry lambd
+- Testing agent iteracja 3: **100% pass** (m.in. upsert-not-duplicate kontrahenta, keyed remount formularza, pełna struktura szablonu wydruku, round-trip ustawień)
+
 ## Backlog / P1-P2
 - P2: eksport kontrahentów do CSV
 

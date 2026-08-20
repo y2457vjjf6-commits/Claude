@@ -3,6 +3,7 @@ import { Save, Printer, FileDown, Mail, Trash2, ArrowLeft } from 'lucide-react';
 import { AppState, Item, ItemRow, WZDocument } from '../types';
 import { computeNumberFor } from '../lib/numbering';
 import { uid } from '../lib/storage';
+import { DocumentForm, collectItems, initDocumentForm, todayStr, upsertDocument } from '../lib/documents';
 import { printDocument, savePdfDocument, emailDocument } from '../lib/printing';
 import { ToastFn } from '../hooks/useToastMessage';
 import ItemsEditor from '../components/ItemsEditor';
@@ -18,53 +19,12 @@ interface Props {
   emailConfirm: (message: string) => Promise<boolean>;
 }
 
-interface EditorForm {
-  dateIssued: string;
-  place: string;
-  orderNo: string;
-  contractorSel: string;
-  saveContractor: boolean;
-  cName: string;
-  cNip: string;
-  cAddress: string;
-  cEmail: string;
-  notes: string;
-}
-
-function todayStr(): string {
-  const d = new Date();
-  return (
-    d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
-  );
-}
-
 function newRow(item?: Item): ItemRow {
   return { rowId: uid(), name: item?.name || '', unit: item?.unit ?? 'szt.', qty: item?.qty || '' };
 }
 
 function toRows(doc: WZDocument | null): ItemRow[] {
   return doc && doc.items.length ? doc.items.map((it) => newRow(it)) : [newRow()];
-}
-
-function initForm(doc: WZDocument | null, defaultPlace: string): EditorForm {
-  return {
-    dateIssued: doc?.dateIssued || todayStr(),
-    place: doc ? doc.place : defaultPlace,
-    orderNo: doc?.orderNo || '',
-    contractorSel: doc?.contractorId || '',
-    saveContractor: false,
-    cName: doc?.contractor?.name || '',
-    cNip: doc?.contractor?.nip || '',
-    cAddress: doc?.contractor?.address || '',
-    cEmail: doc?.contractor?.email || '',
-    notes: doc?.notes || ''
-  };
-}
-
-function collectItems(rows: ItemRow[]): Item[] {
-  return rows
-    .map((r) => ({ name: r.name.trim(), unit: r.unit.trim(), qty: r.qty.trim() }))
-    .filter((it) => it.name || it.qty);
 }
 
 export default function EditorView({
@@ -80,18 +40,18 @@ export default function EditorView({
   const doc = editingDocId ? state.documents.find((d) => d.id === editingDocId) || null : null;
   const initRef = useRef<string | null>(editingDocId);
 
-  const [form, setForm] = useState<EditorForm>(() => initForm(doc, state.settings.place));
+  const [form, setForm] = useState<DocumentForm>(() => initDocumentForm(doc, state.settings.place));
   const [rows, setRows] = useState<ItemRow[]>(() => toRows(doc));
 
   useEffect(() => {
     if (initRef.current === editingDocId) return;
     initRef.current = editingDocId;
     const d = editingDocId ? state.documents.find((x) => x.id === editingDocId) || null : null;
-    setForm(initForm(d, state.settings.place));
+    setForm(initDocumentForm(d, state.settings.place));
     setRows(toRows(d));
   }, [editingDocId, state.documents, state.settings.place]);
 
-  const set = (patch: Partial<EditorForm>): void => setForm((f) => ({ ...f, ...patch }));
+  const set = (patch: Partial<DocumentForm>): void => setForm((f) => ({ ...f, ...patch }));
 
   const numberPreview = useMemo(
     () => computeNumberFor(state.documents, editingDocId, form.dateIssued || todayStr(), form.cName.trim()).number,
@@ -128,61 +88,14 @@ export default function EditorView({
       toast('Podaj datę wystawienia.', true);
       return null;
     }
-    const name = form.cName.trim();
-    if (!name) {
+    if (!form.cName.trim()) {
       toast('Podaj nazwę odbiorcy.', true);
       return null;
     }
-
-    const { seq, number } = computeNumberFor(state.documents, editingDocId, form.dateIssued, name);
-    const contractor = {
-      name,
-      address: form.cAddress.trim(),
-      nip: form.cNip.trim(),
-      email: form.cEmail.trim()
-    };
-
-    const next = structuredClone(state);
-    let contractorId: string | null = form.contractorSel || null;
-    if (form.saveContractor) {
-      const existing = contractorId ? next.contractors.find((c) => c.id === contractorId) : null;
-      if (existing) {
-        Object.assign(existing, contractor);
-        contractorId = existing.id;
-      } else {
-        const created = { id: uid(), ...contractor };
-        next.contractors.push(created);
-        contractorId = created.id;
-      }
-    }
-
-    const nowIso = new Date().toISOString();
-    const newDoc: WZDocument = {
-      id: editingDocId || uid(),
-      number,
-      seq,
-      dateIssued: form.dateIssued,
-      place: form.place.trim(),
-      orderNo: form.orderNo.trim(),
-      contractorId,
-      contractor,
-      items: collectItems(rows),
-      notes: form.notes.trim(),
-      createdAt: nowIso,
-      updatedAt: nowIso
-    };
-
-    if (editingDocId) {
-      const idx = next.documents.findIndex((d) => d.id === editingDocId);
-      newDoc.createdAt = next.documents[idx]?.createdAt || nowIso;
-      next.documents[idx] = newDoc;
-    } else {
-      next.documents.push(newDoc);
-    }
-
+    const { next, doc: savedDoc } = upsertDocument(state, editingDocId, form, collectItems(rows));
     await onPersist(next);
-    if (!editingDocId) onSaved(newDoc.id);
-    return newDoc;
+    if (!editingDocId) onSaved(savedDoc.id);
+    return savedDoc;
   }
 
   const handleSave = async (): Promise<void> => {

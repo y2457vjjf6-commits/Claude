@@ -2,6 +2,68 @@ import { KeyboardEvent, useEffect, useRef } from 'react';
 import { Plus, X } from 'lucide-react';
 import { ItemRow } from '../types';
 
+type RowKeyHandler = (ev: KeyboardEvent<HTMLInputElement>, index: number) => void;
+
+interface RowProps {
+  row: ItemRow;
+  index: number;
+  onSetRow: (rowId: string, patch: Partial<ItemRow>) => void;
+  onRemoveRow: (rowId: string) => void;
+  onKeyDown: RowKeyHandler;
+}
+
+function ItemRowEditor({ row, index, onSetRow, onRemoveRow, onKeyDown }: RowProps) {
+  return (
+    <tr>
+      <td className="item-lp num">{index + 1}</td>
+      <td>
+        <input
+          type="text"
+          className="input item-name"
+          data-testid={`item-name-${index}`}
+          aria-label="Nazwa towaru"
+          value={row.name}
+          onChange={(e) => onSetRow(row.rowId, { name: e.target.value })}
+          onKeyDown={(e) => onKeyDown(e, index)}
+        />
+      </td>
+      <td>
+        <input
+          type="text"
+          className="input item-unit"
+          data-testid={`item-unit-${index}`}
+          aria-label="Jednostka"
+          value={row.unit}
+          onChange={(e) => onSetRow(row.rowId, { unit: e.target.value })}
+          onKeyDown={(e) => onKeyDown(e, index)}
+        />
+      </td>
+      <td>
+        <input
+          type="text"
+          className="input item-qty num"
+          data-testid={`item-qty-${index}`}
+          aria-label="Ilość"
+          value={row.qty}
+          onChange={(e) => onSetRow(row.rowId, { qty: e.target.value })}
+          onKeyDown={(e) => onKeyDown(e, index)}
+        />
+      </td>
+      <td>
+        <button
+          className="btn btn-small btn-danger item-remove"
+          data-testid={`item-remove-${index}`}
+          aria-label="Usuń pozycję"
+          title="Usuń pozycję"
+          onClick={() => onRemoveRow(row.rowId)}
+        >
+          <X className="icon" />
+        </button>
+      </td>
+    </tr>
+  );
+}
+
 interface Props {
   rows: ItemRow[];
   onSetRow: (rowId: string, patch: Partial<ItemRow>) => void;
@@ -26,7 +88,7 @@ export default function ItemsEditor({ rows, onSetRow, onAddRow, onRemoveRow }: P
     onAddRow();
   };
 
-  const onKeyDown = (ev: KeyboardEvent<HTMLInputElement>, index: number): void => {
+  const onKeyDown: RowKeyHandler = (ev, index) => {
     if (ev.key !== 'Enter') return;
     if (index === rows.length - 1) {
       ev.preventDefault();
@@ -48,53 +110,7 @@ export default function ItemsEditor({ rows, onSetRow, onAddRow, onRemoveRow }: P
         </thead>
         <tbody ref={bodyRef} data-testid="items-body">
           {rows.map((row, i) => (
-            <tr key={row.rowId}>
-              <td className="item-lp num">{i + 1}</td>
-              <td>
-                <input
-                  type="text"
-                  className="input item-name"
-                  data-testid={`item-name-${i}`}
-                  aria-label="Nazwa towaru"
-                  value={row.name}
-                  onChange={(e) => onSetRow(row.rowId, { name: e.target.value })}
-                  onKeyDown={(e) => onKeyDown(e, i)}
-                />
-              </td>
-              <td>
-                <input
-                  type="text"
-                  className="input item-unit"
-                  data-testid={`item-unit-${i}`}
-                  aria-label="Jednostka"
-                  value={row.unit}
-                  onChange={(e) => onSetRow(row.rowId, { unit: e.target.value })}
-                  onKeyDown={(e) => onKeyDown(e, i)}
-                />
-              </td>
-              <td>
-                <input
-                  type="text"
-                  className="input item-qty num"
-                  data-testid={`item-qty-${i}`}
-                  aria-label="Ilość"
-                  value={row.qty}
-                  onChange={(e) => onSetRow(row.rowId, { qty: e.target.value })}
-                  onKeyDown={(e) => onKeyDown(e, i)}
-                />
-              </td>
-              <td>
-                <button
-                  className="btn btn-small btn-danger item-remove"
-                  data-testid={`item-remove-${i}`}
-                  aria-label="Usuń pozycję"
-                  title="Usuń pozycję"
-                  onClick={() => onRemoveRow(row.rowId)}
-                >
-                  <X className="icon" />
-                </button>
-              </td>
-            </tr>
+            <ItemRowEditor key={row.rowId} row={row} index={i} onSetRow={onSetRow} onRemoveRow={onRemoveRow} onKeyDown={onKeyDown} />
           ))}
         </tbody>
       </table>

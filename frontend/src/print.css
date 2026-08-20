@@ -14,10 +14,10 @@
 #print-area,
 .preview-page {
   /* Delikatna siatka zamiast ciężkich czarnych ramek — czytelna na wydruku mono */
-  --wz-rule: #b4b4b4;        /* linie siatki tabeli i pól */
-  --wz-rule-strong: #7d7d7d; /* ramki zewnętrzne bloków */
-  --wz-rule-accent: #3a3a3a; /* kreska pod nagłówkiem firmowym */
-  --wz-head-bg: #f2f2f2;     /* tło wiersza nagłówkowego tabeli */
+  --wz-rule: #8a8a8a;        /* linie siatki tabeli i pól */
+  --wz-rule-strong: #4f4f4f; /* ramki zewnętrzne bloków */
+  --wz-rule-accent: #1f1f1f; /* kreska pod nagłówkiem firmowym */
+  --wz-head-bg: #ededed;     /* tło wiersza nagłówkowego tabeli */
 }
 
 #print-area {
@@ -195,5 +195,5 @@
   padding-top: 4pt;
   text-align: center;
   font-size: 8pt;
-  color: #444;
+  color: #333;
 }

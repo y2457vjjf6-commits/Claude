@@ -71,10 +71,30 @@ backup, wystarczy skopiować ten plik.
 
 ## Konfiguracja poczty (wysyłka WZ e-mailem)
 
-W zakładce **Ustawienia → Poczta e-mail** podaj dane SMTP swojej skrzynki nadawczej,
-np. dla Gmaila: serwer `smtp.gmail.com`, port `587`, login = adres e-mail oraz
-[hasło aplikacji](https://support.google.com/accounts/answer/185833) (nie zwykłe hasło).
-Temat i treść wiadomości można dostosować — `{numer}` zostanie zastąpiony numerem WZ.
+W zakładce **Ustawienia → Poczta e-mail** podaj dane skrzynki nadawczej (SMTP),
+a następnie kliknij **Testuj połączenie** — sprawdzi serwer, port, login i hasło
+bez wysyłania wiadomości. Temat i treść można dostosować; `{numer}` zostanie
+zastąpiony numerem WZ.
+
+### Poczta i-host (Wenet)
+
+| Pole | Wartość |
+|---|---|
+| Serwer SMTP | `hX.i-host.pl` — X to numer serwera z panelu i-host (ten sam adres co poczta przychodząca) |
+| Port | `465` (szyfrowanie SSL/TLS) lub `587` (STARTTLS) |
+| Login | pełny adres e-mail, np. `biuro@lechrol.pl` |
+| Hasło | hasło do skrzynki |
+| Nadawca | ten sam adres co login |
+
+Numer serwera (`hX`) znajdziesz w panelu klienta i-host albo w wiadomości
+konfiguracyjnej otrzymanej przy zakładaniu hostingu; podaje go też program pocztowy
+już skonfigurowany na tej skrzynce (Outlook / Thunderbird → ustawienia konta →
+serwer poczty wychodzącej).
+
+### Inni dostawcy
+
+Gmail wymaga [hasła aplikacji](https://support.google.com/accounts/answer/185833)
+zamiast zwykłego hasła (serwer `smtp.gmail.com`, port `587`).
 
 ## Struktura projektu
 

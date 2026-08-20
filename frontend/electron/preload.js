@@ -6,5 +6,6 @@ contextBridge.exposeInMainWorld('wzApi', {
   dataLocation: () => ipcRenderer.invoke('data:location'),
   printDoc: () => ipcRenderer.invoke('doc:print'),
   savePdf: (suggestedName) => ipcRenderer.invoke('doc:savePdf', suggestedName),
-  sendEmail: (payload) => ipcRenderer.invoke('doc:email', payload)
+  sendEmail: (payload) => ipcRenderer.invoke('doc:email', payload),
+  testEmail: (smtp) => ipcRenderer.invoke('doc:testEmail', smtp)
 });

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Save } from 'lucide-react';
+import { Save, PlugZap, Loader2 } from 'lucide-react';
 import { AppState } from '../types';
 import { dataLocation, hasApi } from '../lib/storage';
 
@@ -27,6 +27,7 @@ export default function SettingsView({ state, onPersist, toast }: Props) {
     mBody: st.emailBody
   });
   const [location, setLocation] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
 
   useEffect(() => {
     if (hasApi) dataLocation().then(setLocation);
@@ -53,6 +54,31 @@ export default function SettingsView({ state, onPersist, toast }: Props) {
     next.settings.emailBody = form.mBody;
     await onPersist(next);
     toast('Zapisano ustawienia.');
+  };
+
+  const testEmail = async () => {
+    if (!hasApi || !window.wzApi) {
+      toast('Test poczty działa tylko w aplikacji na komputerze.', true);
+      return;
+    }
+    if (!form.mHost.trim() || !form.mUser.trim()) {
+      toast('Podaj serwer SMTP i login, zanim sprawdzisz połączenie.', true);
+      return;
+    }
+    setTesting(true);
+    try {
+      const res = await window.wzApi.testEmail({
+        host: form.mHost.trim(),
+        port: Number(form.mPort) || 587,
+        user: form.mUser.trim(),
+        pass: form.mPass,
+        from: form.mFrom.trim()
+      });
+      if (res.ok) toast('Połączenie z serwerem poczty działa — dane są poprawne.');
+      else toast(res.error || 'Nie udało się połączyć z serwerem poczty.', true);
+    } finally {
+      setTesting(false);
+    }
   };
 
   return (
@@ -124,6 +150,13 @@ export default function SettingsView({ state, onPersist, toast }: Props) {
           <span>Treść wiadomości</span>
           <textarea className="input" data-testid="email-body-input" rows={4} value={form.mBody} onChange={(e) => set({ mBody: e.target.value })} />
         </label>
+        <div className="actions-bar" style={{ marginTop: 16 }}>
+          <button className="btn" data-testid="test-email-btn" onClick={testEmail} disabled={testing}>
+            {testing ? <Loader2 className="icon icon-spin" /> : <PlugZap className="icon" />}
+            {testing ? 'Sprawdzam połączenie…' : 'Testuj połączenie'}
+          </button>
+          <span className="muted">Sprawdza serwer, port, login i hasło — bez wysyłania wiadomości.</span>
+        </div>
       </div>
 
       <div className="actions-bar">

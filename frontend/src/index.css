@@ -704,6 +704,26 @@ input[type='checkbox'] {
   display: none;
 }
 
+/* Ikona ładowania w przyciskach */
+.icon-spin {
+  animation: icon-spin 900ms linear infinite;
+}
+
+@keyframes icon-spin {
+  to { transform: rotate(360deg); }
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.btn:disabled:hover {
+  background: var(--card);
+  border-color: var(--hairline);
+  color: var(--ink);
+}
+
 /* ============================ Dialogi i podgląd ============================ */
 
 .modal-overlay {

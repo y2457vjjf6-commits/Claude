@@ -88,6 +88,7 @@ declare global {
         text: string;
         filename: string;
       }) => Promise<{ ok: boolean; error?: string }>;
+      testEmail: (smtp: Smtp) => Promise<{ ok: boolean; error?: string }>;
     };
   }
 }

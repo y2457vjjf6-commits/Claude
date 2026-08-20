@@ -108,6 +108,43 @@ ipcMain.handle('doc:savePdf', async (_ev, suggestedName) => {
   }
 });
 
+ipcMain.handle('doc:testEmail', async (_ev, smtp) => {
+  if (!smtp || !smtp.host || !smtp.user) {
+    return { ok: false, error: 'Uzupełnij serwer SMTP i login.' };
+  }
+  try {
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+      host: smtp.host,
+      port: Number(smtp.port) || 587,
+      secure: Number(smtp.port) === 465,
+      auth: { user: smtp.user, pass: smtp.pass },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000
+    });
+    await transporter.verify();
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: describeSmtpError(err) };
+  }
+});
+
+// Techniczne komunikaty nodemailera na podpowiedzi zrozumiałe dla użytkownika
+function describeSmtpError(err) {
+  const code = err && err.code;
+  const msg = String((err && err.message) || err);
+  if (code === 'EAUTH') {
+    return 'Serwer odrzucił login lub hasło. Sprawdź, czy jako login podajesz pełny adres e-mail.';
+  }
+  if (code === 'ENOTFOUND' || code === 'EDNS') {
+    return 'Nie znaleziono takiego serwera. Sprawdź pisownię adresu serwera SMTP.';
+  }
+  if (code === 'ETIMEDOUT' || code === 'ECONNECTION' || code === 'ESOCKET') {
+    return 'Brak połączenia z serwerem. Sprawdź adres i port (465 albo 587) oraz połączenie z internetem. Port mógł też zostać zablokowany przez zaporę lub antywirus. Szczegóły: ' + msg;
+  }
+  return msg;
+}
+
 ipcMain.handle('doc:email', async (_ev, payload) => {
   const { smtp, to, subject, text, filename } = payload;
   if (!smtp || !smtp.host || !smtp.user) {
@@ -135,7 +172,7 @@ ipcMain.handle('doc:email', async (_ev, payload) => {
     });
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: String(err.message || err) };
+    return { ok: false, error: describeSmtpError(err) };
   } finally {
     if (tmpPath) { try { fs.unlinkSync(tmpPath); } catch {} }
   }

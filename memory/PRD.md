@@ -31,10 +31,15 @@ Dev desktop: `yarn build && yarn electron` lub `ELECTRON_START_URL=http://localh
 - Cała logika 1:1: numeracja, edytor WZ (Enter dodaje wiersz, podgląd numeru live), kontrahenci (CRUD + kod), ustawienia (sprzedawca + SMTP), motyw jasny/ciemny (warm-dark), drukowanie/PDF/e-mail, persystencja
 - Testing agent iteracja 1: **100% pass (24 scenariusze)**; build produkcyjny OK (72.7 kB gz)
 
+## Zrealizowane (2026-06 / iteracja 2)
+- **GitHub Actions** `/.github/workflows/build-windows.yml`: po każdym pushu na `main` (i ręcznie przez workflow_dispatch) buduje portable .exe na windows-latest, publikuje jako artefakt + Release (tag `v<wersja>-build<N>`) + gałąź `windows-exe` — schemat zgodny z oryginalnym repo, dostosowany do katalogu `frontend/` i yarn
+- **Ładne potwierdzenia**: `ConfirmDialog.tsx` + `askConfirm` (Promise) w App — zastępuje window.confirm dla usuwania dokumentu, kontrahenta i potwierdzenia wysyłki e-mail (przycisk Wyślij, nie-danger); Esc/Enter, klik w tło = anuluj; identyczne komunikaty PL
+- **Podgląd dokumentu**: ikona oka w tabeli (doc-preview-<id>) otwiera `PreviewModal` z kartką A4 (buildPrintHtml wydzielone z fillPrintArea w printing.ts) + przyciski Drukuj / Zapisz PDF / Zamknij
+- **Fix krytyczny**: print.css `#app` → `#root` (inaczej UI drukowało się razem z dokumentem w wersji React)
+- Weryfikacja: lokalny Playwright — pełny flow (nowa WZ → zapis 8001/RA/2026 → podgląd z treścią → confirm anuluj/usuń) PASS; build produkcyjny OK
+
 ## Backlog / P1-P2
-- P2: podgląd dokumentu (ikona oka z mockupu — celowo NIE dodana, bo restyle only)
-- P2: własny modal potwierdzeń zamiast window.confirm (spójny z designem)
-- P2: GitHub Actions workflow do budowy exe (w starym repo istniał build-windows.yml)
+- P2: eksport kontrahentów do CSV
 
 ## Uwierzytelnianie
 Brak auth — aplikacja lokalna, brak kont.

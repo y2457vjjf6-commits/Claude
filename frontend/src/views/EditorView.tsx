@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft } from 'lucide-react';
-import { AppState, Item, WZDocument } from '../types';
+import { AppState, AskConfirm, Item, WZDocument } from '../types';
 import { computeNumberFor } from '../lib/numbering';
 import { uid } from '../lib/storage';
 import { printDocument, savePdfDocument, emailDocument } from '../lib/printing';
@@ -13,6 +13,7 @@ interface Props {
   onBack: () => void;
   onDelete: (doc: WZDocument) => void;
   toast: (msg: string, isError?: boolean) => void;
+  emailConfirm: (message: string) => Promise<boolean>;
 }
 
 function todayStr(): string {
@@ -24,7 +25,7 @@ function todayStr(): string {
 
 const EMPTY_ITEM: Item = { name: '', unit: 'szt.', qty: '' };
 
-export default function EditorView({ state, editingDocId, onPersist, onSaved, onBack, onDelete, toast }: Props) {
+export default function EditorView({ state, editingDocId, onPersist, onSaved, onBack, onDelete, toast, emailConfirm }: Props) {
   const doc = editingDocId ? state.documents.find((d) => d.id === editingDocId) || null : null;
   const initRef = useRef<string | null>('__none__');
 
@@ -199,7 +200,7 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
   };
   const handleSaveEmail = async () => {
     const saved = await saveDoc();
-    if (saved) emailDocument(saved, state.settings, toast);
+    if (saved) emailDocument(saved, state.settings, toast, emailConfirm);
   };
 
   return (

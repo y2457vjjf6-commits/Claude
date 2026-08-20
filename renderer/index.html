@@ -8,18 +8,39 @@
 </head>
 <body>
 
+<!-- Ikony (Lucide, inline) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></symbol>
+    <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></symbol>
+    <symbol id="i-pdf" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></symbol>
+  </defs>
+</svg>
+
 <div id="app">
   <header class="topbar">
     <div class="brand">
       <div class="brand-logo">LECHROL</div>
-      <div class="brand-sub">POLSKI PRODUCENT · Wydania zewnętrzne (WZ)</div>
+      <div class="brand-sub">Polski producent · Wydania zewnętrzne</div>
     </div>
     <nav class="nav">
-      <button class="nav-btn active" data-view="list">Dokumenty WZ</button>
-      <button class="nav-btn" data-view="contractors">Kontrahenci</button>
-      <button class="nav-btn" data-view="settings">Ustawienia</button>
+      <button class="nav-btn active" data-view="list"><svg class="icon"><use href="#i-file"/></svg>Dokumenty WZ</button>
+      <button class="nav-btn" data-view="contractors"><svg class="icon"><use href="#i-users"/></svg>Kontrahenci</button>
+      <button class="nav-btn" data-view="settings"><svg class="icon"><use href="#i-settings"/></svg>Ustawienia</button>
     </nav>
-    <button id="btnNewDoc" class="btn btn-primary">+ Nowa WZ</button>
+    <div class="topbar-actions">
+      <button id="btnNewDoc" class="btn btn-primary" title="Ctrl+N"><svg class="icon"><use href="#i-plus"/></svg>Nowa WZ</button>
+    </div>
   </header>
 
   <main class="content">
@@ -27,9 +48,12 @@
     <!-- ===== Lista dokumentów ===== -->
     <section id="view-list" class="view">
       <div class="toolbar">
-        <input id="searchDocs" type="search" class="input search"
-               placeholder="Szukaj: numer, kontrahent, nr zamówienia, data (RRRR-MM-DD)…">
-        <span id="docsCount" class="muted"></span>
+        <div class="search-wrap">
+          <svg class="icon"><use href="#i-search"/></svg>
+          <input id="searchDocs" type="search" class="input"
+                 placeholder="Szukaj: numer, kontrahent, nr zamówienia, data…">
+        </div>
+        <span id="docsCount" class="muted num"></span>
       </div>
       <table class="table" id="docsTable">
         <thead>
@@ -38,20 +62,27 @@
             <th style="width:110px">Data</th>
             <th>Odbiorca</th>
             <th style="width:150px">Nr zamówienia</th>
-            <th style="width:70px">Pozycje</th>
-            <th style="width:260px">Akcje</th>
+            <th class="th-num" style="width:76px">Pozycje</th>
+            <th style="width:300px">Akcje</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
-      <p id="docsEmpty" class="empty hidden">Brak dokumentów. Kliknij „+ Nowa WZ”, aby wystawić pierwszy dokument.</p>
+      <div id="docsEmpty" class="empty hidden">
+        <svg class="icon"><use href="#i-file"/></svg>
+        <p>Brak dokumentów. Wystaw pierwszą WZ — zajmie to mniej niż minutę.</p>
+        <button class="btn btn-primary" id="btnEmptyNewDoc"><svg class="icon"><use href="#i-plus"/></svg>Nowa WZ</button>
+      </div>
     </section>
 
     <!-- ===== Edytor WZ ===== -->
     <section id="view-edit" class="view hidden">
       <div class="edit-head">
         <h2 id="editTitle">Nowa WZ</h2>
-        <div class="doc-number">Numer: <strong id="numberPreview">—</strong></div>
+        <div class="doc-number">
+          <span class="doc-number-label">Numer</span>
+          <strong id="numberPreview">—</strong>
+        </div>
       </div>
 
       <div class="card">
@@ -110,16 +141,16 @@
         <table class="table items-table">
           <thead>
             <tr>
-              <th style="width:44px">Lp.</th>
+              <th style="width:44px" class="th-num">Lp.</th>
               <th>Nazwa towaru / opis</th>
               <th style="width:110px">Jedn.</th>
-              <th style="width:110px">Ilość</th>
+              <th style="width:110px" class="th-num">Ilość</th>
               <th style="width:44px"></th>
             </tr>
           </thead>
           <tbody id="itemsBody"></tbody>
         </table>
-        <button id="btnAddItem" class="btn btn-light">+ Dodaj pozycję</button>
+        <button id="btnAddItem" class="btn btn-light"><svg class="icon"><use href="#i-plus"/></svg>Dodaj pozycję <span class="muted">(Enter w ostatnim wierszu)</span></button>
       </div>
 
       <div class="card">
@@ -130,36 +161,43 @@
       </div>
 
       <div class="actions-bar">
-        <button id="btnSaveDoc" class="btn btn-primary">Zapisz</button>
-        <button id="btnSavePrint" class="btn">Zapisz i drukuj</button>
-        <button id="btnSavePdf" class="btn">Zapisz PDF</button>
-        <button id="btnSaveEmail" class="btn">Wyślij e-mailem</button>
+        <button id="btnSaveDoc" class="btn btn-primary"><svg class="icon"><use href="#i-save"/></svg>Zapisz</button>
+        <button id="btnSavePrint" class="btn"><svg class="icon"><use href="#i-print"/></svg>Zapisz i drukuj</button>
+        <button id="btnSavePdf" class="btn"><svg class="icon"><use href="#i-pdf"/></svg>Zapisz PDF</button>
+        <button id="btnSaveEmail" class="btn"><svg class="icon"><use href="#i-mail"/></svg>Wyślij e-mailem</button>
         <span class="spacer"></span>
-        <button id="btnDeleteDoc" class="btn btn-danger hidden">Usuń dokument</button>
-        <button id="btnBack" class="btn btn-light">Wróć do listy</button>
+        <button id="btnDeleteDoc" class="btn btn-danger hidden"><svg class="icon"><use href="#i-trash"/></svg>Usuń</button>
+        <button id="btnBack" class="btn btn-light"><svg class="icon"><use href="#i-back"/></svg>Wróć do listy</button>
       </div>
     </section>
 
     <!-- ===== Kontrahenci ===== -->
     <section id="view-contractors" class="view hidden">
       <div class="toolbar">
-        <input id="searchContractors" type="search" class="input search" placeholder="Szukaj kontrahenta…">
-        <button id="btnNewContractor" class="btn btn-primary">+ Dodaj kontrahenta</button>
+        <div class="search-wrap">
+          <svg class="icon"><use href="#i-search"/></svg>
+          <input id="searchContractors" type="search" class="input" placeholder="Szukaj kontrahenta…">
+        </div>
+        <span class="spacer" style="flex:1"></span>
+        <button id="btnNewContractor" class="btn btn-primary"><svg class="icon"><use href="#i-plus"/></svg>Dodaj kontrahenta</button>
       </div>
       <table class="table">
         <thead>
           <tr>
             <th>Firma / Imię</th>
-            <th style="width:150px">NIP</th>
+            <th style="width:140px">NIP</th>
             <th>Adres</th>
-            <th style="width:220px">E-mail</th>
-            <th style="width:80px">Kod</th>
-            <th style="width:160px">Akcje</th>
+            <th style="width:210px">E-mail</th>
+            <th style="width:70px">Kod</th>
+            <th style="width:170px">Akcje</th>
           </tr>
         </thead>
         <tbody id="contractorsBody"></tbody>
       </table>
-      <p id="contractorsEmpty" class="empty hidden">Brak kontrahentów w bazie.</p>
+      <div id="contractorsEmpty" class="empty hidden">
+        <svg class="icon"><use href="#i-users"/></svg>
+        <p>Brak kontrahentów w bazie. Odbiorcy zapisani przy wystawianiu WZ pojawią się tutaj.</p>
+      </div>
 
       <div id="contractorForm" class="card hidden">
         <h3 id="contractorFormTitle">Nowy kontrahent</h3>
@@ -170,7 +208,7 @@
           <label class="field"><span>E-mail</span><input type="email" id="cfEmail" class="input"></label>
         </div>
         <div class="actions-bar">
-          <button id="btnSaveContractor" class="btn btn-primary">Zapisz kontrahenta</button>
+          <button id="btnSaveContractor" class="btn btn-primary"><svg class="icon"><use href="#i-save"/></svg>Zapisz kontrahenta</button>
           <button id="btnCancelContractor" class="btn btn-light">Anuluj</button>
         </div>
       </div>
@@ -192,8 +230,8 @@
 
       <div class="card">
         <h3>Poczta e-mail (wysyłka WZ jako PDF)</h3>
-        <p class="muted">Opcjonalne. Wymaga dostępu do internetu w chwili wysyłki. Dane logowania do skrzynki
-           nadawczej (SMTP) znajdziesz u swojego dostawcy poczty.</p>
+        <p class="muted" style="margin-top:-6px">Opcjonalne. Wymaga dostępu do internetu w chwili wysyłki. Dane logowania
+           do skrzynki nadawczej (SMTP) znajdziesz u swojego dostawcy poczty.</p>
         <div class="grid2">
           <label class="field"><span>Serwer SMTP (np. smtp.gmail.com)</span><input type="text" id="mHost" class="input"></label>
           <label class="field"><span>Port (587 lub 465)</span><input type="number" id="mPort" class="input" placeholder="587"></label>
@@ -202,17 +240,17 @@
           <label class="field"><span>Nadawca (pole „Od”)</span><input type="text" id="mFrom" class="input" placeholder="np. biuro@lechrol.pl"></label>
           <label class="field"><span>Temat wiadomości ({numer} = numer WZ)</span><input type="text" id="mSubject" class="input"></label>
         </div>
-        <label class="field"><span>Treść wiadomości</span><textarea id="mBody" class="input" rows="4"></textarea></label>
+        <label class="field" style="margin-top:14px"><span>Treść wiadomości</span><textarea id="mBody" class="input" rows="4"></textarea></label>
       </div>
 
       <div class="actions-bar">
-        <button id="btnSaveSettings" class="btn btn-primary">Zapisz ustawienia</button>
+        <button id="btnSaveSettings" class="btn btn-primary"><svg class="icon"><use href="#i-save"/></svg>Zapisz ustawienia</button>
         <span id="dataLocation" class="muted"></span>
       </div>
     </section>
   </main>
 
-  <div id="toast" class="toast hidden"></div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 </div>
 
 <!-- Obszar wydruku — wypełniany przed drukowaniem, widoczny tylko na wydruku/PDF -->

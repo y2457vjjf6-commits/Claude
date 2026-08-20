@@ -65,11 +65,15 @@ async function persist() {
 
 // ============================== Pomocnicze ==============================
 
+const icon = (name) => `<svg class="icon" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+
 let toastTimer = null;
 function toast(msg, isError) {
   const el = $('#toast');
   el.textContent = msg;
   el.classList.toggle('error', !!isError);
+  el.classList.add('hidden');
+  void el.offsetWidth; // restart animacji wejścia
   el.classList.remove('hidden');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.add('hidden'), isError ? 6000 : 3000);
@@ -123,24 +127,28 @@ function renderDocsList() {
   tbody.innerHTML = docs.map((d) => `
     <tr data-id="${d.id}">
       <td class="doc-number-cell">${esc(d.number)}</td>
-      <td>${esc(formatDatePl(d.dateIssued))}</td>
+      <td class="num">${esc(formatDatePl(d.dateIssued))}</td>
       <td>${esc(d.contractor?.name || '—')}</td>
       <td>${esc(d.orderNo || '')}</td>
-      <td>${d.items.filter((i) => i.name).length}</td>
+      <td class="td-num">${d.items.filter((i) => i.name).length}</td>
       <td>
         <div class="row-actions">
-          <button class="btn btn-small" data-act="edit">Edytuj</button>
-          <button class="btn btn-small" data-act="print">Drukuj</button>
-          <button class="btn btn-small" data-act="pdf">PDF</button>
-          <button class="btn btn-small" data-act="email">E-mail</button>
-          <button class="btn btn-small btn-danger" data-act="delete">Usuń</button>
+          <button class="btn btn-small btn-light" data-act="edit">${icon('edit')}Edytuj</button>
+          <button class="btn btn-small btn-light" data-act="print" aria-label="Drukuj" title="Drukuj">${icon('print')}</button>
+          <button class="btn btn-small btn-light" data-act="pdf" aria-label="Zapisz PDF" title="Zapisz PDF">${icon('pdf')}</button>
+          <button class="btn btn-small btn-light" data-act="email" aria-label="Wyślij e-mailem" title="Wyślij e-mailem">${icon('mail')}</button>
+          <button class="btn btn-small btn-danger" data-act="delete" aria-label="Usuń" title="Usuń">${icon('trash')}</button>
         </div>
       </td>
-    </tr>`).join('');
+    </tr>`).join('')
+    || (state.documents.length
+      ? `<tr><td colspan="6" class="muted" style="text-align:center;padding:24px">Brak wyników dla „${esc(q)}”.</td></tr>`
+      : '');
 
-  $('#docsEmpty').classList.toggle('hidden', docs.length > 0);
-  $('#docsCount').textContent = docs.length
-    ? `Dokumentów: ${docs.length}` : '';
+  const anyDocs = state.documents.length > 0;
+  $('#docsTable').classList.toggle('hidden', !anyDocs);
+  $('#docsEmpty').classList.toggle('hidden', anyDocs);
+  $('#docsCount').textContent = docs.length ? `Dokumentów: ${docs.length}` : '';
 }
 
 async function handleDocAction(id, act) {
@@ -206,10 +214,10 @@ function addItemRow(item) {
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td class="item-lp"></td>
-    <td><input type="text" class="input item-name" value="${esc(item?.name || '')}"></td>
-    <td><input type="text" class="input item-unit" value="${esc(item?.unit ?? 'szt.')}"></td>
-    <td><input type="text" class="input item-qty" value="${esc(item?.qty || '')}"></td>
-    <td><button class="btn btn-small btn-danger item-remove" title="Usuń pozycję">✕</button></td>`;
+    <td><input type="text" class="input item-name" value="${esc(item?.name || '')}" aria-label="Nazwa towaru"></td>
+    <td><input type="text" class="input item-unit" value="${esc(item?.unit ?? 'szt.')}" aria-label="Jednostka"></td>
+    <td><input type="text" class="input item-qty" value="${esc(item?.qty || '')}" aria-label="Ilość"></td>
+    <td><button class="btn btn-small btn-danger item-remove" aria-label="Usuń pozycję" title="Usuń pozycję">${icon('x')}</button></td>`;
   tbody.appendChild(tr);
   renumberItems();
 }
@@ -463,19 +471,24 @@ function renderContractors() {
   $('#contractorsBody').innerHTML = list.map((c) => `
     <tr data-id="${c.id}">
       <td>${esc(c.name)}</td>
-      <td>${esc(c.nip)}</td>
+      <td class="num">${esc(c.nip)}</td>
       <td>${esc(c.address)}</td>
       <td>${esc(c.email)}</td>
       <td>${esc(Numbering.contractorCode(c.name))}</td>
       <td>
         <div class="row-actions">
-          <button class="btn btn-small" data-act="edit">Edytuj</button>
-          <button class="btn btn-small btn-danger" data-act="delete">Usuń</button>
+          <button class="btn btn-small btn-light" data-act="edit">${icon('edit')}Edytuj</button>
+          <button class="btn btn-small btn-danger" data-act="delete" aria-label="Usuń" title="Usuń">${icon('trash')}</button>
         </div>
       </td>
-    </tr>`).join('');
+    </tr>`).join('')
+    || (state.contractors.length
+      ? `<tr><td colspan="6" class="muted" style="text-align:center;padding:24px">Brak wyników dla „${esc(q)}”.</td></tr>`
+      : '');
 
-  $('#contractorsEmpty').classList.toggle('hidden', list.length > 0);
+  const anyContractors = state.contractors.length > 0;
+  $('#contractorsBody').closest('table').classList.toggle('hidden', !anyContractors);
+  $('#contractorsEmpty').classList.toggle('hidden', anyContractors);
 }
 
 function openContractorForm(id) {
@@ -550,6 +563,13 @@ async function saveSettings() {
 function bindEvents() {
   $$('.nav-btn').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
   $('#btnNewDoc').addEventListener('click', () => openEditor(null));
+  $('#btnEmptyNewDoc').addEventListener('click', () => openEditor(null));
+  document.addEventListener('keydown', (ev) => {
+    if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'n') {
+      ev.preventDefault();
+      openEditor(null);
+    }
+  });
 
   // Lista dokumentów
   $('#searchDocs').addEventListener('input', renderDocsList);

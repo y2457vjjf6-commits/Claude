@@ -11,6 +11,15 @@
   #print-area { display: block !important; }
 }
 
+#print-area,
+.preview-page {
+  /* Delikatna siatka zamiast ciężkich czarnych ramek — czytelna na wydruku mono */
+  --wz-rule: #b4b4b4;        /* linie siatki tabeli i pól */
+  --wz-rule-strong: #7d7d7d; /* ramki zewnętrzne bloków */
+  --wz-rule-accent: #3a3a3a; /* kreska pod nagłówkiem firmowym */
+  --wz-head-bg: #f2f2f2;     /* tło wiersza nagłówkowego tabeli */
+}
+
 #print-area {
   color-scheme: light;   /* dokument zawsze jasny, niezależnie od motywu aplikacji */
   background: #fff;
@@ -27,7 +36,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  border-bottom: 2.5pt solid #000;
+  border-bottom: 1.2pt solid var(--wz-rule-accent);
   padding-bottom: 8pt;
   margin-bottom: 8pt;
 }
@@ -60,14 +69,14 @@
 .wz-meta {
   display: flex;
   gap: 0;
-  border: 1pt solid #000;
+  border: 0.5pt solid var(--wz-rule-strong);
   margin-bottom: 8pt;
 }
 
 .wz-meta-cell {
   flex: 1;
   padding: 4pt 8pt 6pt;
-  border-right: 1pt solid #000;
+  border-right: 0.5pt solid var(--wz-rule);
 }
 .wz-meta-cell:last-child { border-right: none; }
 
@@ -90,12 +99,12 @@
 
 .wz-party {
   flex: 1;
-  border: 1pt solid #000;
+  border: 0.5pt solid var(--wz-rule-strong);
   padding: 5pt 8pt 7pt;
 }
 
 .wz-party .wz-label {
-  border-bottom: 1pt solid #000;
+  border-bottom: 0.5pt solid var(--wz-rule);
   padding-bottom: 3pt;
   margin-bottom: 4pt;
   font-size: 8pt;
@@ -113,7 +122,7 @@
 }
 
 .wz-items th {
-  border: 1pt solid #000;
+  border: 0.5pt solid var(--wz-rule-strong);
   background: #e8e8e8;
   font-size: 8.5pt;
   font-weight: 700;
@@ -124,7 +133,7 @@
 }
 
 .wz-items td {
-  border: 1pt solid #000;
+  border: 0.5pt solid var(--wz-rule-strong);
   padding: 4pt 6pt;
   font-size: 10pt;
   height: 15pt;
@@ -145,14 +154,14 @@
 
 .wz-notes {
   flex: 1;
-  border: 1pt solid #000;
+  border: 0.5pt solid var(--wz-rule-strong);
   min-height: 44pt;
   padding: 4pt 8pt 6pt;
 }
 
 .wz-received {
   width: 150pt;
-  border: 1pt solid #000;
+  border: 0.5pt solid var(--wz-rule-strong);
   min-height: 44pt;
   padding: 4pt 8pt 6pt;
 }
@@ -177,14 +186,14 @@
   text-align: center;
   font-size: 8.5pt;
   padding-top: 4pt;
-  border-top: 1pt solid #000;
+  border-top: 0.5pt solid var(--wz-rule-strong);
 }
 
 /* ---------- Stopka ---------- */
 .wz-footer {
-  border-top: 1pt solid #000;
+  border-top: 0.5pt solid var(--wz-rule);
   padding-top: 4pt;
   text-align: center;
   font-size: 8pt;
-  color: #000;
+  color: #444;
 }

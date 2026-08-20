@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, ViewName, WZDocument } from './types';
+import { AppState, AskConfirm, ViewName, WZDocument } from './types';
 import { loadState, persistState, DEFAULT_STATE } from './lib/storage';
 import { printDocument, savePdfDocument, emailDocument } from './lib/printing';
 import Sidebar from './components/Sidebar';
 import Toast, { ToastState } from './components/Toast';
+import ConfirmDialog, { ConfirmRequest } from './components/ConfirmDialog';
+import PreviewModal from './components/PreviewModal';
 import DocumentsView from './views/DocumentsView';
 import EditorView from './views/EditorView';
 import ContractorsView from './views/ContractorsView';
@@ -14,6 +16,8 @@ export default function App() {
   const [view, setView] = useState<ViewName>('list');
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
   const [toastState, setToastState] = useState<ToastState | null>(null);
+  const [confirmReq, setConfirmReq] = useState<ConfirmRequest | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<WZDocument | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toast = useCallback((msg: string, isError?: boolean) => {
@@ -26,6 +30,31 @@ export default function App() {
     setState(next);
     await persistState(next);
   }, []);
+
+  const askConfirm = useCallback<AskConfirm>(
+    (message, opts) =>
+      new Promise<boolean>((resolve) =>
+        setConfirmReq({
+          message,
+          confirmLabel: opts?.confirmLabel || 'Usuń',
+          danger: opts?.danger ?? true,
+          resolve
+        })
+      ),
+    []
+  );
+
+  const closeConfirm = useCallback((value: boolean) => {
+    setConfirmReq((req) => {
+      req?.resolve(value);
+      return null;
+    });
+  }, []);
+
+  const emailConfirm = useCallback(
+    (message: string) => askConfirm(message, { confirmLabel: 'Wyślij', danger: false }),
+    [askConfirm]
+  );
 
   useEffect(() => {
     loadState().then(setState);
@@ -61,7 +90,7 @@ export default function App() {
   };
 
   const deleteDocument = async (doc: WZDocument, backToList: boolean) => {
-    if (!window.confirm(`Usunąć dokument ${doc.number}? Tej operacji nie można cofnąć.`)) return;
+    if (!(await askConfirm(`Usunąć dokument ${doc.number}? Tej operacji nie można cofnąć.`))) return;
     const next = { ...state, documents: state.documents.filter((d) => d.id !== doc.id) };
     await persist(next);
     if (backToList) setView('list');
@@ -83,9 +112,10 @@ export default function App() {
             documents={state.documents}
             onEdit={(id) => openEditor(id)}
             onNewDoc={() => openEditor(null)}
+            onPreview={(doc) => setPreviewDoc(doc)}
             onPrint={(doc) => printDocument(doc, state.settings, toast)}
             onPdf={(doc) => savePdfDocument(doc, state.settings, toast)}
-            onEmail={(doc) => emailDocument(doc, state.settings, toast)}
+            onEmail={(doc) => emailDocument(doc, state.settings, toast, emailConfirm)}
             onDelete={(doc) => deleteDocument(doc, false)}
           />
         )}
@@ -98,16 +128,27 @@ export default function App() {
             onBack={() => setView('list')}
             onDelete={(doc) => deleteDocument(doc, true)}
             toast={toast}
+            emailConfirm={emailConfirm}
           />
         )}
         {view === 'contractors' && (
-          <ContractorsView state={state} onPersist={persist} toast={toast} />
+          <ContractorsView state={state} onPersist={persist} toast={toast} askConfirm={askConfirm} />
         )}
         {view === 'settings' && (
           <SettingsView state={state} onPersist={persist} toast={toast} />
         )}
       </main>
       <Toast toast={toastState} />
+      {confirmReq && <ConfirmDialog request={confirmReq} onClose={closeConfirm} />}
+      {previewDoc && (
+        <PreviewModal
+          doc={previewDoc}
+          settings={state.settings}
+          onClose={() => setPreviewDoc(null)}
+          onPrint={(doc) => printDocument(doc, state.settings, toast)}
+          onPdf={(doc) => savePdfDocument(doc, state.settings, toast)}
+        />
+      )}
     </div>
   );
 }

@@ -16,7 +16,7 @@ export function formatDatePl(dateStr: string): string {
 
 const MIN_PRINT_ROWS = 12;
 
-export function fillPrintArea(doc: WZDocument, settings: Settings): void {
+export function buildPrintHtml(doc: WZDocument, settings: Settings): string {
   const s = settings.seller;
   const items = doc.items.slice();
   while (items.length < MIN_PRINT_ROWS) items.push({ name: '', unit: '', qty: '' });
@@ -33,9 +33,7 @@ export function fillPrintArea(doc: WZDocument, settings: Settings): void {
     )
     .join('');
 
-  const area = document.getElementById('print-area');
-  if (!area) return;
-  area.innerHTML = `
+  return `
   <div class="wz-doc">
     <div class="wz-header">
       <div>
@@ -112,6 +110,12 @@ export function fillPrintArea(doc: WZDocument, settings: Settings): void {
   </div>`;
 }
 
+export function fillPrintArea(doc: WZDocument, settings: Settings): void {
+  const area = document.getElementById('print-area');
+  if (!area) return;
+  area.innerHTML = buildPrintHtml(doc, settings);
+}
+
 export function pdfFilename(doc: WZDocument): string {
   return 'WZ_' + doc.number.replace(/[\\/:*?"<>|]/g, '-') + '.pdf';
 }
@@ -139,7 +143,12 @@ export async function savePdfDocument(doc: WZDocument, settings: Settings, toast
   }
 }
 
-export async function emailDocument(doc: WZDocument, settings: Settings, toast: ToastFn): Promise<void> {
+export async function emailDocument(
+  doc: WZDocument,
+  settings: Settings,
+  toast: ToastFn,
+  confirm: (message: string) => Promise<boolean>
+): Promise<void> {
   if (!hasApi || !window.wzApi) {
     toast('Wysyłka e-mail dostępna tylko w aplikacji desktopowej.', true);
     return;
@@ -154,7 +163,7 @@ export async function emailDocument(doc: WZDocument, settings: Settings, toast: 
     toast('Brak konfiguracji poczty — uzupełnij dane SMTP w Ustawieniach.', true);
     return;
   }
-  if (!window.confirm(`Wysłać dokument ${doc.number} na adres ${to}?`)) return;
+  if (!(await confirm(`Wysłać dokument ${doc.number} na adres ${to}?`))) return;
 
   fillPrintArea(doc, settings);
   toast('Wysyłanie e-maila…');

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Search, Plus, Pencil, Trash2, Save, Handshake } from 'lucide-react';
-import { AppState, Contractor } from '../types';
+import { AppState, AskConfirm, Contractor } from '../types';
 import { contractorCode } from '../lib/numbering';
 import { uid } from '../lib/storage';
 
@@ -8,9 +8,10 @@ interface Props {
   state: AppState;
   onPersist: (next: AppState) => Promise<void>;
   toast: (msg: string, isError?: boolean) => void;
+  askConfirm: AskConfirm;
 }
 
-export default function ContractorsView({ state, onPersist, toast }: Props) {
+export default function ContractorsView({ state, onPersist, toast, askConfirm }: Props) {
   const [q, setQ] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -51,7 +52,7 @@ export default function ContractorsView({ state, onPersist, toast }: Props) {
 
   const deleteContractor = async (id: string) => {
     const c = state.contractors.find((x) => x.id === id);
-    if (!window.confirm(`Usunąć kontrahenta „${c?.name}” z bazy? Wystawione dokumenty pozostaną bez zmian.`)) return;
+    if (!(await askConfirm(`Usunąć kontrahenta „${c?.name}” z bazy? Wystawione dokumenty pozostaną bez zmian.`))) return;
     const next = { ...state, contractors: state.contractors.filter((x) => x.id !== id) };
     await onPersist(next);
   };

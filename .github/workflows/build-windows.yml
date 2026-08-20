@@ -1,0 +1,69 @@
+name: Budowa Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Pobranie kodu
+        uses: actions/checkout@v4
+
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+
+      - name: Instalacja zależności
+        run: yarn install --frozen-lockfile
+
+      - name: Budowa przenośnego .exe
+        run: yarn dist
+        env:
+          CI: "false"
+
+      - name: Publikacja artefaktu
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lechrol-WZ-windows
+          path: frontend/dist/*.exe
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Publikacja w Releases
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v$(node -p "require('./package.json').version")-build${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" dist/*.exe \
+            --title "Lechrol WZ ${TAG}" \
+            --notes "Przenośny program dla Windows — pobierz plik .exe poniżej, skopiuj na komputer i uruchom (bez instalacji)." \
+            --latest
+
+      - name: Gałąź windows-exe (pobieranie przez git)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          mkdir exe-branch
+          cp dist/*.exe exe-branch/
+          cd exe-branch
+          git init -b windows-exe
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add .
+          git commit -m "Lechrol WZ - przenośny exe (automatyczna budowa ${GITHUB_RUN_NUMBER})"
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" windows-exe

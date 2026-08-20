@@ -67,6 +67,8 @@ export interface AppState {
 
 export type ViewName = 'list' | 'edit' | 'contractors' | 'settings';
 
+export type AskConfirm = (message: string, opts?: { confirmLabel?: string; danger?: boolean }) => Promise<boolean>;
+
 declare global {
   interface Window {
     wzApi?: {

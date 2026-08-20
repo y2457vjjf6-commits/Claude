@@ -7,7 +7,7 @@
 
 @media print {
   html, body { background: #fff !important; }
-  #app { display: none !important; }
+  #root { display: none !important; }
   #print-area { display: block !important; }
 }
 

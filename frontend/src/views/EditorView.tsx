@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft } from 'lucide-react';
 import { AppState, Item, WZDocument } from '../types';
-import { computeNumberFor } from '../lib/numbering';
+import { computeNumberFor, contractorCode } from '../lib/numbering';
 import { uid } from '../lib/storage';
 import { printDocument, savePdfDocument, emailDocument } from '../lib/printing';
 
@@ -45,6 +45,7 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
       cNip: d ? d.contractor?.nip || '' : '',
       cAddress: d ? d.contractor?.address || '' : '',
       cEmail: d ? d.contractor?.email || '' : '',
+      cCode: d ? d.contractor?.code || '' : '',
       notes: d ? d.notes || '' : ''
     };
   }
@@ -79,7 +80,8 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
     state.documents,
     editingDocId,
     form.dateIssued || todayStr(),
-    form.cName.trim()
+    form.cName.trim(),
+    form.cCode
   ).number;
 
   const selectContractor = (id: string) => {
@@ -91,7 +93,8 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
         cName: c.name,
         cAddress: c.address || '',
         cNip: c.nip || '',
-        cEmail: c.email || ''
+        cEmail: c.email || '',
+        cCode: c.code || ''
       });
     }
   };
@@ -120,8 +123,13 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
 
   const collectItems = (): Item[] =>
     items
-      .map((it) => ({ name: it.name.trim(), unit: it.unit.trim(), qty: it.qty.trim() }))
-      .filter((it) => it.name || it.qty);
+      .map((it) => ({
+        name: it.name.trim(),
+        unit: it.unit.trim(),
+        qty: it.qty.trim(),
+        order: (it.order || '').trim()
+      }))
+      .filter((it) => it.name || it.qty || it.order);
 
   async function saveDoc(): Promise<WZDocument | null> {
     const dateStr = form.dateIssued;
@@ -135,12 +143,13 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
       return null;
     }
 
-    const { seq, number } = computeNumberFor(state.documents, editingDocId, dateStr, name);
+    const { seq, number } = computeNumberFor(state.documents, editingDocId, dateStr, name, form.cCode);
     const contractor = {
       name,
       address: form.cAddress.trim(),
       nip: form.cNip.trim(),
-      email: form.cEmail.trim()
+      email: form.cEmail.trim(),
+      code: form.cCode.trim().toUpperCase()
     };
 
     const next = structuredClone(state);
@@ -282,6 +291,18 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
             <span>E-mail (do wysyłki WZ)</span>
             <input type="email" className="input" data-testid="contractor-email-input" value={form.cEmail} onChange={(e) => set({ cEmail: e.target.value })} />
           </label>
+          <label className="field">
+            <span>Kod do numeracji (puste = automatyczny)</span>
+            <input
+              type="text"
+              className="input"
+              data-testid="contractor-code-input"
+              maxLength={6}
+              placeholder={form.cName.trim() ? contractorCode(form.cName) : 'np. RS'}
+              value={form.cCode}
+              onChange={(e) => set({ cCode: e.target.value.toUpperCase() })}
+            />
+          </label>
         </div>
       </div>
 
@@ -292,8 +313,9 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
             <tr>
               <th style={{ width: 44 }} className="th-num">Lp.</th>
               <th>Nazwa towaru / opis</th>
-              <th style={{ width: 110 }}>Jedn.</th>
-              <th style={{ width: 110 }} className="th-num">Ilość</th>
+              <th style={{ width: 140 }}>Zamówienie</th>
+              <th style={{ width: 100 }}>Jedn.</th>
+              <th style={{ width: 100 }} className="th-num">Ilość</th>
               <th style={{ width: 44 }}></th>
             </tr>
           </thead>
@@ -309,6 +331,17 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
                     aria-label="Nazwa towaru"
                     value={it.name}
                     onChange={(e) => setItem(i, { name: e.target.value })}
+                    onKeyDown={(e) => onItemKeyDown(e, i)}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    className="input item-order"
+                    data-testid={`item-order-${i}`}
+                    aria-label="Zamówienie"
+                    value={it.order || ''}
+                    onChange={(e) => setItem(i, { order: e.target.value })}
                     onKeyDown={(e) => onItemKeyDown(e, i)}
                   />
                 </td>

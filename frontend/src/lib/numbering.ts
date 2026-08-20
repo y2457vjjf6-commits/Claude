@@ -14,10 +14,11 @@ export function contractorCode(name: string): string {
   return (letters[0] + letters[letters.length - 1]).toUpperCase();
 }
 
-export function buildNumber(dateStr: string, seq: number, contractorName: string): string {
+export function buildNumber(dateStr: string, seq: number, contractorName: string, codeOverride?: string): string {
   const { year, month } = parseDate(dateStr);
   const prefix = String(month * 10) + String(seq).padStart(2, '0');
-  return prefix + '/' + contractorCode(contractorName) + '/' + year;
+  const code = (codeOverride || '').trim() ? String(codeOverride).trim().toUpperCase() : contractorCode(contractorName);
+  return prefix + '/' + code + '/' + year;
 }
 
 // Kolejny wolny numer w miesiącu i roku daty wystawienia.
@@ -38,7 +39,8 @@ export function computeNumberFor(
   documents: WZDocument[],
   editingDocId: string | null,
   dateStr: string,
-  contractorName: string
+  contractorName: string,
+  codeOverride?: string
 ): { seq: number; number: string } {
   const existing = editingDocId ? documents.find((d) => d.id === editingDocId) || null : null;
   let seq: number;
@@ -52,5 +54,5 @@ export function computeNumberFor(
   } else {
     seq = nextSeq(documents, dateStr);
   }
-  return { seq, number: buildNumber(dateStr, seq, contractorName) };
+  return { seq, number: buildNumber(dateStr, seq, contractorName, codeOverride) };
 }

@@ -34,3 +34,10 @@ test('numer kolejny liczony osobno dla miesiąca i roku', () => {
   expect(nextSeq(docs, '2026-01-25', 'b')).toBe(2);
   expect(nextSeq([], '2026-01-01')).toBe(1);
 });
+
+test('własny kod kontrahenta nadpisuje kod automatyczny', () => {
+  expect(buildNumber('2026-01-01', 1, 'Rolety Siejka', 'RS')).toBe('1001/RS/2026');
+  expect(buildNumber('2026-01-01', 1, 'Rolety Siejka', 'rs')).toBe('1001/RS/2026');
+  expect(buildNumber('2026-01-01', 1, 'Rolety Siejka', '  ')).toBe('1001/RA/2026');
+  expect(buildNumber('2026-01-01', 1, 'Rolety Siejka')).toBe('1001/RA/2026');
+});

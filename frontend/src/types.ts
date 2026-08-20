@@ -2,6 +2,7 @@ export interface Item {
   name: string;
   unit: string;
   qty: string;
+  order?: string;
 }
 
 export interface Contractor {
@@ -10,6 +11,8 @@ export interface Contractor {
   nip?: string;
   address?: string;
   email?: string;
+  /** Własny kod do numeracji (np. „RS”); pusty = automatyczny z nazwy */
+  code?: string;
 }
 
 export interface DocContractor {
@@ -17,6 +20,7 @@ export interface DocContractor {
   address: string;
   nip: string;
   email: string;
+  code?: string;
 }
 
 export interface WZDocument {

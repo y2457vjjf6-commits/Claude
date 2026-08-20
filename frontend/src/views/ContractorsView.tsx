@@ -15,7 +15,7 @@ export default function ContractorsView({ state, onPersist, toast, askConfirm }:
   const [q, setQ] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', nip: '', address: '', email: '' });
+  const [form, setForm] = useState({ name: '', nip: '', address: '', email: '', code: '' });
 
   const query = q.trim().toLowerCase();
   const list = state.contractors
@@ -30,7 +30,7 @@ export default function ContractorsView({ state, onPersist, toast, askConfirm }:
 
   const openForm = (c: Contractor | null) => {
     setEditingId(c?.id || null);
-    setForm({ name: c?.name || '', nip: c?.nip || '', address: c?.address || '', email: c?.email || '' });
+    setForm({ name: c?.name || '', nip: c?.nip || '', address: c?.address || '', email: c?.email || '', code: c?.code || '' });
     setFormOpen(true);
   };
 
@@ -40,7 +40,13 @@ export default function ContractorsView({ state, onPersist, toast, askConfirm }:
       toast('Podaj nazwę kontrahenta.', true);
       return;
     }
-    const data = { name, nip: form.nip.trim(), address: form.address.trim(), email: form.email.trim() };
+    const data = {
+      name,
+      nip: form.nip.trim(),
+      address: form.address.trim(),
+      email: form.email.trim(),
+      code: form.code.trim().toUpperCase()
+    };
     const next = structuredClone(state);
     const existing = editingId ? next.contractors.find((c) => c.id === editingId) : null;
     if (existing) Object.assign(existing, data);
@@ -99,7 +105,7 @@ export default function ContractorsView({ state, onPersist, toast, askConfirm }:
                   <td className="num">{c.nip}</td>
                   <td>{c.address}</td>
                   <td>{c.email}</td>
-                  <td>{contractorCode(c.name)}</td>
+                  <td>{c.code || contractorCode(c.name)}</td>
                   <td>
                     <div className="row-actions">
                       <button className="btn btn-small btn-light" data-testid={`contractor-edit-${c.id}`} onClick={() => openForm(c)}>
@@ -159,6 +165,18 @@ export default function ContractorsView({ state, onPersist, toast, askConfirm }:
             <label className="field">
               <span>E-mail</span>
               <input type="email" className="input" data-testid="cf-email-input" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            </label>
+            <label className="field">
+              <span>Kod do numeracji (puste = automatyczny)</span>
+              <input
+                type="text"
+                className="input"
+                data-testid="cf-code-input"
+                maxLength={6}
+                placeholder={form.name.trim() ? contractorCode(form.name) : 'np. RS'}
+                value={form.code}
+                onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+              />
             </label>
           </div>
           <div className="actions-bar">

@@ -27,6 +27,7 @@ export function buildPrintHtml(doc: WZDocument, settings: Settings): string {
     <tr>
       <td class="col-lp">${i + 1}</td>
       <td>${esc(it.name)}</td>
+      <td class="col-order">${esc(it.order)}</td>
       <td class="col-unit">${esc(it.unit)}</td>
       <td class="col-qty">${esc(it.qty)}</td>
     </tr>`
@@ -87,6 +88,7 @@ export function buildPrintHtml(doc: WZDocument, settings: Settings): string {
         <tr>
           <th class="col-lp">Lp.</th>
           <th>Nazwa towaru / opis</th>
+          <th class="col-order">Zamówienie</th>
           <th class="col-unit">Jedn.</th>
           <th class="col-qty">Ilość</th>
         </tr>

@@ -131,8 +131,9 @@
 }
 
 .wz-items .col-lp { width: 26pt; text-align: center; }
-.wz-items .col-unit { width: 60pt; }
-.wz-items .col-qty { width: 66pt; }
+.wz-items .col-order { width: 80pt; }
+.wz-items .col-unit { width: 52pt; }
+.wz-items .col-qty { width: 58pt; }
 .wz-items td.col-lp { color: #000; }
 
 /* ---------- Uwagi ---------- */

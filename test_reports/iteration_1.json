@@ -1,0 +1,25 @@
+{
+  "summary": "Frontend-only Playwright E2E of Lechrol WZ SPA (localStorage mode). All 24 scenarios in the review request passed: sidebar/nav visibility, empty state, editor open with default date/place, live number preview with contractor code, Enter-adds-row & X-removes-row & Dodaj pozycję, save validation, save success toast+title switch to 'Edycja WZ ...', save-contractor checkbox adds contractor, docs list count/search, sequence increment same-month (8001->8002 seq), keeps number on edit, Kontrahenci CRUD (validation, add, Kod first+last letter uppercase e.g. 'Beta Corp'->'BP', search), Ustawienia defaults (ZPHU Lechrol..., Łomianki), save toast, place propagates to new WZ, theme toggle -> data-theme='dark' persists after reload, full localStorage persistence after reload (docs=2 restored), Zapisz PDF fills #print-area (4299 chars, contains contractor name) & calls window.print(), Wyślij e-mailem shows 'Wysyłka e-mail dostępna tylko w aplikacji desktopowej.', delete confirm dialog + toast 'Usunięto dokument ...'.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Minor: In lib/printing.ts savePdfDocument browser fallback calls window.print(); during our test print() was observed to fire twice for one click — likely React StrictMode double-invocation in dev only (harmless in production build). Consider guarding if it causes double print dialogs in real Electron builds.",
+    "storage.ts deepMerge: safe usage; DEFAULT_STATE is exported and used both in App and storage — consider single source of truth (already fine).",
+    "EditorView collectItems filters items with name OR qty — a row with only qty (no name) still gets saved. Acceptable per original spec but worth confirming with product.",
+    "No data-testid on individual doc-print/doc-pdf/doc-email buttons in the docs list actually already present via `doc-print-<id>` etc — good."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "100%"},
+  "test_credentials": "none — no auth",
+  "seed_data_creation": "Test created via UI: 2 documents (8001/RA/2026 Rolety Siejka, 8002/AA/2026 Alicja Bartoszewska) and 2 contractors (Rolety Siejka, Beta Corp). Persisted in localStorage key 'lechrol-wz-data'.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "App is fully SPA + localStorage; window.wzApi undefined so hasApi=false path exercised. All data-testids listed in review are present and functional. Backend (FastAPI boilerplate) is unused — do not test. Delete/email flows use window.confirm — attach a dialog handler before clicking. window.print must be stubbed to avoid opening print dialog during headless test.",
+  "rca of the issue": "No issues found."
+}

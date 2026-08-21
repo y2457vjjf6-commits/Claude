@@ -1,7 +1,7 @@
 import { Settings, WZDocument } from '../types';
 
 // window.wzApi musi istnieć zanim moduł printing.ts policzy hasApi
-const sendEmail = jest.fn(async () => ({ ok: true }));
+const sendEmail = jest.fn(async (_payload: Record<string, unknown>) => ({ ok: true }));
 (window as any).wzApi = {
   sendEmail,
   savePdf: jest.fn(),
@@ -35,7 +35,7 @@ const settings = (): Settings => ({
 
 beforeEach(() => {
   // CRA ustawia resetMocks: true — implementację trzeba nadać przed każdym testem
-  sendEmail.mockImplementation(async () => ({ ok: true }));
+  sendEmail.mockImplementation(async (_payload: Record<string, unknown>) => ({ ok: true }));
   document.body.innerHTML = '<div id="print-area"></div>';
 });
 
@@ -48,7 +48,7 @@ test('kopia trafia w ukrytej kopii i jest zapowiedziana w pytaniu', async () => 
   expect(zapytania[0]).toContain('klient@example.com');
   expect(zapytania[0]).toContain('lechrol@lechrol.pl');
   expect(sendEmail).toHaveBeenCalledTimes(1);
-  const payload = sendEmail.mock.calls[0][0];
+  const payload = sendEmail.mock.calls[0][0] as Record<string, string>;
   expect(payload.to).toBe('klient@example.com');
   expect(payload.bcc).toBe('lechrol@lechrol.pl');
   expect(payload.text).toContain('Towar odebrał: Jan Kowalski');
@@ -58,7 +58,7 @@ test('pusty adres kopii — wiadomość idzie tylko do klienta', async () => {
   const st = settings();
   st.emailCopyTo = '';
   await emailDocument(doc, st, () => {}, async () => true);
-  expect(sendEmail.mock.calls[0][0].bcc).toBe('');
+  expect((sendEmail.mock.calls[0][0] as Record<string, string>).bcc).toBe('');
 });
 
 test('anulowanie potwierdzenia nie wysyła nic', async () => {

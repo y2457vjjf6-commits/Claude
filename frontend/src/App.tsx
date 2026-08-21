@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, AskConfirm, ViewName, WZDocument } from './types';
 import { loadState, persistState, DEFAULT_STATE } from './lib/storage';
 import { printDocument, savePdfDocument, emailDocument } from './lib/printing';
+import { backupInBackground } from './lib/backup';
+import ReportsView from './views/ReportsView';
 import Sidebar from './components/Sidebar';
 import Toast, { ToastState } from './components/Toast';
 import ConfirmDialog, { ConfirmRequest } from './components/ConfirmDialog';
@@ -29,7 +31,24 @@ export default function App() {
   const persist = useCallback(async (next: AppState) => {
     setState(next);
     await persistState(next);
+    backupInBackground(next);
   }, []);
+
+  // Odnotowanie, że dokument został wydrukowany albo wysłany — ślad widoczny na liście
+  const markDocument = useCallback(
+    async (doc: WZDocument, patch: Partial<WZDocument>) => {
+      setState((biezacy) => {
+        if (!biezacy) return biezacy;
+        const next = {
+          ...biezacy,
+          documents: biezacy.documents.map((d) => (d.id === doc.id ? { ...d, ...patch } : d))
+        };
+        persistState(next).then(() => backupInBackground(next));
+        return next;
+      });
+    },
+    []
+  );
 
   const askConfirm = useCallback<AskConfirm>(
     (message, opts) =>
@@ -113,9 +132,17 @@ export default function App() {
             onEdit={(id) => openEditor(id)}
             onNewDoc={() => openEditor(null)}
             onPreview={(doc) => setPreviewDoc(doc)}
-            onPrint={(doc) => printDocument(doc, state.settings, toast)}
+            onPrint={async (doc) => {
+              await printDocument(doc, state.settings, toast);
+              markDocument(doc, { printedAt: new Date().toISOString() });
+            }}
             onPdf={(doc) => savePdfDocument(doc, state.settings, toast)}
-            onEmail={(doc) => emailDocument(doc, state.settings, toast, emailConfirm)}
+            onEmail={async (doc) => {
+              const wyslano = await emailDocument(doc, state.settings, toast, emailConfirm);
+              if (wyslano) {
+                markDocument(doc, { emailedAt: new Date().toISOString(), emailedTo: doc.contractor?.email || '' });
+              }
+            }}
             onDelete={(doc) => deleteDocument(doc, false)}
           />
         )}
@@ -129,13 +156,15 @@ export default function App() {
             onDelete={(doc) => deleteDocument(doc, true)}
             toast={toast}
             emailConfirm={emailConfirm}
+            onMark={markDocument}
           />
         )}
         {view === 'contractors' && (
           <ContractorsView state={state} onPersist={persist} toast={toast} askConfirm={askConfirm} />
         )}
+        {view === 'reports' && <ReportsView state={state} />}
         {view === 'settings' && (
-          <SettingsView state={state} onPersist={persist} toast={toast} />
+          <SettingsView state={state} onPersist={persist} toast={toast} askConfirm={askConfirm} />
         )}
       </main>
       <Toast toast={toastState} />

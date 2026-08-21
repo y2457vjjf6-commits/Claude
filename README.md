@@ -26,7 +26,17 @@ wszystkie dane zapisywane są lokalnie na komputerze.
   w chwili wysyłki). Każda wysyłka trafia też w ukrytej kopii na firmowy adres
   (domyślnie `lechrol@lechrol.pl`), więc w skrzynce zostaje komplet wystawionych WZ.
 - **Archiwum z wyszukiwarką** — lista wszystkich WZ z filtrowaniem po numerze,
-  odbiorcy, numerze zamówienia i dacie.
+  odbiorcy, numerze zamówienia, dacie, a także **po nazwie towaru**, osobie
+  odbierającej i uwagach.
+- **Znaczniki wydruku i wysyłki** — przy dokumencie widać, czy był drukowany
+  i czy poszedł mailem; po najechaniu myszą pokazuje się data, godzina i adres.
+- **Podpowiedzi towarów** — nazwy i jednostki podpowiadają się z wcześniejszych
+  dokumentów (od najczęściej używanych), bez utrzymywania katalogu produktów.
+- **Zestawienia** — osobna zakładka: co wydano danemu odbiorcy w wybranym
+  miesiącu, z zsumowanymi ilościami każdego towaru i listą dokumentów.
+- **Kopia zapasowa** — wskazany folder (pendrive, dysk sieciowy, OneDrive)
+  dostaje kopię wszystkich danych przy każdej zmianie, jeden plik na dzień;
+  z tego samego miejsca można dane przywrócić.
 - **Ciemny motyw** (domyślny) z przełącznikiem jasny/ciemny w pasku górnym;
   wybór jest zapamiętywany. Wydruk zawsze pozostaje czarno-biały na białym tle.
 

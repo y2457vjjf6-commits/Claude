@@ -14,6 +14,15 @@ export function formatDatePl(dateStr: string): string {
   return y && m && d ? `${d}.${m}.${y}` : '';
 }
 
+/** Data i godzina po polsku, np. „20.08.2026, 14:31”. */
+export function formatDateTimePl(iso?: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const dwie = (n: number) => String(n).padStart(2, '0');
+  return `${dwie(d.getDate())}.${dwie(d.getMonth() + 1)}.${d.getFullYear()}, ${dwie(d.getHours())}:${dwie(d.getMinutes())}`;
+}
+
 const MIN_PRINT_ROWS = 12;
 
 export function buildPrintHtml(doc: WZDocument, settings: Settings): string {
@@ -130,14 +139,15 @@ export function pdfFilename(doc: WZDocument): string {
 
 type ToastFn = (msg: string, isError?: boolean) => void;
 
-export async function printDocument(doc: WZDocument, settings: Settings, toast: ToastFn): Promise<void> {
+export async function printDocument(doc: WZDocument, settings: Settings, toast: ToastFn): Promise<boolean> {
   fillPrintArea(doc, settings);
   if (hasApi && window.wzApi) {
     const res = await window.wzApi.printDoc();
     if (!res.ok && res.error && res.error !== 'cancelled') toast('Drukowanie: ' + res.error, true);
-  } else {
-    window.print();
+    return res.ok;
   }
+  window.print();
+  return false;
 }
 
 export async function savePdfDocument(doc: WZDocument, settings: Settings, toast: ToastFn): Promise<void> {
@@ -180,26 +190,26 @@ export async function emailDocument(
   settings: Settings,
   toast: ToastFn,
   confirm: (message: string) => Promise<boolean>
-): Promise<void> {
+): Promise<boolean> {
   if (!hasApi || !window.wzApi) {
     toast('Wysyłka e-mail dostępna tylko w aplikacji desktopowej.', true);
-    return;
+    return false;
   }
   const to = doc.contractor?.email;
   if (!to) {
     toast('Odbiorca nie ma podanego adresu e-mail. Uzupełnij go w dokumencie.', true);
-    return;
+    return false;
   }
   const smtp = settings.smtp;
   if (!smtp.host || !smtp.user) {
     toast('Brak konfiguracji poczty — uzupełnij dane SMTP w Ustawieniach.', true);
-    return;
+    return false;
   }
   const copyTo = (settings.emailCopyTo || '').trim();
   const pytanie = copyTo
     ? `Wysłać dokument ${doc.number} na adres ${to}?\nKopia trafi też na ${copyTo}.`
     : `Wysłać dokument ${doc.number} na adres ${to}?`;
-  if (!(await confirm(pytanie))) return;
+  if (!(await confirm(pytanie))) return false;
 
   fillPrintArea(doc, settings);
   toast('Wysyłanie e-maila…');
@@ -217,4 +227,5 @@ export async function emailDocument(
       : `Wysłano dokument ${doc.number} na adres ${to}.`);
   }
   else toast('Błąd wysyłki: ' + res.error, true);
+  return !!res.ok;
 }

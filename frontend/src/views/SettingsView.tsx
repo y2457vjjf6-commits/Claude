@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
-import { Save, PlugZap, Loader2 } from 'lucide-react';
+import { Save, PlugZap, Loader2, FolderOpen, HardDriveDownload, HardDriveUpload } from 'lucide-react';
 import { AppState } from '../types';
 import { dataLocation, hasApi } from '../lib/storage';
+import { backupNow, chooseBackupFolder, restoreBackup } from '../lib/backup';
+import { AskConfirm } from '../types';
 
 interface Props {
   state: AppState;
   onPersist: (next: AppState) => Promise<void>;
   toast: (msg: string, isError?: boolean) => void;
+  askConfirm: AskConfirm;
 }
 
-export default function SettingsView({ state, onPersist, toast }: Props) {
+export default function SettingsView({ state, onPersist, toast, askConfirm }: Props) {
   const st = state.settings;
   const [form, setForm] = useState({
     sName: st.seller.name,
@@ -25,6 +28,7 @@ export default function SettingsView({ state, onPersist, toast }: Props) {
     mFrom: st.smtp.from,
     mSubject: st.emailSubject,
     mCopyTo: st.emailCopyTo || '',
+    backupFolder: st.backupFolder || '',
     mBody: st.emailBody
   });
   const [location, setLocation] = useState<string | null>(null);
@@ -53,9 +57,49 @@ export default function SettingsView({ state, onPersist, toast }: Props) {
     };
     next.settings.emailSubject = form.mSubject;
     next.settings.emailCopyTo = form.mCopyTo.trim();
+    next.settings.backupFolder = form.backupFolder.trim();
     next.settings.emailBody = form.mBody;
     await onPersist(next);
     toast('Zapisano ustawienia.');
+  };
+
+  const wybierzFolder = async () => {
+    const folder = await chooseBackupFolder();
+    if (!folder) return;
+    set({ backupFolder: folder });
+    const next = structuredClone(state);
+    next.settings.backupFolder = folder;
+    await onPersist(next);
+    const res = await backupNow(next);
+    toast(res.ok ? `Folder ustawiony, kopia zapisana: ${res.file}` : `Folder ustawiony, ale kopia się nie udała: ${res.error}`, !res.ok);
+  };
+
+  const zapiszKopie = async () => {
+    if (!form.backupFolder.trim()) {
+      toast('Najpierw wskaż folder na kopie zapasowe.', true);
+      return;
+    }
+    const next = structuredClone(state);
+    next.settings.backupFolder = form.backupFolder.trim();
+    const res = await backupNow(next);
+    toast(res.ok ? `Zapisano kopię: ${res.file}` : `Nie udało się zapisać kopii: ${res.error}`, !res.ok);
+  };
+
+  const przywroc = async () => {
+    const res = await restoreBackup(form.backupFolder.trim());
+    if (res.canceled) return;
+    if (!res.ok || !res.state) {
+      toast(res.error || 'Nie udało się wczytać kopii.', true);
+      return;
+    }
+    const liczba = res.state.documents?.length ?? 0;
+    const potwierdzone = await askConfirm(
+      `Wczytać kopię z ${liczba} dokumentami? Obecne dane w programie zostaną zastąpione.`,
+      { confirmLabel: 'Przywróć', danger: true }
+    );
+    if (!potwierdzone) return;
+    await onPersist(res.state);
+    toast(`Przywrócono dane z kopii (${liczba} dokumentów).`);
   };
 
   const testEmail = async () => {
@@ -113,6 +157,40 @@ export default function SettingsView({ state, onPersist, toast }: Props) {
             <span>Domyślne miejsce wystawienia</span>
             <input type="text" className="input" data-testid="seller-place-input" value={form.sPlace} onChange={(e) => set({ sPlace: e.target.value })} />
           </label>
+        </div>
+      </div>
+
+      <div className="card">
+        <h3 className="card-title">Kopia zapasowa danych</h3>
+        <p className="muted card-note">
+          Wskaż folder poza komputerem — pendrive, dysk sieciowy albo katalog OneDrive / Dysku Google.
+          Program zapisuje tam kopię wszystkich dokumentów i kontrahentów przy każdej zmianie
+          (jeden plik na dzień, więc zostaje historia z ostatnich dni).
+        </p>
+        <label className="field">
+          <span>Folder kopii zapasowych</span>
+          <input
+            type="text"
+            className="input"
+            data-testid="backup-folder-input"
+            placeholder="np. D:\\Kopie\\LechrolWZ — kliknij „Wybierz folder”"
+            value={form.backupFolder}
+            onChange={(e) => set({ backupFolder: e.target.value })}
+          />
+        </label>
+        <div className="actions-bar" style={{ marginTop: 16 }}>
+          <button className="btn" data-testid="backup-choose-btn" onClick={wybierzFolder}>
+            <FolderOpen className="icon" />
+            Wybierz folder
+          </button>
+          <button className="btn" data-testid="backup-now-btn" onClick={zapiszKopie}>
+            <HardDriveDownload className="icon" />
+            Zapisz kopię teraz
+          </button>
+          <button className="btn" data-testid="backup-restore-btn" onClick={przywroc}>
+            <HardDriveUpload className="icon" />
+            Przywróć z kopii
+          </button>
         </div>
       </div>
 

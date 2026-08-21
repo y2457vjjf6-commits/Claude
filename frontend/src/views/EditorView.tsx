@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft } from 'lucide-react';
 import { AppState, Item, WZDocument } from '../types';
 import { computeNumberFor, contractorCode } from '../lib/numbering';
+import { itemNameSuggestions, unitSuggestions } from '../lib/suggestions';
 import { uid } from '../lib/storage';
 import { printDocument, savePdfDocument, emailDocument } from '../lib/printing';
 
@@ -14,6 +15,7 @@ interface Props {
   onDelete: (doc: WZDocument) => void;
   toast: (msg: string, isError?: boolean) => void;
   emailConfirm: (message: string) => Promise<boolean>;
+  onMark: (doc: WZDocument, patch: Partial<WZDocument>) => void;
 }
 
 function todayStr(): string {
@@ -25,7 +27,7 @@ function todayStr(): string {
 
 const EMPTY_ITEM: Item = { name: '', unit: 'szt.', qty: '' };
 
-export default function EditorView({ state, editingDocId, onPersist, onSaved, onBack, onDelete, toast, emailConfirm }: Props) {
+export default function EditorView({ state, editingDocId, onPersist, onSaved, onBack, onDelete, toast, emailConfirm, onMark }: Props) {
   const doc = editingDocId ? state.documents.find((d) => d.id === editingDocId) || null : null;
   const initRef = useRef<string | null>('__none__');
 
@@ -76,6 +78,10 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
   }, [items.length]);
 
   const set = (patch: Partial<typeof form>) => setForm((f) => ({ ...f, ...patch }));
+
+  // Podpowiedzi budowane z dotychczasowych dokumentów — bez katalogu towarów
+  const podpowiedziNazw = itemNameSuggestions(state.documents);
+  const podpowiedziJednostek = unitSuggestions(state.documents);
 
   const numberPreview = computeNumberFor(
     state.documents,
@@ -206,7 +212,10 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
   };
   const handleSavePrint = async () => {
     const saved = await saveDoc();
-    if (saved) printDocument(saved, state.settings, toast);
+    if (!saved) return;
+    if (await printDocument(saved, state.settings, toast)) {
+      onMark(saved, { printedAt: new Date().toISOString() });
+    }
   };
   const handleSavePdf = async () => {
     const saved = await saveDoc();
@@ -214,7 +223,10 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
   };
   const handleSaveEmail = async () => {
     const saved = await saveDoc();
-    if (saved) emailDocument(saved, state.settings, toast, emailConfirm);
+    if (!saved) return;
+    if (await emailDocument(saved, state.settings, toast, emailConfirm)) {
+      onMark(saved, { emailedAt: new Date().toISOString(), emailedTo: saved.contractor?.email || '' });
+    }
   };
 
   return (
@@ -313,6 +325,16 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
 
       <div className="card">
         <h3 className="card-title">Pozycje</h3>
+        <datalist id="podpowiedzi-nazw">
+          {podpowiedziNazw.map((n) => (
+            <option key={n} value={n} />
+          ))}
+        </datalist>
+        <datalist id="podpowiedzi-jednostek">
+          {podpowiedziJednostek.map((j) => (
+            <option key={j} value={j} />
+          ))}
+        </datalist>
         <table className="table items-table">
           <thead>
             <tr>
@@ -334,6 +356,7 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
                     className="input item-name"
                     data-testid={`item-name-${i}`}
                     aria-label="Nazwa towaru"
+                    list="podpowiedzi-nazw"
                     value={it.name}
                     onChange={(e) => setItem(i, { name: e.target.value })}
                     onKeyDown={(e) => onItemKeyDown(e, i)}
@@ -356,6 +379,7 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
                     className="input item-unit"
                     data-testid={`item-unit-${i}`}
                     aria-label="Jednostka"
+                    list="podpowiedzi-jednostek"
                     value={it.unit}
                     onChange={(e) => setItem(i, { unit: e.target.value })}
                     onKeyDown={(e) => onItemKeyDown(e, i)}

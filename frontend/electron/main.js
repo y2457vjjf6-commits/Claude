@@ -78,6 +78,56 @@ ipcMain.handle('data:save', async (_ev, state) => {
 
 ipcMain.handle('data:location', async () => dataFile());
 
+// ---------- Kopia zapasowa danych ----------
+
+ipcMain.handle('backup:choose', async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+    title: 'Wybierz folder na kopie zapasowe',
+    properties: ['openDirectory', 'createDirectory']
+  });
+  if (canceled || !filePaths.length) return { ok: false, canceled: true };
+  return { ok: true, folder: filePaths[0] };
+});
+
+// Jedna kopia na dzień — nadpisywana w ciągu dnia, więc w folderze
+// zostaje historia dzienna bez zaśmiecania go setkami plików.
+ipcMain.handle('backup:now', async (_ev, { state, folder }) => {
+  if (!folder) return { ok: false, error: 'Nie wskazano folderu kopii zapasowych.' };
+  try {
+    if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
+    const d = new Date();
+    const stamp = d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+    const file = path.join(folder, `dane-wz-${stamp}.json`);
+    const tmp = file + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(state, null, 2), 'utf8');
+    fs.renameSync(tmp, file);
+    return { ok: true, file };
+  } catch (err) {
+    return { ok: false, error: String(err.message || err) };
+  }
+});
+
+ipcMain.handle('backup:restore', async (_ev, folder) => {
+  const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+    title: 'Wybierz plik kopii zapasowej',
+    defaultPath: folder && fs.existsSync(folder) ? folder : app.getPath('documents'),
+    filters: [{ name: 'Kopia danych', extensions: ['json'] }],
+    properties: ['openFile']
+  });
+  if (canceled || !filePaths.length) return { ok: false, canceled: true };
+  try {
+    const dane = JSON.parse(fs.readFileSync(filePaths[0], 'utf8'));
+    if (!dane || typeof dane !== 'object' || !Array.isArray(dane.documents)) {
+      return { ok: false, error: 'Wybrany plik nie wygląda na kopię danych programu.' };
+    }
+    return { ok: true, state: dane };
+  } catch (err) {
+    return { ok: false, error: 'Nie udało się odczytać pliku: ' + String(err.message || err) };
+  }
+});
+
 // ---------- Drukowanie / PDF ----------
 
 // Marginesy pochodzą z reguły @page w print.css (preferCSSPageSize)

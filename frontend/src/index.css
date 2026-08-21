@@ -770,6 +770,30 @@ input[type='checkbox'] {
   color: var(--ink);
 }
 
+/* Znaczniki wydruku i wysyłki na liście dokumentów */
+.doc-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--row-hover);
+  color: var(--primary);
+  cursor: help;
+}
+
+.status-chip .icon {
+  width: 14px;
+  height: 14px;
+}
+
 /* ============================ Dialogi i podgląd ============================ */
 
 .modal-overlay {

@@ -1,5 +1,5 @@
 import { ReactElement } from 'react';
-import { FileText, Handshake, Settings2, Plus, Sun, Moon } from 'lucide-react';
+import { FileText, Handshake, Settings2, Plus, Sun, Moon, BarChart3 } from 'lucide-react';
 import { ViewName } from '../types';
 
 interface Props {
@@ -39,6 +39,7 @@ export default function Sidebar({ view, theme, onNavigate, onNewDoc, onToggleThe
   const navItems: { key: ViewName; label: string; icon: ReactElement }[] = [
     { key: 'list', label: 'Dokumenty WZ', icon: <FileText className="icon" /> },
     { key: 'contractors', label: 'Kontrahenci', icon: <Handshake className="icon" /> },
+    { key: 'reports', label: 'Zestawienia', icon: <BarChart3 className="icon" /> },
     { key: 'settings', label: 'Ustawienia', icon: <Settings2 className="icon" /> }
   ];
 

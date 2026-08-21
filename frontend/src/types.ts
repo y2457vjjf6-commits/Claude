@@ -45,6 +45,11 @@ export interface WZDocument {
   notes: string;
   /** Imię i nazwisko osoby odbierającej towar */
   receivedBy?: string;
+  /** Kiedy dokument był ostatnio drukowany (ISO) */
+  printedAt?: string;
+  /** Kiedy i na jaki adres wysłano dokument mailem */
+  emailedAt?: string;
+  emailedTo?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -74,6 +79,8 @@ export interface Settings {
   emailBody: string;
   /** Adres, na który trafia ukryta kopia (UDW) każdej wysłanej WZ */
   emailCopyTo: string;
+  /** Folder, do którego trafiają kopie zapasowe danych (pusty = wyłączone) */
+  backupFolder: string;
 }
 
 export interface AppState {
@@ -82,7 +89,7 @@ export interface AppState {
   documents: WZDocument[];
 }
 
-export type ViewName = 'list' | 'edit' | 'contractors' | 'settings';
+export type ViewName = 'list' | 'edit' | 'contractors' | 'reports' | 'settings';
 
 export type AskConfirm = (message: string, opts?: { confirmLabel?: string; danger?: boolean }) => Promise<boolean>;
 
@@ -103,6 +110,9 @@ declare global {
         filename: string;
       }) => Promise<{ ok: boolean; error?: string }>;
       testEmail: (smtp: Smtp) => Promise<{ ok: boolean; error?: string }>;
+      chooseBackupFolder: () => Promise<{ ok: boolean; folder?: string; canceled?: boolean }>;
+      backupNow: (payload: { state: AppState; folder: string }) => Promise<{ ok: boolean; file?: string; error?: string }>;
+      restoreBackup: (folder: string) => Promise<{ ok: boolean; state?: AppState; canceled?: boolean; error?: string }>;
     };
   }
 }

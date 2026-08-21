@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Search, Plus, Eye, Pencil, Printer, FileDown, Mail, Trash2, FileText } from 'lucide-react';
 import { WZDocument } from '../types';
-import { formatDatePl } from '../lib/printing';
+import { formatDatePl, formatDateTimePl } from '../lib/printing';
+import { documentMatches } from '../lib/suggestions';
 
 interface Props {
   documents: WZDocument[];
@@ -23,9 +24,7 @@ export default function DocumentsView({ documents, onEdit, onNewDoc, onPreview, 
     .sort((a, b) => b.dateIssued.localeCompare(a.dateIssued) || Number(b.seq) - Number(a.seq))
     .filter((d) => {
       if (!query) return true;
-      return [d.number, d.contractor?.name, d.orderNo, d.dateIssued, formatDatePl(d.dateIssued)].some((v) =>
-        String(v || '').toLowerCase().includes(query)
-      );
+      return documentMatches(d, query) || formatDatePl(d.dateIssued).includes(query);
     });
 
   const anyDocs = documents.length > 0;
@@ -60,6 +59,7 @@ export default function DocumentsView({ documents, onEdit, onNewDoc, onPreview, 
                 <th>Odbiorca</th>
                 <th style={{ width: 150 }}>Nr zamówienia</th>
                 <th className="th-num" style={{ width: 76 }}>Pozycje</th>
+                <th style={{ width: 96 }}>Status</th>
                 <th style={{ width: 290 }}>Akcje</th>
               </tr>
             </thead>
@@ -71,6 +71,21 @@ export default function DocumentsView({ documents, onEdit, onNewDoc, onPreview, 
                   <td>{d.contractor?.name || '—'}</td>
                   <td>{d.orderNo || ''}</td>
                   <td className="td-num">{d.items.filter((i) => i.name).length}</td>
+                  <td>
+                    <div className="doc-status">
+                      {d.printedAt && (
+                        <span className="status-chip" title={`Drukowano ${formatDateTimePl(d.printedAt)}`}>
+                          <Printer className="icon" />
+                        </span>
+                      )}
+                      {d.emailedAt && (
+                        <span className="status-chip" title={`Wysłano ${formatDateTimePl(d.emailedAt)}${d.emailedTo ? ' na ' + d.emailedTo : ''}`}>
+                          <Mail className="icon" />
+                        </span>
+                      )}
+                      {!d.printedAt && !d.emailedAt && <span className="muted">—</span>}
+                    </div>
+                  </td>
                   <td>
                     <div className="row-actions">
                       <button className="btn btn-small btn-light" data-testid={`doc-preview-${d.id}`} aria-label="Podgląd" title="Podgląd" onClick={() => onPreview(d)}>
@@ -98,7 +113,7 @@ export default function DocumentsView({ documents, onEdit, onNewDoc, onPreview, 
               ))}
               {!docs.length && (
                 <tr>
-                  <td colSpan={6} className="muted" style={{ textAlign: 'center', padding: 24 }}>
+                  <td colSpan={7} className="muted" style={{ textAlign: 'center', padding: 24 }}>
                     Brak wyników dla „{q.trim()}”.
                   </td>
                 </tr>

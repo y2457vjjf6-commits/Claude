@@ -14,6 +14,7 @@ export const DEFAULT_STATE: AppState = {
     smtp: { host: '', port: 587, user: '', pass: '', from: '' },
     emailSubject: 'Dokument WZ {numer} — Lechrol',
     emailCopyTo: 'lechrol@lechrol.pl',
+    backupFolder: '',
     emailBody:
       'Dzień dobry,\n\nw załączniku przesyłamy dokument WZ {numer} (wydanie zewnętrzne).\nTowar odebrał: {odebral}\n\nPozdrawiamy,\nZPHU Lechrol Jacek Wajcht\ntel. 511 697 697 · lechrol.pl'
   },

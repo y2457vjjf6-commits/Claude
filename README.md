@@ -96,6 +96,50 @@ serwer poczty wychodzącej).
 Gmail wymaga [hasła aplikacji](https://support.google.com/accounts/answer/185833)
 zamiast zwykłego hasła (serwer `smtp.gmail.com`, port `587`).
 
+## Podpis cyfrowy programu (certyfikat Code Signing)
+
+Program działa bez podpisu, ale przy pierwszym uruchomieniu Windows pokazuje
+ostrzeżenie SmartScreen („Windows ochronił Twój komputer” → *Więcej informacji*
+→ *Uruchom mimo to*). Podpis cyfrowy usuwa to ostrzeżenie i pokazuje nazwę firmy
+jako wydawcy.
+
+### Co kupić
+
+Potrzebny jest certyfikat **Code Signing OV** wystawiony na firmę. Od czerwca 2023
+klucz musi być sprzętowo chroniony, więc dostajesz go na tokenie USB, karcie
+kryptograficznej albo w chmurze (nie ma już plików `.pfx` do skopiowania).
+Od marca 2026 certyfikaty wydawane są maksymalnie na ~15 miesięcy.
+
+Wariant EV nie jest potrzebny — od 2024 Windows traktuje OV i EV tak samo przy
+budowaniu reputacji SmartScreen.
+
+### Podpisywanie na własnym komputerze (token / karta / chmura)
+
+Najprostsza droga, gdy certyfikat jest na tokenie lub w chmurze dostawcy:
+
+```powershell
+# jednorazowo: sterowniki tokena / aplikacja chmurowa + Windows SDK (signtool)
+frontend\scripts\podpisz-lokalnie.ps1 -Plik "C:\...\Lechrol-WZ-1.1.0.exe"
+```
+
+Skrypt sam znajdzie certyfikat, podpisze plik znacznikiem czasu i sprawdzi wynik.
+
+### Podpisywanie automatyczne przy budowie (opcjonalne)
+
+Budowa w GitHub Actions podpisze plik sama, jeśli certyfikat trzymasz w **Azure
+Key Vault**. Wystarczy dodać sekrety w repozytorium
+(*Settings → Secrets and variables → Actions*):
+
+| Sekret | Zawartość |
+|---|---|
+| `AZURE_KEY_VAULT_URL` | adres skarbca, np. `https://lechrol-kv.vault.azure.net` |
+| `AZURE_CERT_NAME` | nazwa certyfikatu w skarbcu |
+| `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID` | dane aplikacji z dostępem do skarbca |
+
+Dopóki sekretów nie ma, krok podpisywania jest pomijany i budowa działa jak dotąd.
+Znacznik czasu sprawia, że podpisane pliki pozostają ważne także po wygaśnięciu
+certyfikatu.
+
 ## Struktura projektu
 
 Interfejs to aplikacja React + TypeScript (Tailwind, shadcn/ui) opakowana w Electron —

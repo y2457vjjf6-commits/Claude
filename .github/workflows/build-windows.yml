@@ -15,6 +15,8 @@ defaults:
 jobs:
   build-windows:
     runs-on: windows-latest
+    env:
+      AKV_URL: ${{ secrets.AZURE_KEY_VAULT_URL }}
     steps:
       - name: Pobranie kodu
         uses: actions/checkout@v4
@@ -34,6 +36,33 @@ jobs:
 
       - name: Budowa przenośnego .exe
         run: yarn dist
+
+      # Podpis cyfrowy — uruchamia się tylko, gdy certyfikat jest skonfigurowany
+      # w sekretach repozytorium (Settings -> Secrets and variables -> Actions).
+      # Wymagane sekrety: AZURE_KEY_VAULT_URL, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET,
+      # AZURE_TENANT_ID, AZURE_CERT_NAME. Bez nich budowa przebiega jak dotąd,
+      # a plik pozostaje niepodpisany.
+      - name: Podpis cyfrowy pliku .exe
+        if: env.AKV_URL != ''
+        shell: pwsh
+        run: |
+          dotnet tool install --global AzureSignTool
+          $exe = Get-ChildItem dist/*.exe | Select-Object -First 1
+          Write-Host "Podpisywanie: $($exe.FullName)"
+          AzureSignTool sign `
+            --azure-key-vault-url "${{ secrets.AZURE_KEY_VAULT_URL }}" `
+            --azure-key-vault-client-id "${{ secrets.AZURE_CLIENT_ID }}" `
+            --azure-key-vault-client-secret "${{ secrets.AZURE_CLIENT_SECRET }}" `
+            --azure-key-vault-tenant-id "${{ secrets.AZURE_TENANT_ID }}" `
+            --azure-key-vault-certificate "${{ secrets.AZURE_CERT_NAME }}" `
+            --timestamp-rfc3161 "http://timestamp.digicert.com" `
+            --timestamp-digest sha256 `
+            --file-digest sha256 `
+            "$($exe.FullName)"
+          # potwierdzenie, że podpis jest osadzony
+          $sig = Get-AuthenticodeSignature $exe.FullName
+          Write-Host "Status podpisu: $($sig.Status) — $($sig.SignerCertificate.Subject)"
+          if ($sig.Status -ne 'Valid') { throw "Podpis nieprawidłowy: $($sig.Status)" }
 
       - name: Publikacja artefaktu
         uses: actions/upload-artifact@v4

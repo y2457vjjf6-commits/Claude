@@ -161,7 +161,7 @@ function describeSmtpError(err) {
 }
 
 ipcMain.handle('doc:email', async (_ev, payload) => {
-  const { smtp, to, subject, text, filename } = payload;
+  const { smtp, to, bcc, subject, text, filename } = payload;
   if (!smtp || !smtp.host || !smtp.user) {
     return { ok: false, error: 'Brak konfiguracji poczty. Uzupełnij dane SMTP w Ustawieniach.' };
   }
@@ -181,6 +181,7 @@ ipcMain.handle('doc:email', async (_ev, payload) => {
     await transporter.sendMail({
       from: smtp.from || smtp.user,
       to,
+      ...(bcc ? { bcc } : {}),
       subject,
       text,
       attachments: [{ filename, path: tmpPath }]

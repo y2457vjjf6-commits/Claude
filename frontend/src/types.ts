@@ -72,6 +72,8 @@ export interface Settings {
   smtp: Smtp;
   emailSubject: string;
   emailBody: string;
+  /** Adres, na który trafia ukryta kopia (UDW) każdej wysłanej WZ */
+  emailCopyTo: string;
 }
 
 export interface AppState {
@@ -95,6 +97,7 @@ declare global {
       sendEmail: (payload: {
         smtp: Smtp;
         to: string;
+        bcc?: string;
         subject: string;
         text: string;
         filename: string;

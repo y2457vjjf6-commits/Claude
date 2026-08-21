@@ -23,7 +23,8 @@ wszystkie dane zapisywane są lokalnie na komputerze.
   „Zapisz PDF” zapisuje dokument do wybranego pliku.
 - **Wysyłka e-mail (opcjonalna)** — po skonfigurowaniu skrzynki SMTP w Ustawieniach
   dokument wysyłany jest jako PDF na adres e-mail odbiorcy (wymaga internetu tylko
-  w chwili wysyłki).
+  w chwili wysyłki). Każda wysyłka trafia też w ukrytej kopii na firmowy adres
+  (domyślnie `lechrol@lechrol.pl`), więc w skrzynce zostaje komplet wystawionych WZ.
 - **Archiwum z wyszukiwarką** — lista wszystkich WZ z filtrowaniem po numerze,
   odbiorcy, numerze zamówienia i dacie.
 - **Ciemny motyw** (domyślny) z przełącznikiem jasny/ciemny w pasku górnym;
@@ -74,7 +75,11 @@ backup, wystarczy skopiować ten plik.
 W zakładce **Ustawienia → Poczta e-mail** podaj dane skrzynki nadawczej (SMTP),
 a następnie kliknij **Testuj połączenie** — sprawdzi serwer, port, login i hasło
 bez wysyłania wiadomości. Temat i treść można dostosować; `{numer}` zostanie
-zastąpiony numerem WZ.
+zastąpiony numerem WZ, a `{odebral}` — osobą odbierającą towar.
+
+Pole **Kopia dla nas (ukryta, UDW)** decyduje, gdzie trafia kopia każdej wysłanej
+WZ — domyślnie `lechrol@lechrol.pl`. Odbiorca dokumentu nie widzi tego adresu.
+Puste pole wyłącza kopie.
 
 ### Poczta i-host (Wenet)
 

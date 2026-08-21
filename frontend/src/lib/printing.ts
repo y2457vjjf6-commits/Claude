@@ -195,17 +195,26 @@ export async function emailDocument(
     toast('Brak konfiguracji poczty — uzupełnij dane SMTP w Ustawieniach.', true);
     return;
   }
-  if (!(await confirm(`Wysłać dokument ${doc.number} na adres ${to}?`))) return;
+  const copyTo = (settings.emailCopyTo || '').trim();
+  const pytanie = copyTo
+    ? `Wysłać dokument ${doc.number} na adres ${to}?\nKopia trafi też na ${copyTo}.`
+    : `Wysłać dokument ${doc.number} na adres ${to}?`;
+  if (!(await confirm(pytanie))) return;
 
   fillPrintArea(doc, settings);
   toast('Wysyłanie e-maila…');
   const res = await window.wzApi.sendEmail({
     smtp,
     to,
+    bcc: copyTo,
     subject: settings.emailSubject.replaceAll('{numer}', doc.number),
     text: buildEmailBody(settings.emailBody, doc),
     filename: pdfFilename(doc)
   });
-  if (res.ok) toast(`Wysłano dokument ${doc.number} na adres ${to}.`);
+  if (res.ok) {
+    toast(copyTo
+      ? `Wysłano dokument ${doc.number} na adres ${to} (kopia: ${copyTo}).`
+      : `Wysłano dokument ${doc.number} na adres ${to}.`);
+  }
   else toast('Błąd wysyłki: ' + res.error, true);
 }

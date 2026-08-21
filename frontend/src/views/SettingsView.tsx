@@ -24,6 +24,7 @@ export default function SettingsView({ state, onPersist, toast }: Props) {
     mPass: st.smtp.pass,
     mFrom: st.smtp.from,
     mSubject: st.emailSubject,
+    mCopyTo: st.emailCopyTo || '',
     mBody: st.emailBody
   });
   const [location, setLocation] = useState<string | null>(null);
@@ -51,6 +52,7 @@ export default function SettingsView({ state, onPersist, toast }: Props) {
       from: form.mFrom.trim()
     };
     next.settings.emailSubject = form.mSubject;
+    next.settings.emailCopyTo = form.mCopyTo.trim();
     next.settings.emailBody = form.mBody;
     await onPersist(next);
     toast('Zapisano ustawienia.');
@@ -140,6 +142,17 @@ export default function SettingsView({ state, onPersist, toast }: Props) {
           <label className="field">
             <span>Nadawca (pole „Od”)</span>
             <input type="text" className="input" data-testid="smtp-from-input" placeholder="np. biuro@lechrol.pl" value={form.mFrom} onChange={(e) => set({ mFrom: e.target.value })} />
+          </label>
+          <label className="field">
+            <span>Kopia dla nas (ukryta, UDW)</span>
+            <input
+              type="email"
+              className="input"
+              data-testid="email-copy-input"
+              placeholder="np. lechrol@lechrol.pl"
+              value={form.mCopyTo}
+              onChange={(e) => set({ mCopyTo: e.target.value })}
+            />
           </label>
           <label className="field">
             <span>Temat wiadomości ({'{numer}'} = numer WZ)</span>

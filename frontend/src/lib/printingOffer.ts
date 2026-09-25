@@ -76,9 +76,10 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
     ? `<div class="of-sum-line">Rabat ${esc(offer.discountPercent)}%: −${formatMoney(sumy.discountAmount)}</div>`
     : '';
 
+  // Puste pole kwoty znaczy „nie dotyczy” — bez osobnego przełącznika
   const dostawa = offer.deliveryEnabled
     ? `<div class="of-bullet">• Szacunkowy koszt dostawy – ${
-        offer.deliveryNotApplicable ? 'nie dotyczy' : formatMoney(sumy.deliveryAmount)
+        String(offer.deliveryPrice || '').trim() ? formatMoney(sumy.deliveryAmount) : 'nie dotyczy'
       }</div>`
     : '';
 
@@ -112,6 +113,13 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
     ? `<div class="of-legal">${esc(settings.offerLegalText)}</div>`
     : '';
 
+  // Bez wpisanej liczby dni wiersz o terminie nie ma sensu — nie drukujemy go
+  const termin = String(offer.deadlineDays || '').trim()
+    ? `<div class="of-bullet">• Termin realizacji – do ${esc(
+        offer.deadlineDays
+      )} dni roboczych od daty akceptacji zamówienia.</div>`
+    : '';
+
   const klient = String(offer.client || '').trim()
     ? `<div class="of-client"><span class="of-client-label">Dla:</span> ${esc(offer.client)}</div>`
     : '';
@@ -140,9 +148,7 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
 
     <div class="of-conditions">
       <div>Ceny ${offer.installationIncluded ? 'uwzględniają montaż' : 'nie uwzględniają montażu'}.</div>
-      <div class="of-bullet">• Termin realizacji – do ${esc(offer.deadlineDays)} dni roboczych od daty ${esc(
-        offer.deadlineBasis
-      )} zamówienia.</div>
+      ${termin}
       ${dostawa}
       ${waznosc}
       ${uwagi}

@@ -32,6 +32,7 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
     issuers: (st.issuers || []).join('\n'),
     offerDeadlineDays: st.offerDefaults?.deadlineDays || '21',
     offerValidityDays: st.offerDefaults?.validityDays || '30',
+    offerValidityEnabled: st.offerDefaults?.validityEnabled ?? false,
     offerInstallation: st.offerDefaults?.installationIncluded ?? true,
     offerLegalClause: st.offerDefaults?.legalClause ?? true,
     offerLegalText: st.offerLegalText || '',
@@ -75,6 +76,7 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
     next.settings.offerDefaults = {
       deadlineDays: form.offerDeadlineDays.trim(),
       validityDays: form.offerValidityDays.trim(),
+      validityEnabled: form.offerValidityEnabled,
       installationIncluded: form.offerInstallation,
       legalClause: form.offerLegalClause
     };
@@ -275,6 +277,15 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
           <label className="field">
             <span>Domyślna ważność oferty (dni)</span>
             <input type="text" className="input num" data-testid="offer-default-validity" value={form.offerValidityDays} onChange={(e) => set({ offerValidityDays: e.target.value })} />
+            <label className="checkbox-field">
+              <input
+                type="checkbox"
+                data-testid="offer-default-validity-on"
+                checked={form.offerValidityEnabled}
+                onChange={(e) => set({ offerValidityEnabled: e.target.checked })}
+              />
+              <span>Nowe oferty od razu z ograniczoną ważnością</span>
+            </label>
           </label>
           <label className="field">
             <span>Domyślnie: montaż</span>

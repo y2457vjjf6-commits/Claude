@@ -84,11 +84,9 @@ export default function OfferEditorView({
           discountPercent: '',
           deliveryEnabled: false,
           deliveryPrice: '',
-          deliveryNotApplicable: false,
           installationIncluded: d.installationIncluded,
           deadlineDays: d.deadlineDays,
-          deadlineBasis: 'akceptacji',
-          validityEnabled: false,
+          validityEnabled: d.validityEnabled ?? false,
           validityDays: d.validityDays,
           notes: '',
           issuedBy: availableIssuers(state)[0] || '',
@@ -310,6 +308,17 @@ export default function OfferEditorView({
             <span>E-mail klienta</span>
             <input type="email" className="input" data-testid="offer-client-email" value={offer.clientEmail} onChange={(e) => set({ clientEmail: e.target.value })} />
           </label>
+          <label className="field">
+            <span>Status oferty</span>
+            <select className="input" data-testid="offer-status" value={offer.status} onChange={(e) => set({ status: e.target.value as Offer['status'] })}>
+              {(Object.keys(OFFER_STATUS_LABELS) as Offer['status'][]).map((st) => (
+                <option key={st} value={st}>
+                  {OFFER_STATUS_LABELS[st]}
+                </option>
+              ))}
+            </select>
+            <span className="muted field-hint">Tylko do Waszej wiadomości — nie drukuje się na ofercie.</span>
+          </label>
         </div>
       </div>
 
@@ -527,24 +536,18 @@ export default function OfferEditorView({
               <span>Dostawa kurierem</span>
             </label>
             {offer.deliveryEnabled && (
-              <>
-                <label className="field" style={{ marginTop: 8 }}>
-                  <span>Szacunkowy koszt dostawy</span>
-                  <SuffixField
-                    suffix="zł"
-                    normalizuj
-                    testId="offer-delivery-price"
-                    ariaLabel="Szacunkowy koszt dostawy"
-                    disabled={offer.deliveryNotApplicable}
-                    value={offer.deliveryPrice}
-                    onChange={(v) => set({ deliveryPrice: v })}
-                  />
-                </label>
-                <label className="checkbox-field">
-                  <input type="checkbox" data-testid="offer-delivery-na" checked={offer.deliveryNotApplicable} onChange={(e) => set({ deliveryNotApplicable: e.target.checked })} />
-                  <span>Zamiast kwoty wpisz „nie dotyczy”</span>
-                </label>
-              </>
+              <label className="field" style={{ marginTop: 8 }}>
+                <span>Szacunkowy koszt dostawy</span>
+                <SuffixField
+                  suffix="zł"
+                  normalizuj
+                  testId="offer-delivery-price"
+                  ariaLabel="Szacunkowy koszt dostawy"
+                  value={offer.deliveryPrice}
+                  onChange={(v) => set({ deliveryPrice: v })}
+                />
+                <span className="muted field-hint">Puste pole wydrukuje się jako „nie dotyczy”.</span>
+              </label>
             )}
           </div>
         </div>
@@ -568,7 +571,8 @@ export default function OfferEditorView({
           ))}
           {offer.deliveryEnabled && (
             <div className="muted">
-              Dostawa: {offer.deliveryNotApplicable ? 'nie dotyczy' : formatMoney(sumy.deliveryAmount)} (osobno, poza ceną całkowitą)
+              Dostawa: {offer.deliveryPrice.trim() ? formatMoney(sumy.deliveryAmount) : 'nie dotyczy'} (osobno, poza ceną
+              całkowitą)
             </div>
           )}
           {pokazKoszty && koszty.hasCosts && (
@@ -592,6 +596,7 @@ export default function OfferEditorView({
       {/* ---------- Warunki ---------- */}
       <div className="card">
         <h3 className="card-title">Warunki oferty</h3>
+        <p className="muted card-note">Te ustawienia drukują się na dokumencie dla klienta.</p>
         <div className="grid2">
           <label className="field">
             <span>Montaż</span>
@@ -601,49 +606,37 @@ export default function OfferEditorView({
             </select>
           </label>
           <label className="field">
-            <span>Termin realizacji (dni roboczych)</span>
+            <span>Termin realizacji (dni roboczych od akceptacji zamówienia)</span>
             <input type="text" className="input num" data-testid="offer-deadline-days" inputMode="numeric" value={offer.deadlineDays} onChange={(e) => set({ deadlineDays: e.target.value })} />
-          </label>
-          <label className="field">
-            <span>Liczony od daty…</span>
-            <select className="input" data-testid="offer-deadline-basis" value={offer.deadlineBasis} onChange={(e) => set({ deadlineBasis: e.target.value as Offer['deadlineBasis'] })}>
-              <option value="akceptacji">akceptacji zamówienia</option>
-              <option value="potwierdzenia">potwierdzenia zamówienia</option>
-            </select>
+            <span className="muted field-hint">Puste pole pomija ten wiersz na ofercie.</span>
           </label>
         </div>
-        <div className="grid2" style={{ marginTop: 4 }}>
-          <div>
+
+        <div className="switch-row">
+          <div className="switch-col">
             <label className="checkbox-field">
               <input type="checkbox" data-testid="offer-validity-enabled" checked={offer.validityEnabled} onChange={(e) => set({ validityEnabled: e.target.checked })} />
               <span>Ogranicz ważność oferty</span>
             </label>
             {offer.validityEnabled && (
-              <label className="field" style={{ marginTop: 8 }}>
+              <label className="field">
                 <span>Ważna przez (dni) — do {validUntil(offer) || '—'}</span>
                 <input type="text" className="input num" data-testid="offer-validity-days" inputMode="numeric" value={offer.validityDays} onChange={(e) => set({ validityDays: e.target.value })} />
               </label>
             )}
           </div>
-          <label className="checkbox-field" style={{ alignSelf: 'start', paddingTop: 26 }}>
-            <input
-              type="checkbox"
-              data-testid="offer-legal-clause"
-              checked={offer.legalClause}
-              onChange={(e) => set({ legalClause: e.target.checked })}
-            />
-            <span>Dopisz klauzulę informacyjną (art. 66 § 1 k.c.)</span>
-          </label>
-          <label className="field">
-            <span>Status oferty</span>
-            <select className="input" data-testid="offer-status" value={offer.status} onChange={(e) => set({ status: e.target.value as Offer['status'] })}>
-              {(Object.keys(OFFER_STATUS_LABELS) as Offer['status'][]).map((s) => (
-                <option key={s} value={s}>
-                  {OFFER_STATUS_LABELS[s]}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="switch-col">
+            <label className="checkbox-field">
+              <input
+                type="checkbox"
+                data-testid="offer-legal-clause"
+                checked={offer.legalClause}
+                onChange={(e) => set({ legalClause: e.target.checked })}
+              />
+              <span>Dopisz klauzulę informacyjną</span>
+            </label>
+            <span className="muted field-hint">Treść klauzuli ustawisz w Ustawieniach.</span>
+          </div>
         </div>
         <label className="field" style={{ marginTop: 14 }}>
           <span>Uwagi na ofercie</span>

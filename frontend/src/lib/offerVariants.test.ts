@@ -31,10 +31,8 @@ const oferta = (patch: Partial<Offer> = {}): Offer =>
     discountPercent: '',
     deliveryEnabled: false,
     deliveryPrice: '',
-    deliveryNotApplicable: false,
     installationIncluded: true,
     deadlineDays: '14',
-    deadlineBasis: 'akceptacji',
     validityEnabled: false,
     validityDays: '30',
     notes: '',
@@ -109,6 +107,27 @@ test('oferta złożona tylko z wariantów nie pokazuje ceny całkowitej', () => 
   expect(html).not.toContain('Cena całkowita');
   expect(html).toContain('Cena dla tego wariantu: 1000,00 zł');
   expect(html).toContain('Cena dla tego wariantu: 1200,00 zł');
+});
+
+/* ---------------- Warunki na dokumencie ---------------- */
+
+test('termin realizacji zawsze liczony od akceptacji zamówienia', () => {
+  const html = buildOfferHtml(oferta({ deadlineDays: '21' }), DEFAULT_STATE.settings);
+  expect(html).toContain('Termin realizacji – do 21 dni roboczych od daty akceptacji zamówienia.');
+});
+
+test('bez wpisanej liczby dni wiersz o terminie znika', () => {
+  const html = buildOfferHtml(oferta({ deadlineDays: '  ' }), DEFAULT_STATE.settings);
+  expect(html).not.toContain('Termin realizacji');
+});
+
+test('dostawa bez kwoty drukuje się jako „nie dotyczy”', () => {
+  const zKwota = buildOfferHtml(oferta({ deliveryEnabled: true, deliveryPrice: '108,33' }), DEFAULT_STATE.settings);
+  const bezKwoty = buildOfferHtml(oferta({ deliveryEnabled: true, deliveryPrice: '' }), DEFAULT_STATE.settings);
+  const wylaczona = buildOfferHtml(oferta({ deliveryEnabled: false }), DEFAULT_STATE.settings);
+  expect(zKwota).toContain('Szacunkowy koszt dostawy – 108,33 zł');
+  expect(bezKwoty).toContain('Szacunkowy koszt dostawy – nie dotyczy');
+  expect(wylaczona).not.toContain('koszt dostawy');
 });
 
 /* ---------------- Uwagi końcowe pod ofertą ---------------- */

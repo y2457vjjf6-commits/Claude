@@ -110,8 +110,7 @@ export function offerTotals(offer: Offer): OfferTotals {
       label: groupLabel(grupy, i),
       total: poRabacie(groupSum(g), offer).net
     }));
-  const deliveryAmount =
-    offer.deliveryEnabled && !offer.deliveryNotApplicable ? parseNumber(offer.deliveryPrice) : 0;
+  const deliveryAmount = offer.deliveryEnabled ? parseNumber(offer.deliveryPrice) : 0;
   return { itemsSum, discountAmount, total, deliveryAmount, variants };
 }
 

@@ -89,6 +89,8 @@ export interface Settings {
   offerDefaults: {
     deadlineDays: string;
     validityDays: string;
+    /** Czy nowe oferty mają od razu ograniczoną ważność */
+    validityEnabled: boolean;
     installationIncluded: boolean;
     /** Czy nowe oferty mają klauzulę informacyjną */
     legalClause: boolean;
@@ -186,12 +188,10 @@ export interface Offer {
   /** Rabat w procentach */
   discountPercent: string;
   deliveryEnabled: boolean;
-  /** Kwota dostawy; puste przy „nie dotyczy” */
+  /** Kwota dostawy; puste pole drukuje się jako „nie dotyczy” */
   deliveryPrice: string;
-  deliveryNotApplicable: boolean;
   installationIncluded: boolean;
   deadlineDays: string;
-  deadlineBasis: 'akceptacji' | 'potwierdzenia';
   validityEnabled: boolean;
   validityDays: string;
   notes: string;

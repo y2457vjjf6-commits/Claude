@@ -19,6 +19,7 @@ export const DEFAULT_STATE: AppState = {
     offerDefaults: {
       deadlineDays: '21',
       validityDays: '30',
+      validityEnabled: false,
       installationIncluded: true,
       legalClause: true
     },

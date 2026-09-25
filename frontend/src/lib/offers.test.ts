@@ -32,10 +32,8 @@ const oferta = (patch: Partial<Offer> = {}): Offer =>
     discountPercent: '',
     deliveryEnabled: false,
     deliveryPrice: '',
-    deliveryNotApplicable: false,
     installationIncluded: true,
     deadlineDays: '14',
-    deadlineBasis: 'akceptacji',
     validityEnabled: false,
     validityDays: '30',
     notes: '',
@@ -81,10 +79,8 @@ test('wyłączony rabat nie zmienia sumy', () => {
 test('dostawa liczona osobno i tylko gdy włączona', () => {
   expect(offerTotals(oferta({ deliveryEnabled: true, deliveryPrice: '108,33' })).deliveryAmount).toBe(108.33);
   expect(offerTotals(oferta({ deliveryEnabled: false, deliveryPrice: '108,33' })).deliveryAmount).toBe(0);
-  expect(
-    offerTotals(oferta({ deliveryEnabled: true, deliveryNotApplicable: true, deliveryPrice: '108,33' }))
-      .deliveryAmount
-  ).toBe(0);
+  // puste pole kwoty: brak dostawy do policzenia, na dokumencie „nie dotyczy”
+  expect(offerTotals(oferta({ deliveryEnabled: true, deliveryPrice: '' })).deliveryAmount).toBe(0);
   // dostawa nie wchodzi do ceny całkowitej
   expect(offerTotals(oferta({ deliveryEnabled: true, deliveryPrice: '108,33' })).total).toBe(5850);
 });

@@ -265,7 +265,7 @@ table {
 .content {
   min-width: 0;
   overflow-y: auto;
-  padding: var(--sp-8) var(--sp-10) 96px;
+  padding: var(--sp-8) var(--sp-10) 104px;
 }
 
 .view {
@@ -1124,22 +1124,33 @@ tr:hover .status-chip {
   flex-wrap: wrap;
 }
 
-/* Pasek akcji przyklejony do dołu okna — tylko tam, gdzie o to prosimy */
+/* Pasek zapisu stoi przy dolnej krawędzi okna, niezależnie od tego, jak długi
+   jest formularz i gdzie akurat jesteśmy w przewijaniu. */
 .actions-sticky,
 .sticky-actions {
-  position: sticky;
+  position: fixed;
+  left: var(--sidebar-w);
+  right: 0;
   bottom: 0;
   z-index: var(--z-sticky);
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  flex-wrap: wrap;
-  margin: var(--sp-2) calc(var(--sp-10) * -1) calc(var(--sp-8) * -1);
+  flex-wrap: nowrap;
+  overflow: hidden;
+  margin: 0;
   padding: var(--sp-3) var(--sp-10);
-  row-gap: var(--sp-2);
   background: color-mix(in srgb, var(--canvas) 94%, transparent);
   backdrop-filter: blur(10px);
   border-top: 1px solid var(--hairline);
+}
+
+/* Podpowiedź o skrótach ustępuje pierwsza, gdy okno jest wąskie */
+.actions-sticky .shortcut-hint,
+.sticky-actions .shortcut-hint {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .actions-sticky .btn,
@@ -1522,13 +1533,16 @@ kbd {
 
 @media (max-width: 1180px) {
   .content {
-    padding: var(--sp-6) var(--sp-6) 96px;
+    padding: var(--sp-6) var(--sp-6) 104px;
+  }
+
+  .actions-sticky .shortcut-hint,
+  .sticky-actions .shortcut-hint {
+    display: none;
   }
 
   .actions-sticky,
   .sticky-actions {
-    margin-left: calc(var(--sp-6) * -1);
-    margin-right: calc(var(--sp-6) * -1);
     padding-left: var(--sp-6);
     padding-right: var(--sp-6);
   }
@@ -1545,6 +1559,11 @@ kbd {
 @media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .actions-sticky,
+  .sticky-actions {
+    left: 72px;
   }
 
   .sidebar {
@@ -2281,4 +2300,30 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
 :root:not([data-theme='light']) {
   /* w ciemnym motywie natywna ikona jest czarna — odwracamy ją */
   --kalendarz-filtr: invert(1) brightness(1.6);
+}
+
+/* Rząd przełączników w warunkach oferty — dwie kolumny o równej podstawie,
+   bez dosuwania odstępami na oko */
+.switch-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4) var(--sp-5);
+  align-items: start;
+}
+
+.switch-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.switch-col .checkbox-field {
+  min-height: 28px;
+}
+
+@media (max-width: 900px) {
+  .switch-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

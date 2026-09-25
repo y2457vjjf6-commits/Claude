@@ -1,9 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import '@fontsource-variable/fraunces';
-import '@fontsource/geist-sans/400.css';
-import '@fontsource/geist-sans/500.css';
-import '@fontsource/geist-sans/600.css';
+import '@fontsource-variable/archivo/wdth.css';
+import '@fontsource-variable/geist/wght.css';
 import '@fontsource/geist-mono/400.css';
 import '@fontsource/geist-mono/500.css';
 import './index.css';

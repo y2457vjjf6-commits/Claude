@@ -6,6 +6,9 @@
 }
 
 @media print {
+  /* Interfejs działa w schemacie ciemnym; bez tej linii przeglądarka maluje
+     nim tło strony i wychodzi ono na marginesy wydruku oraz PDF-a. */
+  :root { color-scheme: light !important; }
   html, body { background: #fff !important; }
   #root { display: none !important; }
   #print-area { display: block !important; }

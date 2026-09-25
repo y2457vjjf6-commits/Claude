@@ -33,6 +33,7 @@ export default function DocumentsView({ documents, onEdit, onNewDoc, onPreview, 
   return (
     <section className="view" data-testid="view-list">
       <h1 className="page-title">Dokumenty WZ</h1>
+      {anyDocs && (
       <div className="toolbar">
         <div className="search-wrap">
           <Search className="icon" />
@@ -48,7 +49,13 @@ export default function DocumentsView({ documents, onEdit, onNewDoc, onPreview, 
         <span className="muted num" data-testid="docs-count">
           {docs.length ? `Dokumentów: ${docs.length}` : ''}
         </span>
+        <span className="spacer" />
+        <button className="btn btn-primary" data-testid="new-doc-btn" onClick={onNewDoc}>
+          <Plus className="icon" />
+          Nowa WZ
+        </button>
       </div>
+      )}
 
       {anyDocs && (
         <div className="table-card">
@@ -61,7 +68,7 @@ export default function DocumentsView({ documents, onEdit, onNewDoc, onPreview, 
                 <th style={{ width: 150 }}>Nr zamówienia</th>
                 <th className="th-num" style={{ width: 76 }}>Pozycje</th>
                 <th style={{ width: 96 }}>Status</th>
-                <th style={{ width: 290 }}>Akcje</th>
+                <th className="th-actions" style={{ width: 290 }}>Akcje</th>
               </tr>
             </thead>
             <tbody>
@@ -115,7 +122,8 @@ export default function DocumentsView({ documents, onEdit, onNewDoc, onPreview, 
       {!anyDocs && (
         <div className="empty" data-testid="docs-empty">
           <FileText className="icon" />
-          <p>Brak dokumentów. Wystaw pierwszą WZ — zajmie to mniej niż minutę.</p>
+          <h2 className="empty-title">Nie ma jeszcze żadnej WZ</h2>
+          <p>Wystawienie pierwszego dokumentu zajmuje mniej niż minutę.</p>
           <button className="btn btn-primary" data-testid="empty-new-doc-btn" onClick={onNewDoc}>
             <Plus className="icon" />
             Nowa WZ

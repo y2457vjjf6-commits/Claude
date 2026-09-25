@@ -107,7 +107,7 @@ export default function ContractorsView({ state, onPersist, toast, askConfirm }:
                 <th>Adres</th>
                 <th style={{ width: 210 }}>E-mail</th>
                 <th style={{ width: 70 }}>Kod</th>
-                <th style={{ width: 170 }}>Akcje</th>
+                <th className="th-actions" style={{ width: 170 }}>Akcje</th>
               </tr>
             </thead>
             <tbody>
@@ -152,7 +152,12 @@ export default function ContractorsView({ state, onPersist, toast, askConfirm }:
       {!anyContractors && (
         <div className="empty" data-testid="contractors-empty">
           <Handshake className="icon" />
-          <p>Brak kontrahentów w bazie. Odbiorcy zapisani przy wystawianiu WZ pojawią się tutaj.</p>
+          <h2 className="empty-title">Baza kontrahentów jest pusta</h2>
+          <p>Odbiorcy zapisani przy wystawianiu WZ trafią tutaj sami. Możesz też dodać firmę ręcznie.</p>
+          <button className="btn btn-primary" data-testid="empty-new-contractor-btn" onClick={() => openForm(null)}>
+            <Plus className="icon" />
+            Dodaj kontrahenta
+          </button>
         </div>
       )}
 

@@ -61,6 +61,7 @@ export default function OffersView({
     <section className="view" data-testid="view-offers">
       <h1 className="page-title">Oferty cenowe</h1>
 
+      {anyOffers && (
       <div className="toolbar">
         <div className="search-wrap">
           <Search className="icon" />
@@ -82,9 +83,10 @@ export default function OffersView({
           Nowa oferta
         </button>
       </div>
+      )}
 
       {przypomnienia.length > 0 && (
-        <div className="notice-card" data-testid="offers-followup">
+        <div className="notice-card notice-warn" data-testid="offers-followup">
           <div className="notice-head">
             <BellRing className="icon" />
             {przypomnienia.length === 1
@@ -142,7 +144,7 @@ export default function OffersView({
                 )}
                 <th style={{ width: 190 }}>Status</th>
                 <th style={{ width: 86 }}>Wysłano</th>
-                <th style={{ width: 236 }}>Akcje</th>
+                <th className="th-actions" style={{ width: 236 }}>Akcje</th>
               </tr>
             </thead>
             <tbody>
@@ -161,7 +163,7 @@ export default function OffersView({
                       </span>
                     )}
                   </td>
-                  <td className="td-num">{formatMoney(offerTotals(o).total)}</td>
+                  <td className="td-money">{formatMoney(offerTotals(o).total)}</td>
                   {kolumnaMarzy && (
                     <td className="td-num muted" data-testid={`offer-margin-${o.id}`}>
                       {offerCosts(o).hasCosts ? formatMoney(offerCosts(o).margin) : '—'}
@@ -227,7 +229,8 @@ export default function OffersView({
       {!anyOffers && (
         <div className="empty" data-testid="offers-empty">
           <FileSpreadsheet className="icon" />
-          <p>Nie ma jeszcze żadnej oferty. Wystaw pierwszą — zajmie to chwilę.</p>
+          <h2 className="empty-title">Nie ma jeszcze żadnej oferty</h2>
+          <p>Wyceny zebrane w jednym miejscu: wyślesz je mailem i sprawdzisz, na które klient nie odpowiedział.</p>
           <button className="btn btn-primary" data-testid="offers-empty-new-btn" onClick={onNewOffer}>
             <Plus className="icon" />
             Nowa oferta

@@ -16,24 +16,20 @@ interface Props {
 function Monogram() {
   return (
     <svg className="lr-mark" viewBox="0 0 48 48" aria-hidden="true">
-      <rect x="0" y="0" width="48" height="48" rx="12" fill="var(--primary)" />
+      <rect x="0" y="0" width="48" height="48" rx="12" fill="var(--accent-solid)" />
       <text
         x="24"
-        y="33.5"
+        y="32"
         textAnchor="middle"
-        fontFamily="'Geist Sans', sans-serif"
-        fontWeight="800"
-        fontSize="24"
-        letterSpacing="-1"
-        fill="#FBF4E8"
+        fontFamily="'Archivo Variable', sans-serif"
+        fontWeight="700"
+        fontStretch="112%"
+        fontSize="21"
+        letterSpacing="0.5"
+        fill="var(--accent-fg)"
       >
         LR
       </text>
-      <g fill="var(--primary)">
-        {[13, 17, 21, 25, 29, 33].map((y) => (
-          <rect key={y} x="8" y={y} width="32" height="1.6" />
-        ))}
-      </g>
     </svg>
   );
 }
@@ -91,12 +87,12 @@ export default function Sidebar({ view, theme, onNavigate, onNewDoc, onToggleThe
           {theme === 'light' ? 'Ciemny motyw' : 'Jasny motyw'}
         </button>
         {wOfertach ? (
-          <button className="btn btn-primary btn-new-doc" data-testid="sidebar-new-offer-btn" title="Ctrl+N" onClick={onNewOffer}>
+          <button className="btn btn-new-doc" data-testid="sidebar-new-offer-btn" title="Ctrl+N" onClick={onNewOffer}>
             <Plus className="icon" />
             Nowa oferta
           </button>
         ) : (
-          <button className="btn btn-primary btn-new-doc" data-testid="sidebar-new-doc-btn" title="Ctrl+N" onClick={onNewDoc}>
+          <button className="btn btn-new-doc" data-testid="sidebar-new-doc-btn" title="Ctrl+N" onClick={onNewDoc}>
             <Plus className="icon" />
             Nowa WZ
           </button>

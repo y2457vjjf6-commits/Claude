@@ -293,7 +293,7 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
       </div>
 
       {!doc && prefill && (
-        <div className="notice-card" data-testid="wz-from-offer-note">
+        <div className="notice-card notice-info" data-testid="wz-from-offer-note">
           <div className="notice-head">
             <FileOutput className="icon" />
             Dokument przeniesiony z oferty cenowej
@@ -521,15 +521,15 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
         </button>
         <button className="btn" data-testid="save-print-btn" onClick={handleSavePrint}>
           <Printer className="icon" />
-          Zapisz i drukuj
+          Drukuj
         </button>
         <button className="btn" data-testid="save-pdf-btn" onClick={handleSavePdf}>
           <FileDown className="icon" />
-          Zapisz PDF
+          PDF
         </button>
         <button className="btn" data-testid="save-email-btn" onClick={handleSaveEmail}>
           <Mail className="icon" />
-          Wyślij e-mailem
+          Wyślij
         </button>
         <span className="shortcut-hint">
           <kbd>Ctrl</kbd>+<kbd>S</kbd> zapis · <kbd>Ctrl</kbd>+<kbd>P</kbd> wydruk · <kbd>Esc</kbd> powrót
@@ -543,7 +543,7 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
         )}
         <button className="btn btn-light" data-testid="back-btn" onClick={leaveEditor}>
           <ArrowLeft className="icon" />
-          Wróć do listy
+          Wróć
         </button>
       </div>
     </section>

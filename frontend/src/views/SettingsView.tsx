@@ -373,7 +373,7 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
         </div>
       </div>
 
-      <div className="actions-bar">
+      <div className="actions-bar actions-sticky">
         <button className="btn btn-primary" data-testid="save-settings-btn" onClick={save}>
           <Save className="icon" />
           Zapisz ustawienia

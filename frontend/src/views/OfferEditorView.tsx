@@ -254,7 +254,7 @@ export default function OfferEditorView({
         </h1>
         <div className="doc-number">
           <span className="doc-number-label">Wartość</span>
-          <strong data-testid="offer-total">{formatMoney(sumy.total)}</strong>
+          <strong className="value" data-testid="offer-total">{formatMoney(sumy.total)}</strong>
         </div>
       </div>
 
@@ -460,7 +460,7 @@ export default function OfferEditorView({
         </div>
       ))}
 
-      <div className="actions-bar" style={{ position: 'static', border: 'none', boxShadow: 'none', padding: 0, marginBottom: 16 }}>
+      <div className="actions-bar" style={{ marginBottom: 4 }}>
         <button className="btn" data-testid="offer-add-group" onClick={addGroup}>
           <Layers className="icon" />
           Dodaj tabelę
@@ -625,22 +625,22 @@ export default function OfferEditorView({
         </label>
       </div>
 
-      <div className="actions-bar">
+      <div className="actions-bar actions-sticky">
         <button className="btn btn-primary" data-testid="offer-save-btn" onClick={handleSave}>
           <Save className="icon" />
           Zapisz
         </button>
         <button className="btn" data-testid="offer-save-print-btn" onClick={handlePrint}>
           <Printer className="icon" />
-          Zapisz i drukuj
+          Drukuj
         </button>
         <button className="btn" data-testid="offer-save-pdf-btn" onClick={handlePdf}>
           <FileDown className="icon" />
-          Zapisz PDF
+          PDF
         </button>
         <button className="btn" data-testid="offer-save-email-btn" onClick={handleEmail}>
           <Mail className="icon" />
-          Wyślij e-mailem
+          Wyślij
         </button>
         <span className="shortcut-hint">
           <kbd>Ctrl</kbd>+<kbd>S</kbd> zapis · <kbd>Ctrl</kbd>+<kbd>P</kbd> wydruk · <kbd>Esc</kbd> powrót
@@ -658,7 +658,7 @@ export default function OfferEditorView({
         )}
         <button className="btn btn-light" data-testid="offer-back-btn" onClick={leaveEditor}>
           <ArrowLeft className="icon" />
-          Wróć do listy
+          Wróć
         </button>
       </div>
     </section>

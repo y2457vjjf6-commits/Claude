@@ -28,6 +28,13 @@ a w grupie C roleta 120 × 240 cm jest tańsza od 120 × 230 cm o 104 zł.
 |---|---|---|---|---|---|
 | E | 160 | 90 | 302 zł | ~423 zł | zaniżone o 121 zł |
 
+## Rolety wolnowiszące RT 32mm — str. 25-26
+
+| Grupa | Wysokość | Szerokość | W cenniku | Powinno być | Skutek |
+|---|---|---|---|---|---|
+| B | 180 | 250 | 643 zł | ~762 zł | zaniżone o 119 zł |
+| B | 270 | 180 | 634 zł | ~754 zł | zaniżone o 120 zł |
+
 ## Co z tym robi program
 
 Na razie nic — trzyma ceny takie, jakie są w cenniku, żeby oferta zgadzała się

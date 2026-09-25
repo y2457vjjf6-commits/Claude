@@ -24,9 +24,10 @@
   color-scheme: light;   /* dokument zawsze jasny, niezależnie od motywu aplikacji */
   background: #fff;
   color: #000;
-  font-family: Arial, "Segoe UI", sans-serif;
+  font-family: Arial, "Segoe UI", Helvetica, sans-serif;
   font-size: 10.5pt;
   line-height: 1.35;
+  font-variant-numeric: tabular-nums;
 }
 
 .wz-doc { width: 100%; }
@@ -203,7 +204,9 @@
 /* ============================ Oferta cenowa ============================ */
 
 .of-doc {
-  font-family: 'Century Schoolbook', Century, Georgia, serif;
+  /* Century to krój z firmowych ofert w Wordzie; dalej bezpieczne zamienniki
+     na wypadek komputera bez pakietu Office. */
+  font-family: Century, 'Century Schoolbook', 'Bookman Old Style', Georgia, 'Times New Roman', serif;
   font-size: 11.5pt;
   color: #000;
   line-height: 1.35;
@@ -275,7 +278,27 @@
   page-break-inside: avoid;
 }
 
-.of-items .of-lp { width: 28pt; }
+.of-items .of-qty,
+.of-items .of-price,
+.of-items .of-lp {
+  font-variant-numeric: tabular-nums;
+}
+
+.of-items td.of-price {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.of-items th.of-price {
+  text-align: right;
+}
+
+.of-items td.of-qty,
+.of-items th.of-qty {
+  text-align: center;
+}
+
+.of-items .of-lp { width: 28pt; text-align: center; }
 .of-items .of-qty { width: 64pt; }
 .of-items .of-price { width: 84pt; }
 
@@ -293,11 +316,23 @@
 .of-sum-line {
   font-size: 11pt;
   margin-bottom: 3pt;
+  font-variant-numeric: tabular-nums;
 }
 
 .of-total {
   font-size: 12.5pt;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Klauzula prawna pod warunkami */
+.of-legal {
+  margin-top: 14pt;
+  padding-top: 8pt;
+  border-top: 0.5pt solid var(--wz-rule);
+  font-size: 9pt;
+  line-height: 1.45;
+  color: #333;
 }
 
 /* ---------- Warunki ---------- */

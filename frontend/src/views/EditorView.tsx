@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft } from 'lucide-react';
-import { AppState, Item, WZDocument } from '../types';
+import { AppState, AskConfirm, Item, WZDocument } from '../types';
 import { computeNumberFor, contractorCode } from '../lib/numbering';
 import { itemNameSuggestions, unitSuggestions } from '../lib/suggestions';
 import { uid } from '../lib/storage';
 import { printDocument, savePdfDocument, emailDocument } from '../lib/printing';
+import { useEditorShortcuts } from '../hooks/useEditorShortcuts';
 
 interface Props {
   state: AppState;
@@ -16,6 +17,7 @@ interface Props {
   toast: (msg: string, isError?: boolean) => void;
   emailConfirm: (message: string) => Promise<boolean>;
   onMark: (doc: WZDocument, patch: Partial<WZDocument>) => void;
+  askConfirm: AskConfirm;
 }
 
 function todayStr(): string {
@@ -27,7 +29,7 @@ function todayStr(): string {
 
 const EMPTY_ITEM: Item = { name: '', unit: 'szt.', qty: '' };
 
-export default function EditorView({ state, editingDocId, onPersist, onSaved, onBack, onDelete, toast, emailConfirm, onMark }: Props) {
+export default function EditorView({ state, editingDocId, onPersist, onSaved, onBack, onDelete, toast, emailConfirm, onMark, askConfirm }: Props) {
   const doc = editingDocId ? state.documents.find((d) => d.id === editingDocId) || null : null;
   const initRef = useRef<string | null>('__none__');
 
@@ -76,6 +78,23 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
       input?.focus();
     }
   }, [items.length]);
+
+  // Odcisk zapisanego stanu — po nim poznajemy, czy są niezapisane zmiany
+  const savedSnapshot = useRef('');
+  const currentSnapshot = JSON.stringify({ form, items });
+  const dirty = savedSnapshot.current !== '' && savedSnapshot.current !== currentSnapshot;
+
+  useEffect(() => {
+    savedSnapshot.current = JSON.stringify({ form, items });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingDocId]);
+
+  const leaveEditor = async () => {
+    if (dirty && !(await askConfirm('Masz niezapisane zmiany w dokumencie. Wyjść bez zapisywania?', { confirmLabel: 'Wyjdź bez zapisywania', danger: true }))) {
+      return;
+    }
+    onBack();
+  };
 
   const set = (patch: Partial<typeof form>) => setForm((f) => ({ ...f, ...patch }));
 
@@ -202,9 +221,17 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
     }
 
     await onPersist(next);
+    savedSnapshot.current = JSON.stringify({ form, items });
     if (!editingDocId) onSaved(newDoc.id);
     return newDoc;
   }
+
+  useEditorShortcuts({
+    dirty,
+    onSave: () => void handleSave(),
+    onPrint: () => void handleSavePrint(),
+    onBack: () => void leaveEditor()
+  });
 
   const handleSave = async () => {
     const saved = await saveDoc();
@@ -288,7 +315,7 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
               checked={form.saveContractor}
               onChange={(e) => set({ saveContractor: e.target.checked })}
             />
-            <span>Zapisz / zaktualizuj tego odbiorcę w bazie kontrahentów</span>
+            <span>Zapamiętaj tego odbiorcę w bazie kontrahentów</span>
           </label>
         </div>
         <div className="grid2">
@@ -305,11 +332,11 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
             <input type="text" className="input" data-testid="contractor-address-input" value={form.cAddress} onChange={(e) => set({ cAddress: e.target.value })} />
           </label>
           <label className="field">
-            <span>E-mail (do wysyłki WZ)</span>
+            <span>E-mail odbiorcy</span>
             <input type="email" className="input" data-testid="contractor-email-input" value={form.cEmail} onChange={(e) => set({ cEmail: e.target.value })} />
           </label>
           <label className="field">
-            <span>Kod do numeracji (puste = automatyczny)</span>
+            <span>Kod w numerze dokumentu</span>
             <input
               type="text"
               className="input"
@@ -389,7 +416,7 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
                   <input
                     type="text"
                     className="input item-qty num"
-                    data-testid={`item-qty-${i}`}
+                    data-testid={`item-qty-${i}`} inputMode="decimal"
                     aria-label="Ilość"
                     value={it.qty}
                     onChange={(e) => setItem(i, { qty: e.target.value })}
@@ -467,6 +494,9 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
           <Mail className="icon" />
           Wyślij e-mailem
         </button>
+        <span className="shortcut-hint">
+          <kbd>Ctrl</kbd>+<kbd>S</kbd> zapis · <kbd>Ctrl</kbd>+<kbd>P</kbd> wydruk · <kbd>Esc</kbd> powrót
+        </span>
         <span className="spacer" />
         {doc && (
           <button className="btn btn-danger" data-testid="delete-doc-btn" onClick={() => onDelete(doc)}>
@@ -474,7 +504,7 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
             Usuń
           </button>
         )}
-        <button className="btn btn-light" data-testid="back-btn" onClick={onBack}>
+        <button className="btn btn-light" data-testid="back-btn" onClick={leaveEditor}>
           <ArrowLeft className="icon" />
           Wróć do listy
         </button>

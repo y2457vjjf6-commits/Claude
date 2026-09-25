@@ -20,8 +20,12 @@ export const DEFAULT_STATE: AppState = {
       deadlineDays: '21',
       validityDays: '30',
       installationIncluded: true,
-      measurementSource: 'przesłanych'
+      measurementSource: 'przesłanych',
+      legalClause: true
     },
+    offerLegalText:
+      'Niniejsza oferta ma charakter informacyjny i nie stanowi oferty handlowej ' +
+      'w rozumieniu art. 66 § 1 Kodeksu cywilnego. Ceny podano w złotych, w kwotach brutto.',
     emailBody:
       'Dzień dobry,\n\nw załączniku przesyłamy dokument WZ {numer} (wydanie zewnętrzne).\nTowar odebrał: {odebral}\n\nPozdrawiamy,\nZPHU Lechrol Jacek Wajcht\ntel. 511 697 697 · lechrol.pl'
   },

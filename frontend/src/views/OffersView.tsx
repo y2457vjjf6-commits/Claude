@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Search, Plus, Eye, Pencil, Printer, FileDown, Mail, Trash2, FileSpreadsheet } from 'lucide-react';
 import { Offer } from '../types';
-import { formatDatePl, formatDateTimePl } from '../lib/printing';
+import { formatDatePl } from '../lib/printing';
+import StatusChips from '../components/StatusChips';
 import { formatMoney, offerTotals, OFFER_STATUS_LABELS } from '../lib/offers';
 
 interface Props {
@@ -108,22 +109,7 @@ export default function OffersView({
                     </select>
                   </td>
                   <td>
-                    <div className="doc-status">
-                      {o.printedAt && (
-                        <span className="status-chip" title={`Drukowano ${formatDateTimePl(o.printedAt)}`}>
-                          <Printer className="icon" />
-                        </span>
-                      )}
-                      {o.emailedAt && (
-                        <span
-                          className="status-chip"
-                          title={`Wysłano ${formatDateTimePl(o.emailedAt)}${o.emailedTo ? ' na ' + o.emailedTo : ''}`}
-                        >
-                          <Mail className="icon" />
-                        </span>
-                      )}
-                      {!o.printedAt && !o.emailedAt && <span className="muted">—</span>}
-                    </div>
+                    <StatusChips printedAt={o.printedAt} emailedAt={o.emailedAt} emailedTo={o.emailedTo} />
                   </td>
                   <td>
                     <div className="row-actions">

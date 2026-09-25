@@ -1,6 +1,5 @@
 import { Settings, WZDocument } from '../types';
 import { LOGO_LECHROL } from '../assets/logo';
-import { hasApi } from './storage';
 
 export function esc(str: unknown): string {
   return String(str ?? '')
@@ -128,39 +127,17 @@ export function buildPrintHtml(doc: WZDocument, settings: Settings): string {
   </div>`;
 }
 
-export function fillPrintArea(doc: WZDocument, settings: Settings): void {
-  const area = document.getElementById('print-area');
-  if (!area) return;
-  area.innerHTML = buildPrintHtml(doc, settings);
-}
-
 export function pdfFilename(doc: WZDocument): string {
   return 'WZ_' + doc.number.replace(/[\\/:*?"<>|]/g, '-') + '.pdf';
 }
 
-type ToastFn = (msg: string, isError?: boolean) => void;
-
-export async function printDocument(doc: WZDocument, settings: Settings, toast: ToastFn): Promise<boolean> {
-  fillPrintArea(doc, settings);
-  if (hasApi && window.wzApi) {
-    const res = await window.wzApi.printDoc();
-    if (!res.ok && res.error && res.error !== 'cancelled') toast('Drukowanie: ' + res.error, true);
-    return res.ok;
-  }
-  window.print();
-  return false;
-}
-
-export async function savePdfDocument(doc: WZDocument, settings: Settings, toast: ToastFn): Promise<void> {
-  fillPrintArea(doc, settings);
-  if (hasApi && window.wzApi) {
-    const res = await window.wzApi.savePdf(pdfFilename(doc));
-    if (res.ok) toast('Zapisano PDF: ' + res.filePath);
-    else if (!res.canceled) toast('Błąd zapisu PDF: ' + res.error, true);
-  } else {
-    window.print();
-  }
-}
+import {
+  emailPrintable,
+  printPrintable,
+  savePdfPrintable,
+  PrintableDocument,
+  ToastFn
+} from './docActions';
 
 // Treść wiadomości: podmienia {numer} i {odebral}. Gdy szablon nie zawiera
 // {odebral}, a dokument ma wpisanego odbierającego, dopisuje osobny akapit
@@ -186,47 +163,28 @@ export function buildEmailBody(template: string, doc: WZDocument): string {
   return paragraphs.join('\n\n');
 }
 
-export async function emailDocument(
+/** Dokument WZ w postaci gotowej do wydruku, zapisu i wysyłki. */
+export function wzPrintable(doc: WZDocument, settings: Settings): PrintableDocument {
+  return {
+    html: buildPrintHtml(doc, settings),
+    fileName: pdfFilename(doc),
+    recipient: doc.contractor?.email || '',
+    subject: settings.emailSubject.replaceAll('{numer}', doc.number),
+    body: buildEmailBody(settings.emailBody, doc),
+    label: `dokument ${doc.number}`,
+    missingRecipientMessage: 'Odbiorca nie ma podanego adresu e-mail. Uzupełnij go w dokumencie.'
+  };
+}
+
+export const printDocument = (doc: WZDocument, settings: Settings, toast: ToastFn) =>
+  printPrintable(wzPrintable(doc, settings), toast);
+
+export const savePdfDocument = (doc: WZDocument, settings: Settings, toast: ToastFn) =>
+  savePdfPrintable(wzPrintable(doc, settings), toast);
+
+export const emailDocument = (
   doc: WZDocument,
   settings: Settings,
   toast: ToastFn,
   confirm: (message: string) => Promise<boolean>
-): Promise<boolean> {
-  if (!hasApi || !window.wzApi) {
-    toast('Wysyłka e-mail dostępna tylko w aplikacji desktopowej.', true);
-    return false;
-  }
-  const to = doc.contractor?.email;
-  if (!to) {
-    toast('Odbiorca nie ma podanego adresu e-mail. Uzupełnij go w dokumencie.', true);
-    return false;
-  }
-  const smtp = settings.smtp;
-  if (!smtp.host || !smtp.user) {
-    toast('Brak konfiguracji poczty — uzupełnij dane SMTP w Ustawieniach.', true);
-    return false;
-  }
-  const copyTo = (settings.emailCopyTo || '').trim();
-  const pytanie = copyTo
-    ? `Wysłać dokument ${doc.number} na adres ${to}?\nKopia trafi też na ${copyTo}.`
-    : `Wysłać dokument ${doc.number} na adres ${to}?`;
-  if (!(await confirm(pytanie))) return false;
-
-  fillPrintArea(doc, settings);
-  toast('Wysyłanie e-maila…');
-  const res = await window.wzApi.sendEmail({
-    smtp,
-    to,
-    bcc: copyTo,
-    subject: settings.emailSubject.replaceAll('{numer}', doc.number),
-    text: buildEmailBody(settings.emailBody, doc),
-    filename: pdfFilename(doc)
-  });
-  if (res.ok) {
-    toast(copyTo
-      ? `Wysłano dokument ${doc.number} na adres ${to} (kopia: ${copyTo}).`
-      : `Wysłano dokument ${doc.number} na adres ${to}.`);
-  }
-  else toast('Błąd wysyłki: ' + res.error, true);
-  return !!res.ok;
-}
+) => emailPrintable(wzPrintable(doc, settings), settings, toast, confirm);

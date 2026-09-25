@@ -7,6 +7,7 @@ interface Props {
   theme: 'light' | 'dark';
   onNavigate: (view: ViewName) => void;
   onNewDoc: () => void;
+  onNewOffer: () => void;
   onToggleTheme: () => void;
 }
 
@@ -35,7 +36,10 @@ function Monogram() {
   );
 }
 
-export default function Sidebar({ view, theme, onNavigate, onNewDoc, onToggleTheme }: Props) {
+export default function Sidebar({ view, theme, onNavigate, onNewDoc, onToggleTheme, onNewOffer }: Props) {
+  // W zakładce ofert główny przycisk zakłada ofertę, nie WZ
+  const wOfertach = view === 'offers' || view === 'offerEdit';
+
   const navItems: { key: ViewName; label: string; icon: ReactElement }[] = [
     { key: 'list', label: 'Dokumenty WZ', icon: <FileText className="icon" /> },
     { key: 'offers', label: 'Oferty cenowe', icon: <FileSpreadsheet className="icon" /> },
@@ -79,11 +83,17 @@ export default function Sidebar({ view, theme, onNavigate, onNewDoc, onToggleThe
           {theme === 'light' ? <Moon className="icon" /> : <Sun className="icon" />}
           {theme === 'light' ? 'Ciemny motyw' : 'Jasny motyw'}
         </button>
-        <button className="btn btn-primary btn-new-doc" data-testid="sidebar-new-doc-btn" title="Ctrl+N" onClick={onNewDoc}>
-          <Plus className="icon" />
-          Nowa WZ
-        </button>
-        <div className="slat-texture" aria-hidden="true" />
+        {wOfertach ? (
+          <button className="btn btn-primary btn-new-doc" data-testid="sidebar-new-offer-btn" title="Ctrl+N" onClick={onNewOffer}>
+            <Plus className="icon" />
+            Nowa oferta
+          </button>
+        ) : (
+          <button className="btn btn-primary btn-new-doc" data-testid="sidebar-new-doc-btn" title="Ctrl+N" onClick={onNewDoc}>
+            <Plus className="icon" />
+            Nowa WZ
+          </button>
+        )}
       </div>
     </aside>
   );

@@ -179,7 +179,7 @@ export default function ContractorsView({ state, onPersist, toast, askConfirm }:
               <input type="email" className="input" data-testid="cf-email-input" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </label>
             <label className="field">
-              <span>Kod do numeracji (puste = automatyczny)</span>
+              <span>Kod w numerze dokumentu</span>
               <input
                 type="text"
                 className="input"

@@ -1,4 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+
+// Pola dat i formatowanie liczb mają być polskie niezależnie od ustawień systemu
+app.commandLine.appendSwitch('lang', 'pl-PL');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');

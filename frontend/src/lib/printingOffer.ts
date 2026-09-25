@@ -59,6 +59,10 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
     ? `<div class="of-notes">${esc(offer.notes).replace(/\n/g, '<br>')}</div>`
     : '';
 
+  const klauzula = offer.legalClause && String(settings.offerLegalText || '').trim()
+    ? `<div class="of-legal">${esc(settings.offerLegalText)}</div>`
+    : '';
+
   const klient = String(offer.client || '').trim()
     ? `<div class="of-client"><span class="of-client-label">Dla:</span> ${esc(offer.client)}</div>`
     : '';
@@ -96,6 +100,8 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
       ${uwagi}
     </div>
 
+    ${klauzula}
+
     <div class="of-sign">
       <div class="of-sign-regards">Z poważaniem</div>
       <div class="of-sign-name">${esc(offer.issuedBy)}</div>
@@ -103,8 +109,3 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
   </div>`;
 }
 
-export function fillOfferPrintArea(offer: Offer, settings: Settings): void {
-  const area = document.getElementById('print-area');
-  if (!area) return;
-  area.innerHTML = buildOfferHtml(offer, settings);
-}

@@ -117,12 +117,14 @@ export default function App() {
     const onKey = (ev: KeyboardEvent) => {
       if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'n') {
         ev.preventDefault();
-        openEditor(null);
+        // Ctrl+N zakłada to, co pasuje do miejsca, w którym jesteś
+        if (view === 'offers' || view === 'offerEdit') openOfferEditor(null);
+        else openEditor(null);
       }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [openEditor]);
+  }, [openEditor, openOfferEditor, view]);
 
   if (!state) return null;
 
@@ -155,6 +157,7 @@ export default function App() {
         theme={state.settings.theme}
         onNavigate={(v) => setView(v)}
         onNewDoc={() => openEditor(null)}
+        onNewOffer={() => openOfferEditor(null)}
         onToggleTheme={toggleTheme}
       />
       <main className="content">
@@ -189,6 +192,7 @@ export default function App() {
             toast={toast}
             emailConfirm={emailConfirm}
             onMark={markDocument}
+            askConfirm={askConfirm}
           />
         )}
         {view === 'contractors' && (
@@ -230,6 +234,7 @@ export default function App() {
             toast={toast}
             emailConfirm={emailConfirm}
             onMark={markOffer}
+            askConfirm={askConfirm}
           />
         )}
         {view === 'reports' && <ReportsView state={state} />}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft, Layers } from 'lucide-react';
-import { AppState, Offer, OfferColumnHeader, OfferGroup, OfferItem } from '../types';
+import { AppState, AskConfirm, Offer, OfferColumnHeader, OfferGroup, OfferItem } from '../types';
 import { uid } from '../lib/storage';
 import {
   columnHeaderLabel,
@@ -15,6 +15,7 @@ import {
 } from '../lib/offers';
 import { itemNameSuggestions } from '../lib/suggestions';
 import { printOffer, savePdfOffer, emailOffer } from '../lib/offerActions';
+import { useEditorShortcuts } from '../hooks/useEditorShortcuts';
 
 interface Props {
   state: AppState;
@@ -26,6 +27,7 @@ interface Props {
   toast: (msg: string, isError?: boolean) => void;
   emailConfirm: (message: string) => Promise<boolean>;
   onMark: (offer: Offer, patch: Partial<Offer>) => void;
+  askConfirm: AskConfirm;
 }
 
 function todayStr(): string {
@@ -51,7 +53,8 @@ export default function OfferEditorView({
   onDelete,
   toast,
   emailConfirm,
-  onMark
+  onMark,
+  askConfirm
 }: Props) {
   const existing = editingOfferId ? state.offers.find((o) => o.id === editingOfferId) || null : null;
   const initRef = useRef<string | null>('__none__');
@@ -81,6 +84,7 @@ export default function OfferEditorView({
           validityDays: d.validityDays,
           notes: '',
           issuedBy: availableIssuers(state)[0] || '',
+          legalClause: d.legalClause ?? true,
           status: 'szkic',
           createdAt: '',
           updatedAt: ''
@@ -100,6 +104,21 @@ export default function OfferEditorView({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingOfferId]);
+
+  const savedSnapshot = useRef('');
+  const dirty = savedSnapshot.current !== '' && savedSnapshot.current !== JSON.stringify(offer);
+
+  useEffect(() => {
+    savedSnapshot.current = JSON.stringify(offer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingOfferId]);
+
+  const leaveEditor = async () => {
+    if (dirty && !(await askConfirm('Masz niezapisane zmiany w ofercie. Wyjść bez zapisywania?', { confirmLabel: 'Wyjdź bez zapisywania', danger: true }))) {
+      return;
+    }
+    onBack();
+  };
 
   const set = (patch: Partial<Offer>) => setOffer((o) => ({ ...o, ...patch }));
 
@@ -175,9 +194,17 @@ export default function OfferEditorView({
     else next.offers.push(zapisana);
     await onPersist(next);
     setOffer(zapisana);
+    savedSnapshot.current = JSON.stringify(zapisana);
     if (!editingOfferId) onSaved(zapisana.id);
     return zapisana;
   }
+
+  useEditorShortcuts({
+    dirty,
+    onSave: () => void handleSave(),
+    onPrint: () => void handlePrint(),
+    onBack: () => void leaveEditor()
+  });
 
   const handleSave = async () => {
     const z = await saveOffer();
@@ -242,7 +269,7 @@ export default function OfferEditorView({
         </div>
         <div className="grid2">
           <label className="field">
-            <span>Klient / obiekt *</span>
+            <span>Klient lub obiekt *</span>
             <input
               type="text"
               className="input"
@@ -253,7 +280,7 @@ export default function OfferEditorView({
             />
           </label>
           <label className="field">
-            <span>E-mail klienta (do wysyłki oferty)</span>
+            <span>E-mail klienta</span>
             <input type="email" className="input" data-testid="offer-client-email" value={offer.clientEmail} onChange={(e) => set({ clientEmail: e.target.value })} />
           </label>
         </div>
@@ -311,7 +338,7 @@ export default function OfferEditorView({
                     <input
                       type="text"
                       className="input item-lp-input num"
-                      data-testid={`offer-lp-${gi}-${ii}`}
+                      data-testid={`offer-lp-${gi}-${ii}`} inputMode="numeric"
                       aria-label="Numer pozycji"
                       placeholder={numery[gi][ii]}
                       value={it.lpOverride || ''}
@@ -340,16 +367,16 @@ export default function OfferEditorView({
                     />
                   </td>
                   <td>
-                    <input type="text" className="input num" data-testid={`offer-qty-${gi}-${ii}`} aria-label="Ilość" value={it.qty} onChange={(e) => setItem(gi, ii, { qty: e.target.value })} />
+                    <input type="text" className="input num" data-testid={`offer-qty-${gi}-${ii}`} inputMode="decimal" aria-label="Ilość" value={it.qty} onChange={(e) => setItem(gi, ii, { qty: e.target.value })} />
                   </td>
                   <td>
-                    <input type="text" className="input num" data-testid={`offer-unit-${gi}-${ii}`} aria-label="Cena za sztukę" value={it.unitPrice} onChange={(e) => setItem(gi, ii, { unitPrice: e.target.value })} />
+                    <input type="text" className="input num" data-testid={`offer-unit-${gi}-${ii}`} inputMode="decimal" aria-label="Cena za sztukę" value={it.unitPrice} onChange={(e) => setItem(gi, ii, { unitPrice: e.target.value })} />
                   </td>
                   <td>
                     <input
                       type="text"
                       className="input num"
-                      data-testid={`offer-total-${gi}-${ii}`}
+                      data-testid={`offer-total-${gi}-${ii}`} inputMode="decimal"
                       aria-label="Kwota za pozycję"
                       placeholder={isItemEmpty(it) ? '' : formatMoney(itemTotal(it))}
                       value={it.totalOverride || ''}
@@ -375,7 +402,7 @@ export default function OfferEditorView({
       <div className="actions-bar" style={{ position: 'static', border: 'none', boxShadow: 'none', padding: 0, marginBottom: 16 }}>
         <button className="btn" data-testid="offer-add-group" onClick={addGroup}>
           <Layers className="icon" />
-          Dodaj osobną tabelę
+          Dodaj tabelę
         </button>
         <label className="checkbox-field">
           <input
@@ -400,7 +427,7 @@ export default function OfferEditorView({
             {offer.discountEnabled && (
               <label className="field" style={{ marginTop: 8 }}>
                 <span>Wysokość rabatu (%)</span>
-                <input type="text" className="input num" data-testid="offer-discount-percent" value={offer.discountPercent} onChange={(e) => set({ discountPercent: e.target.value })} />
+                <input type="text" className="input num" data-testid="offer-discount-percent" inputMode="decimal" value={offer.discountPercent} onChange={(e) => set({ discountPercent: e.target.value })} />
               </label>
             )}
           </div>
@@ -416,7 +443,7 @@ export default function OfferEditorView({
                   <input
                     type="text"
                     className="input num"
-                    data-testid="offer-delivery-price"
+                    data-testid="offer-delivery-price" inputMode="decimal"
                     disabled={offer.deliveryNotApplicable}
                     value={offer.deliveryPrice}
                     onChange={(e) => set({ deliveryPrice: e.target.value })}
@@ -424,7 +451,7 @@ export default function OfferEditorView({
                 </label>
                 <label className="checkbox-field">
                   <input type="checkbox" data-testid="offer-delivery-na" checked={offer.deliveryNotApplicable} onChange={(e) => set({ deliveryNotApplicable: e.target.checked })} />
-                  <span>Wpisz „nie dotyczy” zamiast kwoty</span>
+                  <span>Zamiast kwoty wpisz „nie dotyczy”</span>
                 </label>
               </>
             )}
@@ -470,7 +497,7 @@ export default function OfferEditorView({
           </label>
           <label className="field">
             <span>Termin realizacji (dni roboczych)</span>
-            <input type="text" className="input num" data-testid="offer-deadline-days" value={offer.deadlineDays} onChange={(e) => set({ deadlineDays: e.target.value })} />
+            <input type="text" className="input num" data-testid="offer-deadline-days" inputMode="numeric" value={offer.deadlineDays} onChange={(e) => set({ deadlineDays: e.target.value })} />
           </label>
           <label className="field">
             <span>Liczony od daty…</span>
@@ -484,15 +511,24 @@ export default function OfferEditorView({
           <div>
             <label className="checkbox-field">
               <input type="checkbox" data-testid="offer-validity-enabled" checked={offer.validityEnabled} onChange={(e) => set({ validityEnabled: e.target.checked })} />
-              <span>Podaj termin ważności oferty</span>
+              <span>Ogranicz ważność oferty</span>
             </label>
             {offer.validityEnabled && (
               <label className="field" style={{ marginTop: 8 }}>
                 <span>Ważna przez (dni) — do {validUntil(offer) || '—'}</span>
-                <input type="text" className="input num" data-testid="offer-validity-days" value={offer.validityDays} onChange={(e) => set({ validityDays: e.target.value })} />
+                <input type="text" className="input num" data-testid="offer-validity-days" inputMode="numeric" value={offer.validityDays} onChange={(e) => set({ validityDays: e.target.value })} />
               </label>
             )}
           </div>
+          <label className="checkbox-field" style={{ alignSelf: 'start', paddingTop: 26 }}>
+            <input
+              type="checkbox"
+              data-testid="offer-legal-clause"
+              checked={offer.legalClause}
+              onChange={(e) => set({ legalClause: e.target.checked })}
+            />
+            <span>Dopisz klauzulę informacyjną (art. 66 § 1 k.c.)</span>
+          </label>
           <label className="field">
             <span>Status oferty</span>
             <select className="input" data-testid="offer-status" value={offer.status} onChange={(e) => set({ status: e.target.value as Offer['status'] })}>
@@ -505,7 +541,7 @@ export default function OfferEditorView({
           </label>
         </div>
         <label className="field" style={{ marginTop: 14 }}>
-          <span>Dodatkowe uwagi (widoczne na ofercie)</span>
+          <span>Uwagi na ofercie</span>
           <textarea className="input" data-testid="offer-notes" rows={3} value={offer.notes} onChange={(e) => set({ notes: e.target.value })} />
         </label>
       </div>
@@ -527,6 +563,9 @@ export default function OfferEditorView({
           <Mail className="icon" />
           Wyślij e-mailem
         </button>
+        <span className="shortcut-hint">
+          <kbd>Ctrl</kbd>+<kbd>S</kbd> zapis · <kbd>Ctrl</kbd>+<kbd>P</kbd> wydruk · <kbd>Esc</kbd> powrót
+        </span>
         <span className="spacer" />
         {existing && (
           <button className="btn btn-danger" data-testid="offer-delete-btn" onClick={() => onDelete(existing)}>
@@ -534,7 +573,7 @@ export default function OfferEditorView({
             Usuń
           </button>
         )}
-        <button className="btn btn-light" data-testid="offer-back-btn" onClick={onBack}>
+        <button className="btn btn-light" data-testid="offer-back-btn" onClick={leaveEditor}>
           <ArrowLeft className="icon" />
           Wróć do listy
         </button>

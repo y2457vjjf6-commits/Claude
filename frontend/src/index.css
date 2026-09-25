@@ -244,18 +244,6 @@ body {
   font-size: 15px;
 }
 
-.slat-texture {
-  height: 56px;
-  border-radius: 10px;
-  background: repeating-linear-gradient(
-    to bottom,
-    var(--slat) 0px,
-    var(--slat) 3px,
-    transparent 3px,
-    transparent 8px
-  );
-}
-
 /* ============================ Buttons ============================ */
 
 .btn {
@@ -550,7 +538,16 @@ input[type='checkbox'] {
 }
 
 .items-table th {
-  padding: 8px 8px 10px 0;
+  /* Tekst nagłówka ma stać dokładnie nad tekstem w polu poniżej:
+     odstęp komórki + ramka pola + wewnętrzny odstęp pola. */
+  padding-left: calc(var(--cell-gap) + var(--field-border) + var(--field-pad));
+  padding-right: calc(var(--cell-gap) + var(--field-border) + var(--field-pad));
+  padding-top: 8px;
+  padding-bottom: 10px;
+}
+
+.items-table td {
+  padding: 5px 4px;
 }
 
 .items-table td:first-child,
@@ -670,7 +667,7 @@ input[type='checkbox'] {
 .toast {
   position: fixed;
   right: 24px;
-  bottom: 24px;
+  bottom: 92px;
   z-index: 100;
   max-width: 440px;
   background: var(--ink);
@@ -679,7 +676,7 @@ input[type='checkbox'] {
   padding: 13px 18px;
   font-size: 14px;
   box-shadow: 0 8px 24px rgba(42, 39, 35, 0.25);
-  animation: toast-in 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  animation: toast-in 0.2s cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
 .toast.error {
@@ -712,9 +709,13 @@ input[type='checkbox'] {
   align-items: start;
 }
 
-.field-hint {
-  font-size: 12px;
-  line-height: 1.4;
+.field-hint,
+.field > span.field-hint {
+  font-size: 12.5px;
+  line-height: 1.45;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
 }
 
 /* Pracownicy kontrahenta */
@@ -774,8 +775,14 @@ input[type='checkbox'] {
 .group-head {
   display: flex;
   align-items: flex-end;
+  justify-content: space-between;
   gap: 16px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.group-head .card-title {
+  margin-bottom: 9px;
 }
 
 .group-head .card-title {
@@ -798,8 +805,10 @@ input[type='checkbox'] {
 }
 
 .offer-summary-box {
-  margin-top: 16px;
-  padding: 14px 16px;
+  margin-top: 18px;
+  padding: 16px 18px;
+  min-width: 0;
+  overflow-wrap: anywhere;
   border: 1px solid var(--hairline);
   border-radius: 8px;
   background: var(--row-hover);
@@ -985,4 +994,107 @@ input[type='checkbox'] {
   .content {
     padding: 24px 20px 36px;
   }
+}
+
+/* ======================= Dopracowanie: typografia i ergonomia ======================= */
+
+/* Skala typograficzna — jeden rytm w całej aplikacji */
+:root {
+  --text-xs: 12.5px;   /* podpowiedzi pod polami */
+  --text-sm: 13.5px;   /* dane w tabelach, przyciski pomocnicze */
+  --text-base: 15px;   /* pola formularzy, treść */
+  --text-lg: 17px;     /* wyróżnione kwoty */
+  --text-title: 28px;  /* tytuł widoku */
+
+  /* Wymiary pól — z nich liczone jest wyrównanie nagłówków tabel */
+  --cell-gap: 4px;
+  --field-border: 1px;
+  --field-pad: 14px;
+}
+
+.page-title {
+  font-size: var(--text-title);
+  margin-bottom: 20px;
+  text-wrap: balance;
+}
+
+/* Etykiety pól: czytelne, bez krzyku wersalikami w długich zdaniach */
+.field > span {
+  font-size: 11.5px;
+  letter-spacing: 0.05em;
+}
+
+/* Dane liczbowe zawsze w jednej osi — kwoty, ilości, numery */
+.num,
+.td-num,
+.th-num,
+.input.num,
+.doc-number-cell,
+.item-lp {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.input.num {
+  text-align: right;
+}
+
+/* Tabele: spokojniejszy rytm i nagłówek widoczny przy przewijaniu */
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--card);
+  box-shadow: inset 0 -1px 0 var(--hairline);
+}
+
+.table td {
+  font-size: var(--text-sm);
+}
+
+/* Pola pozycji: wyższe wiersze wygodniejsze przy wpisywaniu z klawiatury */
+.items-table .input {
+  font-size: var(--text-base);
+}
+
+.offer-items-table .item-material {
+  font-size: var(--text-sm);
+}
+
+/* Kwota oferty w nagłówku edytora */
+.doc-number strong {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Pasek akcji nie zasłania ostatniego pola formularza */
+.view-edit {
+  padding-bottom: 8px;
+}
+
+/* Odstęp między grupami przycisków akcji na wąskim oknie */
+@media (max-width: 1100px) {
+  .actions-bar {
+    gap: 8px;
+  }
+  .actions-bar .btn {
+    flex: 0 1 auto;
+  }
+}
+
+/* Podpowiedź o skrótach w pasku akcji */
+.shortcut-hint {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 5px;
+  border: 1px solid var(--hairline);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--card);
+  color: var(--ink);
 }

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Search, Plus, Eye, Pencil, Printer, FileDown, Mail, Trash2, FileText } from 'lucide-react';
 import { WZDocument } from '../types';
-import { formatDatePl, formatDateTimePl } from '../lib/printing';
+import { formatDatePl } from '../lib/printing';
+import StatusChips from '../components/StatusChips';
 import { documentMatches } from '../lib/suggestions';
 
 interface Props {
@@ -72,19 +73,7 @@ export default function DocumentsView({ documents, onEdit, onNewDoc, onPreview, 
                   <td>{d.orderNo || ''}</td>
                   <td className="td-num">{d.items.filter((i) => i.name).length}</td>
                   <td>
-                    <div className="doc-status">
-                      {d.printedAt && (
-                        <span className="status-chip" title={`Drukowano ${formatDateTimePl(d.printedAt)}`}>
-                          <Printer className="icon" />
-                        </span>
-                      )}
-                      {d.emailedAt && (
-                        <span className="status-chip" title={`Wysłano ${formatDateTimePl(d.emailedAt)}${d.emailedTo ? ' na ' + d.emailedTo : ''}`}>
-                          <Mail className="icon" />
-                        </span>
-                      )}
-                      {!d.printedAt && !d.emailedAt && <span className="muted">—</span>}
-                    </div>
+                    <StatusChips printedAt={d.printedAt} emailedAt={d.emailedAt} emailedTo={d.emailedTo} />
                   </td>
                   <td>
                     <div className="row-actions">

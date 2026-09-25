@@ -89,7 +89,11 @@ export interface Settings {
     validityDays: string;
     installationIncluded: boolean;
     measurementSource: 'dokonanych' | 'przesłanych';
+    /** Czy nowe oferty mają klauzulę informacyjną */
+    legalClause: boolean;
   };
+  /** Treść klauzuli drukowanej na ofercie */
+  offerLegalText: string;
 }
 
 export interface AppState {
@@ -182,6 +186,8 @@ export interface Offer {
   notes: string;
   /** Kto wystawił ofertę */
   issuedBy: string;
+  /** Klauzula: dokument ma charakter informacyjny (art. 71 k.c.) */
+  legalClause: boolean;
   status: OfferStatus;
   printedAt?: string;
   emailedAt?: string;

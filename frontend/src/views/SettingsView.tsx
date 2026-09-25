@@ -34,6 +34,8 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
     offerValidityDays: st.offerDefaults?.validityDays || '30',
     offerInstallation: st.offerDefaults?.installationIncluded ?? true,
     offerMeasurement: (st.offerDefaults?.measurementSource || 'przesłanych') as string,
+    offerLegalClause: st.offerDefaults?.legalClause ?? true,
+    offerLegalText: st.offerLegalText || '',
     mBody: st.emailBody
   });
   const [location, setLocation] = useState<string | null>(null);
@@ -71,8 +73,10 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
       deadlineDays: form.offerDeadlineDays.trim(),
       validityDays: form.offerValidityDays.trim(),
       installationIncluded: form.offerInstallation,
-      measurementSource: form.offerMeasurement as 'dokonanych' | 'przesłanych'
+      measurementSource: form.offerMeasurement as 'dokonanych' | 'przesłanych',
+      legalClause: form.offerLegalClause
     };
+    next.settings.offerLegalText = form.offerLegalText;
     next.settings.emailBody = form.mBody;
     await onPersist(next);
     toast('Zapisano ustawienia.');
@@ -104,8 +108,10 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
       deadlineDays: form.offerDeadlineDays.trim(),
       validityDays: form.offerValidityDays.trim(),
       installationIncluded: form.offerInstallation,
-      measurementSource: form.offerMeasurement as 'dokonanych' | 'przesłanych'
+      measurementSource: form.offerMeasurement as 'dokonanych' | 'przesłanych',
+      legalClause: form.offerLegalClause
     };
+    next.settings.offerLegalText = form.offerLegalText;
     const res = await backupNow(next);
     toast(res.ok ? `Zapisano kopię: ${res.file}` : `Nie udało się zapisać kopii: ${res.error}`, !res.ok);
   };
@@ -202,6 +208,28 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
             onChange={(e) => set({ issuers: e.target.value })}
           />
         </label>
+        <label className="field" style={{ marginTop: 14 }}>
+          <span>Klauzula drukowana na ofercie</span>
+          <textarea
+            className="input"
+            data-testid="offer-legal-text"
+            rows={2}
+            value={form.offerLegalText}
+            onChange={(e) => set({ offerLegalText: e.target.value })}
+          />
+          <span className="muted field-hint">
+            Dopisywana pod warunkami oferty. Każdą ofertę można z niej zwolnić osobnym przełącznikiem.
+          </span>
+        </label>
+        <label className="checkbox-field">
+          <input
+            type="checkbox"
+            data-testid="offer-legal-default"
+            checked={form.offerLegalClause}
+            onChange={(e) => set({ offerLegalClause: e.target.checked })}
+          />
+          <span>Nowe oferty domyślnie z klauzulą</span>
+        </label>
         <div className="grid2" style={{ marginTop: 14 }}>
           <label className="field">
             <span>Domyślny termin realizacji (dni roboczych)</span>
@@ -290,7 +318,7 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
             <input type="text" className="input" data-testid="smtp-from-input" placeholder="np. biuro@lechrol.pl" value={form.mFrom} onChange={(e) => set({ mFrom: e.target.value })} />
           </label>
           <label className="field">
-            <span>Kopia dla nas (ukryta, UDW)</span>
+            <span>Kopia dla nas (ukryta)</span>
             <input
               type="email"
               className="input"
@@ -314,7 +342,7 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
             {testing ? <Loader2 className="icon icon-spin" /> : <PlugZap className="icon" />}
             {testing ? 'Sprawdzam połączenie…' : 'Testuj połączenie'}
           </button>
-          <span className="muted">Sprawdza serwer, port, login i hasło — bez wysyłania wiadomości.</span>
+          <span className="muted">Sprawdza dane skrzynki bez wysyłania wiadomości.</span>
         </div>
       </div>
 

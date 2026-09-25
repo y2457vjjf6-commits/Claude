@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { BarChart3, Printer, Mail } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 import { AppState, WZDocument } from '../types';
-import { formatDatePl, formatDateTimePl } from '../lib/printing';
+import { formatDatePl } from '../lib/printing';
+import StatusChips from '../components/StatusChips';
 
 interface Props {
   state: AppState;
@@ -171,19 +172,7 @@ export default function ReportsView({ state }: Props) {
                       <td>{d.receivedBy || ''}</td>
                       <td className="td-num">{d.items.filter((i) => i.name).length}</td>
                       <td>
-                        <div className="doc-status">
-                          {d.printedAt && (
-                            <span className="status-chip" title={`Drukowano ${formatDateTimePl(d.printedAt)}`}>
-                              <Printer className="icon" />
-                            </span>
-                          )}
-                          {d.emailedAt && (
-                            <span className="status-chip" title={`Wysłano ${formatDateTimePl(d.emailedAt)}`}>
-                              <Mail className="icon" />
-                            </span>
-                          )}
-                          {!d.printedAt && !d.emailedAt && <span className="muted">—</span>}
-                        </div>
+                        <StatusChips printedAt={d.printedAt} emailedAt={d.emailedAt} emailedTo={d.emailedTo} />
                       </td>
                     </tr>
                   ))}

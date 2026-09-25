@@ -101,6 +101,7 @@ export default function OffersView(props: Props) {
   const naMiesiace = shouldGroup(lista, sort, 'data');
   const grupy = naMiesiace ? groupByMonth(lista, (o) => o.date) : [{ klucz: '', etykieta: '', wiersze: lista }];
   const sortuj = (key: string) => setSort((s) => nextSort(s, key, key === 'data' || key === 'wartosc' || key === 'marza'));
+  let kolejnyWiersz = 0;
 
   const licznik = (f: Filtr) => (f === 'wszystkie' ? offers.length : offers.filter((o) => o.status === f).length);
   const filtry: Filtr[] = ['wszystkie', 'szkic', 'wyslana', 'zaakceptowana', 'odrzucona'];
@@ -259,6 +260,7 @@ export default function OffersView(props: Props) {
                     {g.wiersze.map((o) => (
                       <Row
                         key={o.id}
+                        kolejnosc={kolejnyWiersz++}
                         offer={o}
                         kolumnaMarzy={kolumnaMarzy}
                         zaznaczony={zaznaczanie.zbior.has(o.id)}
@@ -322,6 +324,7 @@ function Fragmenty({ children }: { children: ReactNode }) {
 
 interface RowProps {
   offer: Offer;
+  kolejnosc: number;
   kolumnaMarzy: boolean;
   zaznaczony: boolean;
   onSelect: (id: string, zakres: boolean) => void;
@@ -337,6 +340,7 @@ interface RowProps {
 
 function Row({
   offer: o,
+  kolejnosc,
   kolumnaMarzy,
   zaznaczony,
   onSelect,
@@ -357,6 +361,7 @@ function Row({
       data-row
       tabIndex={0}
       className={zaznaczony ? 'selected' : undefined}
+      style={{ ['--i' as string]: Math.min(kolejnosc, 12) }}
       data-testid={`offer-row-${o.id}`}
       aria-label={`Oferta dla ${o.client}`}
       onClick={(e) => isRowBackgroundClick(e) && e.currentTarget.focus()}

@@ -152,8 +152,8 @@ export default function ContractorsView({ state, onPersist, toast }: Props) {
               </tr>
             </thead>
             <tbody>
-              {list.map((c) => (
-                <ContractorRow key={c.id} contractor={c} onOpen={openForm} onDelete={deleteContractor} />
+              {list.map((c, i) => (
+                <ContractorRow key={c.id} kolejnosc={i} contractor={c} onOpen={openForm} onDelete={deleteContractor} />
               ))}
               {!list.length && (
                 <tr>
@@ -302,16 +302,18 @@ export default function ContractorsView({ state, onPersist, toast }: Props) {
 
 interface RowProps {
   contractor: Contractor;
+  kolejnosc: number;
   onOpen: (c: Contractor) => void;
   onDelete: (id: string) => void;
 }
 
-function ContractorRow({ contractor: c, onOpen, onDelete }: RowProps) {
+function ContractorRow({ contractor: c, kolejnosc, onOpen, onDelete }: RowProps) {
   const naKlawisz = useRowKeyboard({ onEnter: () => onOpen(c) });
   return (
     <tr
       data-row
       tabIndex={0}
+      style={{ ['--i' as string]: Math.min(kolejnosc, 12) }}
       data-testid={`contractor-row-${c.id}`}
       aria-label={`Kontrahent ${c.name}`}
       onClick={(e) => isRowBackgroundClick(e) && e.currentTarget.focus()}

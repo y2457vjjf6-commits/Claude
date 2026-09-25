@@ -40,7 +40,11 @@ export default function App() {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toast = useCallback((msg: string, isError?: boolean, action?: { label: string; run: () => void }) => {
-    const zamknij = () => setToastState(null);
+    // wygaszenie przez klasę, żeby zdążyło zniknąć płynnie zamiast zgasnąć
+    const zamknij = () => {
+      setToastState((t) => (t ? { ...t, closing: true } : t));
+      setTimeout(() => setToastState(null), 140);
+    };
     const opakowane = action ? { label: action.label, run: () => { action.run(); zamknij(); } } : undefined;
     setToastState({ msg, isError: !!isError, key: Date.now(), action: opakowane });
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -313,6 +317,7 @@ export default function App() {
         onToggleTheme={toggleTheme}
       />
       <main className="content">
+        <div className="view-swap" key={view}>
         {view === 'list' && (
           <DocumentsView
             documents={state.documents}
@@ -406,6 +411,7 @@ export default function App() {
         {view === 'settings' && (
           <SettingsView state={state} onPersist={persist} toast={toast} askConfirm={askConfirm} />
         )}
+        </div>
       </main>
       {paletaOtwarta && (
         <CommandPalette

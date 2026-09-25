@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { X, Printer, FileDown, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Props {
@@ -19,17 +19,35 @@ interface Props {
 }
 
 export default function PreviewModal({ title, html, onClose, onPrint, onPdf, onEdit, onPrev, onNext, licznik }: Props) {
+  // z której strony wjeżdża kolejna kartka — ruch niesie kierunek wędrówki po liście
+  const [kierunek, setKierunek] = useState<'dalej' | 'wstecz' | null>(null);
+  const poprzedniTytul = useRef(title);
+
+  const dalej = useCallback(() => {
+    setKierunek('dalej');
+    onNext?.();
+  }, [onNext]);
+
+  const wstecz = useCallback(() => {
+    setKierunek('wstecz');
+    onPrev?.();
+  }, [onPrev]);
+
+  useEffect(() => {
+    poprzedniTytul.current = title;
+  }, [title]);
+
   useEffect(() => {
     const onKey = (ev: KeyboardEvent) => {
       if (ev.key === 'Escape') onClose();
       // strzałki kartkują listę bez zamykania podglądu
       if (ev.key === 'ArrowRight' && onNext) {
         ev.preventDefault();
-        onNext();
+        dalej();
       }
       if (ev.key === 'ArrowLeft' && onPrev) {
         ev.preventDefault();
-        onPrev();
+        wstecz();
       }
       if (ev.key === 'Enter' && onEdit) {
         ev.preventDefault();
@@ -38,7 +56,7 @@ export default function PreviewModal({ title, html, onClose, onPrint, onPdf, onE
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose, onNext, onPrev, onEdit]);
+  }, [onClose, onNext, onPrev, onEdit, dalej, wstecz]);
 
   return (
     <div className="modal-overlay" data-testid="preview-overlay" onClick={onClose}>
@@ -56,7 +74,7 @@ export default function PreviewModal({ title, html, onClose, onPrint, onPdf, onE
                 aria-label="Poprzedni dokument"
                 title="Poprzedni (←)"
                 disabled={!onPrev}
-                onClick={onPrev}
+                onClick={wstecz}
               >
                 <ChevronLeft className="icon" />
               </button>
@@ -69,7 +87,7 @@ export default function PreviewModal({ title, html, onClose, onPrint, onPdf, onE
                 aria-label="Następny dokument"
                 title="Następny (→)"
                 disabled={!onNext}
-                onClick={onNext}
+                onClick={dalej}
               >
                 <ChevronRight className="icon" />
               </button>
@@ -95,7 +113,13 @@ export default function PreviewModal({ title, html, onClose, onPrint, onPdf, onE
           </button>
         </div>
         <div className="preview-scroll">
-          <div className="preview-page" data-testid="preview-page" dangerouslySetInnerHTML={{ __html: html }} />
+          <div
+            key={title}
+            className="preview-page"
+            data-kierunek={kierunek || undefined}
+            data-testid="preview-page"
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
         </div>
       </div>
     </div>

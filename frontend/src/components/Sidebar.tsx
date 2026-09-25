@@ -38,6 +38,14 @@ export default function Sidebar({ view, theme, onNavigate, onNewDoc, onToggleThe
   // W zakładce ofert główny przycisk zakłada ofertę, nie WZ
   const wOfertach = view === 'offers' || view === 'offerEdit';
 
+  // która pozycja jest aktywna — po niej jedzie podświetlenie
+  const aktywnaPozycja = Math.max(
+    0,
+    ['list', 'offers', 'contractors', 'reports', 'settings'].indexOf(
+      view === 'edit' ? 'list' : view === 'offerEdit' ? 'offers' : view
+    )
+  );
+
   const navItems: { key: ViewName; label: string; icon: ReactElement }[] = [
     { key: 'list', label: 'Dokumenty WZ', icon: <FileText className="icon" /> },
     { key: 'offers', label: 'Oferty cenowe', icon: <FileSpreadsheet className="icon" /> },
@@ -57,6 +65,7 @@ export default function Sidebar({ view, theme, onNavigate, onNewDoc, onToggleThe
       </div>
 
       <nav className="nav">
+        <span className="nav-marker" aria-hidden="true" style={{ ['--nav-i' as string]: aktywnaPozycja }} />
         {navItems.map((item) => (
           <button
             key={item.key}

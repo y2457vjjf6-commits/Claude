@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft, Layers, GitCompareArrows, Wallet, FileOutput } from 'lucide-react';
+import {
+  Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft, Layers, GitCompareArrows, Wallet, FileOutput,
+  Check, Loader2
+} from 'lucide-react';
 import { AppState, AskConfirm, Offer, OfferColumnHeader, OfferGroup, OfferItem } from '../types';
 import { uid } from '../lib/storage';
 import {
@@ -19,6 +22,7 @@ import {
 import { itemNameSuggestions } from '../lib/suggestions';
 import { printOffer, savePdfOffer, emailOffer } from '../lib/offerActions';
 import { useEditorShortcuts } from '../hooks/useEditorShortcuts';
+import { useActionState } from '../hooks/useActionState';
 import SuffixField from '../components/SuffixField';
 
 interface Props {
@@ -227,34 +231,43 @@ export default function OfferEditorView({
     onBack: () => void leaveEditor()
   });
 
-  const handleSave = async () => {
-    const z = await saveOffer();
-    if (z) toast(`Zapisano ofertę dla: ${z.client}.`);
-  };
-  const handlePrint = async () => {
-    const z = await saveOffer();
-    if (!z) return;
-    if (await printOffer(z, state.settings, toast)) onMark(z, { printedAt: new Date().toISOString() });
-  };
-  const handlePdf = async () => {
-    const z = await saveOffer();
-    if (z) savePdfOffer(z, state.settings, toast);
-  };
+  const akcje = useActionState();
+
+  const handleSave = () =>
+    akcje.wykonaj('zapis', async () => {
+      const z = await saveOffer();
+      if (z) {
+        akcje.potwierdzZapis();
+        toast(`Zapisano ofertę dla: ${z.client}.`);
+      }
+    });
+  const handlePrint = () =>
+    akcje.wykonaj('druk', async () => {
+      const z = await saveOffer();
+      if (!z) return;
+      if (await printOffer(z, state.settings, toast)) onMark(z, { printedAt: new Date().toISOString() });
+    });
+  const handlePdf = () =>
+    akcje.wykonaj('pdf', async () => {
+      const z = await saveOffer();
+      if (z) await savePdfOffer(z, state.settings, toast);
+    });
   const handleIssueWz = async () => {
     const z = await saveOffer();
     if (z) onIssueWz(z);
   };
-  const handleEmail = async () => {
-    const z = await saveOffer();
-    if (!z) return;
-    if (await emailOffer(z, state.settings, toast, emailConfirm)) {
-      onMark(z, {
-        emailedAt: new Date().toISOString(),
-        emailedTo: z.clientEmail,
-        status: z.status === 'szkic' ? 'wyslana' : z.status
-      });
-    }
-  };
+  const handleEmail = () =>
+    akcje.wykonaj('mail', async () => {
+      const z = await saveOffer();
+      if (!z) return;
+      if (await emailOffer(z, state.settings, toast, emailConfirm)) {
+        onMark(z, {
+          emailedAt: new Date().toISOString(),
+          emailedTo: z.clientEmail,
+          status: z.status === 'szkic' ? 'wyslana' : z.status
+        });
+      }
+    });
 
   return (
     <section className="view view-edit" data-testid="view-offer-edit">
@@ -645,21 +658,26 @@ export default function OfferEditorView({
       </div>
 
       <div className="actions-bar actions-sticky">
-        <button className="btn btn-primary" data-testid="offer-save-btn" onClick={handleSave}>
-          <Save className="icon" />
-          Zapisz
+        <button
+          className={'btn btn-primary btn-save' + (akcje.zapisane ? ' done' : '')}
+          data-testid="offer-save-btn"
+          disabled={!!akcje.pracuje}
+          onClick={handleSave}
+        >
+          {akcje.zapisane ? <Check className="icon" /> : <Save className="icon" />}
+          {akcje.zapisane ? 'Zapisano' : 'Zapisz'}
         </button>
-        <button className="btn" data-testid="offer-save-print-btn" onClick={handlePrint}>
-          <Printer className="icon" />
-          Drukuj
+        <button className="btn" data-testid="offer-save-print-btn" disabled={!!akcje.pracuje} onClick={handlePrint}>
+          {akcje.pracuje === 'druk' ? <Loader2 className="icon icon-spin" /> : <Printer className="icon" />}
+          {akcje.pracuje === 'druk' ? 'Drukuję…' : 'Drukuj'}
         </button>
-        <button className="btn" data-testid="offer-save-pdf-btn" onClick={handlePdf}>
-          <FileDown className="icon" />
+        <button className="btn" data-testid="offer-save-pdf-btn" disabled={!!akcje.pracuje} onClick={handlePdf}>
+          {akcje.pracuje === 'pdf' ? <Loader2 className="icon icon-spin" /> : <FileDown className="icon" />}
           PDF
         </button>
-        <button className="btn" data-testid="offer-save-email-btn" onClick={handleEmail}>
-          <Mail className="icon" />
-          Wyślij
+        <button className="btn" data-testid="offer-save-email-btn" disabled={!!akcje.pracuje} onClick={handleEmail}>
+          {akcje.pracuje === 'mail' ? <Loader2 className="icon icon-spin" /> : <Mail className="icon" />}
+          {akcje.pracuje === 'mail' ? 'Wysyłam…' : 'Wyślij'}
         </button>
         <span className="shortcut-hint">
           <kbd>Ctrl</kbd>+<kbd>S</kbd> zapis · <kbd>Ctrl</kbd>+<kbd>P</kbd> wydruk · <kbd>Esc</kbd> powrót

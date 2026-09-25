@@ -89,12 +89,18 @@
   --control-h: 38px;
   --sidebar-w: 216px;
 
-  /* Ruch: wejścia ease-out, wyjścia krócej niż wejścia */
+  /* Ruch. Reguła: im częściej coś się dzieje, tym mniej ma się ruszać.
+     Wywołania z klawiatury (Ctrl+K) nie animują się wcale — każda milisekunda
+     opóźnienia przy stu użyciach dziennie czuć jako ociężałość. */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --t-fast: 120ms;
   --t-mid: 180ms;
   --t-slow: 240ms;
+  /* wyjście zawsze krótsze od wejścia (~65%) */
+  --t-exit: 130ms;
+  --stagger: 14ms;
 
   /* Warstwy */
   --z-sticky: 20;
@@ -137,6 +143,53 @@
   --scrim: rgba(23, 31, 39, 0.38);
   --shadow-1: 0 8px 24px -10px rgba(23, 31, 39, 0.24);
   --shadow-2: 0 32px 64px -28px rgba(23, 31, 39, 0.34);
+}
+
+/* Zmiana zakładki: krótkie wejście treści od dołu — tyle, żeby oko złapało,
+   że to inny ekran, i ani milisekundy więcej. */
+@keyframes widok-wejscie {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Opakowanie widoku zmienia tylko przezroczystość. Gdyby ruszało transformem,
+   przejęłoby pozycjonowanie przyklejonego paska akcji — element „fixed” liczy
+   się wtedy względem przodka z transformem, a nie względem okna. */
+@keyframes widok-pojawienie {
+  from {
+    opacity: 0;
+  }
+}
+
+.view-swap {
+  animation: widok-pojawienie 140ms var(--ease-out) both;
+}
+
+/* Unoszenie dostają same karty i tabele — nigdy pasek akcji */
+.view-swap > .view > .view-head,
+.view-swap > .view > .toolbar,
+.view-swap > .view > .card,
+.view-swap > .view > .table-card,
+.view-swap > .view > .notice-card,
+.view-swap > .view > .empty,
+.view-swap > .view > .bulk-bar {
+  animation: widok-wejscie 190ms var(--ease-out) both;
+}
+
+/* Wiersze listy pojawiają się kaskadą — tylko przy pierwszym pokazaniu
+   i tylko kilkanaście pierwszych, żeby nie robić z tego pokazu slajdów. */
+@keyframes wiersz-wejscie {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+
+.table-rows tbody tr[data-row] {
+  animation: wiersz-wejscie var(--t-mid) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * var(--stagger));
 }
 
 /* ------------------------------------------------------------------- baza */
@@ -343,9 +396,30 @@ table {
 }
 
 .nav {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+/* Podświetlenie aktywnej zakładki to jeden element, który przesuwa się
+   między pozycjami — stąd wrażenie ciągłości zamiast przeskoku. */
+.nav-marker {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 40px;
+  border-radius: var(--r-md);
+  background: var(--accent-soft);
+  transform: translateY(calc(var(--nav-i, 0) * 42px));
+  transition: transform 260ms var(--ease-out-expo);
+  pointer-events: none;
+}
+
+.nav-btn {
+  position: relative;
+  z-index: 1;
 }
 
 .nav-btn {
@@ -378,7 +452,7 @@ table {
 }
 
 .nav-btn.active {
-  background: var(--accent-soft);
+  background: transparent;
   color: var(--text);
   font-weight: 560;
 }
@@ -1402,7 +1476,18 @@ kbd {
   color: var(--text);
   font-size: var(--text-base);
   box-shadow: var(--shadow-1);
-  animation: toast-wejscie var(--t-mid) var(--ease-out);
+  animation: toast-wejscie 200ms var(--ease-out);
+}
+
+.toast.closing {
+  animation: toast-wyjscie var(--t-exit) var(--ease-out) forwards;
+}
+
+@keyframes toast-wyjscie {
+  to {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
 }
 
 .toast.error {
@@ -1454,6 +1539,30 @@ kbd {
     opacity: 0;
     transform: scale(0.97);
   }
+}
+
+/* Kartka dokumentu przy przechodzeniu do sąsiedniego wjeżdża z tej strony,
+   z której przyszła — ruch mówi, w którą stronę idziemy po liście. */
+@keyframes kartka-z-prawej {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+}
+
+@keyframes kartka-z-lewej {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+}
+
+.preview-page[data-kierunek='dalej'] {
+  animation: kartka-z-prawej 150ms var(--ease-out) both;
+}
+
+.preview-page[data-kierunek='wstecz'] {
+  animation: kartka-z-lewej 150ms var(--ease-out) both;
 }
 
 .modal-message {
@@ -1995,6 +2104,7 @@ kbd {
 .palette-overlay {
   align-items: flex-start;
   padding-top: 12vh;
+  animation-duration: 60ms;
 }
 
 .palette {
@@ -2007,7 +2117,7 @@ kbd {
   background: var(--surface);
   box-shadow: var(--shadow-2);
   overflow: hidden;
-  animation: modal-wejscie var(--t-slow) var(--ease-out);
+  /* Świadomie bez animacji: wywołanie z klawiatury ma być natychmiastowe */
 }
 
 .palette-search {
@@ -2325,5 +2435,85 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
 @media (max-width: 900px) {
   .switch-row {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ============================================================================
+   Informacja zwrotna: „robię”, „zrobione”
+   ========================================================================== */
+
+/* Przycisk zapisu nie zmienia szerokości, gdy napis krótko zmienia się
+   na „Zapisano” — inaczej cały pasek by drgnął */
+.btn-save {
+  min-width: 118px;
+}
+
+.btn-save.done {
+  background: var(--success);
+  border-color: var(--success);
+  color: var(--canvas);
+}
+
+/* Kropka statusu mruga raz po zmianie — potwierdzenie przy samej kontrolce */
+@keyframes kropka-mrugniecie {
+  0% {
+    box-shadow: 0 0 0 0 currentColor;
+    opacity: 1;
+  }
+  100% {
+    box-shadow: 0 0 0 7px transparent;
+    opacity: 1;
+  }
+}
+
+.status-pill.zmieniony .status-dot {
+  animation: kropka-mrugniecie 420ms var(--ease-out);
+}
+
+/* Ikona stanu pustego wjeżdża delikatnie — to ekran oglądany rzadko,
+   więc może sobie pozwolić na odrobinę życia */
+@keyframes pusto-wejscie {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+}
+
+.empty > .icon {
+  animation: pusto-wejscie 320ms var(--ease-out-expo) both;
+}
+
+.empty-title {
+  animation: widok-wejscie 300ms var(--ease-out) 60ms both;
+}
+
+.empty p {
+  animation: widok-wejscie 300ms var(--ease-out) 110ms both;
+}
+
+.empty .btn {
+  animation: widok-wejscie 300ms var(--ease-out) 160ms both;
+}
+
+/* Pasek działań zbiorczych wchodzi szybciej, niż znika z oczu */
+.bulk-bar {
+  animation: pasek-wejscie 160ms var(--ease-out);
+}
+
+/* Ograniczony ruch: zostaje zmiana przezroczystości, znika przesuwanie */
+@media (prefers-reduced-motion: reduce) {
+  .view-swap,
+  .view-swap > .view > *,
+  .table-rows tbody tr[data-row],
+  .empty > .icon,
+  .empty-title,
+  .empty p,
+  .empty .btn,
+  .preview-page[data-kierunek] {
+    animation: none !important;
+  }
+
+  .nav-marker {
+    transition: none !important;
   }
 }

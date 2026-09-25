@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft, FileOutput } from 'lucide-react';
+import { Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft, FileOutput, Check, Loader2 } from 'lucide-react';
 import { AppState, AskConfirm, Item, WZDocument } from '../types';
 import { WzPrefill } from '../lib/offerToWz';
 import Combobox from '../components/Combobox';
@@ -8,6 +8,7 @@ import { itemNameSuggestions, unitSuggestions } from '../lib/suggestions';
 import { uid } from '../lib/storage';
 import { printDocument, savePdfDocument, emailDocument } from '../lib/printing';
 import { useEditorShortcuts } from '../hooks/useEditorShortcuts';
+import { useActionState } from '../hooks/useActionState';
 
 interface Props {
   state: AppState;
@@ -264,28 +265,37 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
     onBack: () => void leaveEditor()
   });
 
-  const handleSave = async () => {
-    const saved = await saveDoc();
-    if (saved) toast(`Zapisano dokument ${saved.number}.`);
-  };
-  const handleSavePrint = async () => {
-    const saved = await saveDoc();
-    if (!saved) return;
-    if (await printDocument(saved, state.settings, toast)) {
-      onMark(saved, { printedAt: new Date().toISOString() });
-    }
-  };
-  const handleSavePdf = async () => {
-    const saved = await saveDoc();
-    if (saved) savePdfDocument(saved, state.settings, toast);
-  };
-  const handleSaveEmail = async () => {
-    const saved = await saveDoc();
-    if (!saved) return;
-    if (await emailDocument(saved, state.settings, toast, emailConfirm)) {
-      onMark(saved, { emailedAt: new Date().toISOString(), emailedTo: saved.contractor?.email || '' });
-    }
-  };
+  const akcje = useActionState();
+
+  const handleSave = () =>
+    akcje.wykonaj('zapis', async () => {
+      const saved = await saveDoc();
+      if (saved) {
+        akcje.potwierdzZapis();
+        toast(`Zapisano dokument ${saved.number}.`);
+      }
+    });
+  const handleSavePrint = () =>
+    akcje.wykonaj('druk', async () => {
+      const saved = await saveDoc();
+      if (!saved) return;
+      if (await printDocument(saved, state.settings, toast)) {
+        onMark(saved, { printedAt: new Date().toISOString() });
+      }
+    });
+  const handleSavePdf = () =>
+    akcje.wykonaj('pdf', async () => {
+      const saved = await saveDoc();
+      if (saved) await savePdfDocument(saved, state.settings, toast);
+    });
+  const handleSaveEmail = () =>
+    akcje.wykonaj('mail', async () => {
+      const saved = await saveDoc();
+      if (!saved) return;
+      if (await emailDocument(saved, state.settings, toast, emailConfirm)) {
+        onMark(saved, { emailedAt: new Date().toISOString(), emailedTo: saved.contractor?.email || '' });
+      }
+    });
 
   return (
     <section className="view view-edit" data-testid="view-edit">
@@ -527,21 +537,26 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
       </div>
 
       <div className="actions-bar sticky-actions">
-        <button className="btn btn-primary" data-testid="save-doc-btn" onClick={handleSave}>
-          <Save className="icon" />
-          Zapisz
+        <button
+          className={'btn btn-primary btn-save' + (akcje.zapisane ? ' done' : '')}
+          data-testid="save-doc-btn"
+          disabled={!!akcje.pracuje}
+          onClick={handleSave}
+        >
+          {akcje.zapisane ? <Check className="icon" /> : <Save className="icon" />}
+          {akcje.zapisane ? 'Zapisano' : 'Zapisz'}
         </button>
-        <button className="btn" data-testid="save-print-btn" onClick={handleSavePrint}>
-          <Printer className="icon" />
-          Drukuj
+        <button className="btn" data-testid="save-print-btn" disabled={!!akcje.pracuje} onClick={handleSavePrint}>
+          {akcje.pracuje === 'druk' ? <Loader2 className="icon icon-spin" /> : <Printer className="icon" />}
+          {akcje.pracuje === 'druk' ? 'Drukuję…' : 'Drukuj'}
         </button>
-        <button className="btn" data-testid="save-pdf-btn" onClick={handleSavePdf}>
-          <FileDown className="icon" />
+        <button className="btn" data-testid="save-pdf-btn" disabled={!!akcje.pracuje} onClick={handleSavePdf}>
+          {akcje.pracuje === 'pdf' ? <Loader2 className="icon icon-spin" /> : <FileDown className="icon" />}
           PDF
         </button>
-        <button className="btn" data-testid="save-email-btn" onClick={handleSaveEmail}>
-          <Mail className="icon" />
-          Wyślij
+        <button className="btn" data-testid="save-email-btn" disabled={!!akcje.pracuje} onClick={handleSaveEmail}>
+          {akcje.pracuje === 'mail' ? <Loader2 className="icon icon-spin" /> : <Mail className="icon" />}
+          {akcje.pracuje === 'mail' ? 'Wysyłam…' : 'Wyślij'}
         </button>
         <span className="shortcut-hint">
           <kbd>Ctrl</kbd>+<kbd>S</kbd> zapis · <kbd>Ctrl</kbd>+<kbd>P</kbd> wydruk · <kbd>Esc</kbd> powrót

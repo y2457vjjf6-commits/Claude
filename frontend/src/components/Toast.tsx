@@ -4,6 +4,8 @@ export interface ToastState {
   msg: string;
   isError: boolean;
   key: number;
+  /** trwa wygaszanie — wtedy leci krótsza animacja wyjścia */
+  closing?: boolean;
   /** Działanie do cofnięcia — pokazywane jako przycisk obok treści */
   action?: { label: string; run: () => void };
 }
@@ -13,7 +15,7 @@ export default function Toast({ toast }: { toast: ToastState | null }) {
   return (
     <div
       key={toast.key}
-      className={'toast' + (toast.isError ? ' error' : '')}
+      className={'toast' + (toast.isError ? ' error' : '') + (toast.closing ? ' closing' : '')}
       role="status"
       aria-live="polite"
       data-testid="toast"

@@ -81,6 +81,8 @@ export default function DocumentsView(props: Props) {
   const naMiesiace = shouldGroup(docs, sort, 'data');
   const grupy = naMiesiace ? groupByMonth(docs, (d) => d.dateIssued) : [{ klucz: '', etykieta: '', wiersze: docs }];
   const sortuj = (key: string) => setSort((s) => nextSort(s, key, key === 'data' || key === 'pozycje'));
+  // numer w kaskadzie wejścia; dalsze wiersze pojawiają się już bez opóźnienia
+  let licznik = 0;
   const ostatni = useMemo(() => documents.map((d) => d.dateIssued).sort().slice(-1)[0], [documents]);
 
   return (
@@ -167,6 +169,7 @@ export default function DocumentsView(props: Props) {
                     {g.wiersze.map((d) => (
                       <Row
                         key={d.id}
+                        kolejnosc={licznik++}
                         doc={d}
                         zaznaczony={zaznaczanie.zbior.has(d.id)}
                         onSelect={zaznaczanie.przelacz}
@@ -228,6 +231,7 @@ function Fragmenty({ children }: { children: ReactNode }) {
 
 interface RowProps {
   doc: WZDocument;
+  kolejnosc: number;
   zaznaczony: boolean;
   onSelect: (id: string, zakres: boolean) => void;
   onEdit: (id: string) => void;
@@ -238,7 +242,7 @@ interface RowProps {
   onDelete: (doc: WZDocument) => void;
 }
 
-function Row({ doc: d, zaznaczony, onSelect, onEdit, onPreview, onPrint, onPdf, onEmail, onDelete }: RowProps) {
+function Row({ doc: d, kolejnosc, zaznaczony, onSelect, onEdit, onPreview, onPrint, onPdf, onEmail, onDelete }: RowProps) {
   const naKlawisz = useRowKeyboard({ onEnter: () => onEdit(d.id), onSpace: () => onPreview(d) });
 
   return (
@@ -246,6 +250,7 @@ function Row({ doc: d, zaznaczony, onSelect, onEdit, onPreview, onPrint, onPdf, 
       data-row
       tabIndex={0}
       className={zaznaczony ? 'selected' : undefined}
+      style={{ ['--i' as string]: Math.min(kolejnosc, 12) }}
       data-testid={`doc-row-${d.id}`}
       aria-label={`Dokument ${d.number}`}
       onClick={(e) => isRowBackgroundClick(e) && e.currentTarget.focus()}

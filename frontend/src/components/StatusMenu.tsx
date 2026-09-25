@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Offer } from '../types';
 import { OFFER_STATUS_LABELS } from '../lib/offers';
@@ -13,11 +14,23 @@ interface Props {
 
 /** Status oferty jako pastylka z kropką — kolor niesie stan, nazwa go nazywa. */
 export default function StatusMenu({ status, onChange, testId }: Props) {
+  // po zmianie statusu kropka raz mrugnie — potwierdzenie tuż przy kontrolce
+  const [mrugniecie, setMrugniecie] = useState(false);
+  const poprzedni = useRef(status);
+
+  useEffect(() => {
+    if (poprzedni.current === status) return;
+    poprzedni.current = status;
+    setMrugniecie(true);
+    const t = setTimeout(() => setMrugniecie(false), 420);
+    return () => clearTimeout(t);
+  }, [status]);
+
   return (
     <PopMenu
       testId={testId}
       label="Status oferty"
-      className={`status-pill status-${status}`}
+      className={`status-pill status-${status}` + (mrugniecie ? ' zmieniony' : '')}
       trigger={
         <>
           <span className="status-dot" aria-hidden="true" />

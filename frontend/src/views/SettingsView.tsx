@@ -36,6 +36,8 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
     offerMeasurement: (st.offerDefaults?.measurementSource || 'przesłanych') as string,
     offerLegalClause: st.offerDefaults?.legalClause ?? true,
     offerLegalText: st.offerLegalText || '',
+    offerFollowUpDays: st.offerFollowUpDays || '7',
+    showCosts: st.showCosts !== false,
     mBody: st.emailBody
   });
   const [location, setLocation] = useState<string | null>(null);
@@ -47,7 +49,8 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
 
   const set = (patch: Partial<typeof form>) => setForm((f) => ({ ...f, ...patch }));
 
-  const save = async () => {
+  /** Ustawienia z formularza w jednym miejscu — używa tego i zapis, i kopia zapasowa. */
+  const stateFromForm = (): AppState => {
     const next = structuredClone(state);
     next.settings.seller.name = form.sName.trim();
     next.settings.seller.nip = form.sNip.trim();
@@ -77,8 +80,14 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
       legalClause: form.offerLegalClause
     };
     next.settings.offerLegalText = form.offerLegalText;
+    next.settings.offerFollowUpDays = form.offerFollowUpDays.trim() || '0';
+    next.settings.showCosts = form.showCosts;
     next.settings.emailBody = form.mBody;
-    await onPersist(next);
+    return next;
+  };
+
+  const save = async () => {
+    await onPersist(stateFromForm());
     toast('Zapisano ustawienia.');
   };
 
@@ -98,21 +107,7 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
       toast('Najpierw wskaż folder na kopie zapasowe.', true);
       return;
     }
-    const next = structuredClone(state);
-    next.settings.backupFolder = form.backupFolder.trim();
-    next.settings.issuers = form.issuers
-      .split('\n')
-      .map((n) => n.trim())
-      .filter(Boolean);
-    next.settings.offerDefaults = {
-      deadlineDays: form.offerDeadlineDays.trim(),
-      validityDays: form.offerValidityDays.trim(),
-      installationIncluded: form.offerInstallation,
-      measurementSource: form.offerMeasurement as 'dokonanych' | 'przesłanych',
-      legalClause: form.offerLegalClause
-    };
-    next.settings.offerLegalText = form.offerLegalText;
-    const res = await backupNow(next);
+    const res = await backupNow(stateFromForm());
     toast(res.ok ? `Zapisano kopię: ${res.file}` : `Nie udało się zapisać kopii: ${res.error}`, !res.ok);
   };
 
@@ -230,6 +225,31 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
           />
           <span>Nowe oferty domyślnie z klauzulą</span>
         </label>
+        <div className="grid2" style={{ marginTop: 14 }}>
+          <label className="field">
+            <span>Przypominaj o wysłanej ofercie po (dniach)</span>
+            <input
+              type="text"
+              className="input num"
+              data-testid="offer-followup-days"
+              inputMode="numeric"
+              value={form.offerFollowUpDays}
+              onChange={(e) => set({ offerFollowUpDays: e.target.value })}
+            />
+            <span className="muted field-hint">
+              Oferty ze statusem „Wysłana”, na które klient nie odpowiedział, zbierają się na górze listy ofert. 0 wyłącza przypomnienia.
+            </span>
+          </label>
+          <label className="checkbox-field" style={{ alignSelf: 'start', paddingTop: 26 }}>
+            <input
+              type="checkbox"
+              data-testid="offer-show-costs"
+              checked={form.showCosts}
+              onChange={(e) => set({ showCosts: e.target.checked })}
+            />
+            <span>Pokazuj koszt własny i marżę (tylko w programie, nigdy na dokumencie)</span>
+          </label>
+        </div>
         <div className="grid2" style={{ marginTop: 14 }}>
           <label className="field">
             <span>Domyślny termin realizacji (dni roboczych)</span>

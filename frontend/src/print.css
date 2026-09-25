@@ -251,6 +251,24 @@
 
 /* ---------- Tabele pozycji ---------- */
 
+/* Podpis nie zostaje sam na końcu strony — trzyma się swojej tabeli.
+   Sama tabela może się łamać, żeby długa lista nie skakała na nową stronę. */
+.of-group-title {
+  font-size: 11pt;
+  font-weight: 700;
+  margin: 4pt 0 4pt;
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.of-variant-total {
+  text-align: right;
+  font-size: 11pt;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin: -6pt 0 14pt;
+}
+
 .of-items {
   width: 100%;
   border-collapse: collapse;

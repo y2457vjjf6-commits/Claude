@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft, Layers } from 'lucide-react';
+import { Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft, Layers, GitCompareArrows, Wallet, FileOutput } from 'lucide-react';
 import { AppState, AskConfirm, Offer, OfferColumnHeader, OfferGroup, OfferItem } from '../types';
 import { uid } from '../lib/storage';
 import {
@@ -8,9 +8,11 @@ import {
   groupLpNumbers,
   isItemEmpty,
   itemTotal,
+  offerCosts,
   offerTotals,
   OFFER_STATUS_LABELS,
   validUntil,
+  variantLetter,
   availableIssuers
 } from '../lib/offers';
 import { itemNameSuggestions } from '../lib/suggestions';
@@ -28,6 +30,8 @@ interface Props {
   emailConfirm: (message: string) => Promise<boolean>;
   onMark: (offer: Offer, patch: Partial<Offer>) => void;
   askConfirm: AskConfirm;
+  /** Przepisanie tej oferty na nowy dokument WZ */
+  onIssueWz: (offer: Offer) => void;
 }
 
 function todayStr(): string {
@@ -36,9 +40,11 @@ function todayStr(): string {
 }
 
 const EMPTY_ITEM = (): OfferItem => ({ name: '', material: '', qty: '1', unitPrice: '' });
-const NEW_GROUP = (header: OfferColumnHeader = 'material'): OfferGroup => ({
+const NEW_GROUP = (header: OfferColumnHeader = 'material', variant = false): OfferGroup => ({
   id: uid(),
   header,
+  title: '',
+  variant,
   items: [EMPTY_ITEM()]
 });
 
@@ -54,7 +60,8 @@ export default function OfferEditorView({
   toast,
   emailConfirm,
   onMark,
-  askConfirm
+  askConfirm,
+  onIssueWz
 }: Props) {
   const existing = editingOfferId ? state.offers.find((o) => o.id === editingOfferId) || null : null;
   const initRef = useRef<string | null>('__none__');
@@ -132,6 +139,9 @@ export default function OfferEditorView({
 
   const numery = groupLpNumbers(offer.groups, offer.continuousNumbering);
   const sumy = offerTotals(offer);
+  const koszty = offerCosts(offer);
+  // Koszt własny i marża są tylko do wyceny w programie — nie ma ich na dokumencie
+  const pokazKoszty = state.settings.showCosts !== false;
 
   // --- grupy i pozycje ---
   const setGroup = (gi: number, patch: Partial<OfferGroup>) =>
@@ -162,6 +172,8 @@ export default function OfferEditorView({
     }));
 
   const addGroup = () => setOffer((o) => ({ ...o, groups: [...o.groups, NEW_GROUP()] }));
+  const addVariant = () =>
+    setOffer((o) => ({ ...o, groups: [...o.groups, NEW_GROUP(o.groups[o.groups.length - 1]?.header || 'material', true)] }));
   const removeGroup = (gi: number) =>
     setOffer((o) => {
       const groups = o.groups.filter((_, i) => i !== gi);
@@ -218,6 +230,10 @@ export default function OfferEditorView({
   const handlePdf = async () => {
     const z = await saveOffer();
     if (z) savePdfOffer(z, state.settings, toast);
+  };
+  const handleIssueWz = async () => {
+    const z = await saveOffer();
+    if (z) onIssueWz(z);
   };
   const handleEmail = async () => {
     const z = await saveOffer();
@@ -296,7 +312,31 @@ export default function OfferEditorView({
       {offer.groups.map((g, gi) => (
         <div className="card" key={g.id} data-testid={`offer-group-${gi}`}>
           <div className="group-head">
-            <h3 className="card-title">Tabela {gi + 1}</h3>
+            <div className="group-head-top">
+              <h3 className="card-title">
+                {g.variant ? variantLetter(offer.groups, gi) : `Tabela ${gi + 1}`}
+                {g.variant && <span className="group-tag">wyceniany osobno</span>}
+              </h3>
+              <span className="spacer" />
+              {offer.groups.length > 1 && (
+                <button className="btn btn-small btn-danger" data-testid={`offer-group-remove-${gi}`} onClick={() => removeGroup(gi)}>
+                  <Trash2 className="icon" />
+                  Usuń tabelę
+                </button>
+              )}
+            </div>
+            <div className="group-head-fields">
+            <label className="field group-title-field">
+              <span>Podpis nad tabelą</span>
+              <input
+                type="text"
+                className="input"
+                data-testid={`offer-group-title-${gi}`}
+                placeholder={g.variant ? variantLetter(offer.groups, gi) : 'nieobowiązkowy, np. Salon'}
+                value={g.title || ''}
+                onChange={(e) => setGroup(gi, { title: e.target.value })}
+              />
+            </label>
             <label className="field group-header-select">
               <span>Nagłówek kolumny</span>
               <select
@@ -312,12 +352,16 @@ export default function OfferEditorView({
                 ))}
               </select>
             </label>
-            {offer.groups.length > 1 && (
-              <button className="btn btn-small btn-danger" data-testid={`offer-group-remove-${gi}`} onClick={() => removeGroup(gi)}>
-                <Trash2 className="icon" />
-                Usuń tabelę
-              </button>
-            )}
+            <label className="checkbox-field group-variant-check">
+              <input
+                type="checkbox"
+                data-testid={`offer-group-variant-${gi}`}
+                checked={!!g.variant}
+                onChange={(e) => setGroup(gi, { variant: e.target.checked })}
+              />
+              <span>Wariant alternatywny (poza ceną całkowitą)</span>
+            </label>
+            </div>
           </div>
 
           <table className="table items-table offer-items-table">
@@ -327,6 +371,11 @@ export default function OfferEditorView({
                 <th>Produkt</th>
                 <th style={{ width: 80 }} className="th-num">Ilość</th>
                 <th style={{ width: 120 }} className="th-num">Cena/szt.</th>
+                {pokazKoszty && (
+                  <th style={{ width: 110 }} className="th-num th-internal" title="Nie trafia na dokument dla klienta">
+                    Koszt/szt.
+                  </th>
+                )}
                 <th style={{ width: 130 }} className="th-num">Kwota</th>
                 <th style={{ width: 44 }}></th>
               </tr>
@@ -372,6 +421,19 @@ export default function OfferEditorView({
                   <td>
                     <input type="text" className="input num" data-testid={`offer-unit-${gi}-${ii}`} inputMode="decimal" aria-label="Cena za sztukę" value={it.unitPrice} onChange={(e) => setItem(gi, ii, { unitPrice: e.target.value })} />
                   </td>
+                  {pokazKoszty && (
+                    <td>
+                      <input
+                        type="text"
+                        className="input num input-internal"
+                        data-testid={`offer-cost-${gi}-${ii}`}
+                        inputMode="decimal"
+                        aria-label="Koszt własny za sztukę"
+                        value={it.cost || ''}
+                        onChange={(e) => setItem(gi, ii, { cost: e.target.value })}
+                      />
+                    </td>
+                  )}
                   <td>
                     <input
                       type="text"
@@ -403,6 +465,10 @@ export default function OfferEditorView({
         <button className="btn" data-testid="offer-add-group" onClick={addGroup}>
           <Layers className="icon" />
           Dodaj tabelę
+        </button>
+        <button className="btn" data-testid="offer-add-variant" onClick={addVariant} title="Druga wersja wyceny, np. inny materiał — na tej samej ofercie">
+          <GitCompareArrows className="icon" />
+          Dodaj wariant
         </button>
         <label className="checkbox-field">
           <input
@@ -467,11 +533,32 @@ export default function OfferEditorView({
             </div>
           )}
           <div className="offer-summary-total">
-            Cena całkowita: <strong>{formatMoney(sumy.total)}</strong>
+            {sumy.variants.length ? 'Cena całkowita oferty podstawowej' : 'Cena całkowita'}:{' '}
+            <strong>{formatMoney(sumy.total)}</strong>
           </div>
+          {sumy.variants.map((w) => (
+            <div key={w.id} data-testid={`offer-variant-total-${w.id}`}>
+              {w.label}: <strong>{formatMoney(w.total)}</strong>
+            </div>
+          ))}
           {offer.deliveryEnabled && (
             <div className="muted">
               Dostawa: {offer.deliveryNotApplicable ? 'nie dotyczy' : formatMoney(sumy.deliveryAmount)} (osobno, poza ceną całkowitą)
+            </div>
+          )}
+          {pokazKoszty && koszty.hasCosts && (
+            <div className="offer-margin" data-testid="offer-margin">
+              <span className="internal-badge">
+                <Wallet className="icon" />
+                tylko w programie
+              </span>
+              <span>
+                Koszt własny: <strong>{formatMoney(koszty.costSum)}</strong>
+              </span>
+              <span>
+                Marża: <strong>{formatMoney(koszty.margin)}</strong> (
+                {koszty.marginPercent.toLocaleString('pl-PL', { maximumFractionDigits: 1 })}%)
+              </span>
             </div>
           )}
         </div>
@@ -567,6 +654,10 @@ export default function OfferEditorView({
           <kbd>Ctrl</kbd>+<kbd>S</kbd> zapis · <kbd>Ctrl</kbd>+<kbd>P</kbd> wydruk · <kbd>Esc</kbd> powrót
         </span>
         <span className="spacer" />
+        <button className="btn" data-testid="offer-issue-wz-btn" onClick={handleIssueWz} title="Przepisz pozycje tej oferty na dokument WZ">
+          <FileOutput className="icon" />
+          Wystaw WZ
+        </button>
         {existing && (
           <button className="btn btn-danger" data-testid="offer-delete-btn" onClick={() => onDelete(existing)}>
             <Trash2 className="icon" />

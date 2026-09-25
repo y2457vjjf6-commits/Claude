@@ -45,6 +45,8 @@ export interface WZDocument {
   notes: string;
   /** Imię i nazwisko osoby odbierającej towar */
   receivedBy?: string;
+  /** Oferta, z której wystawiono ten dokument (jeśli powstał z oferty) */
+  sourceOfferId?: string;
   /** Kiedy dokument był ostatnio drukowany (ISO) */
   printedAt?: string;
   /** Kiedy i na jaki adres wysłano dokument mailem */
@@ -94,6 +96,10 @@ export interface Settings {
   };
   /** Treść klauzuli drukowanej na ofercie */
   offerLegalText: string;
+  /** Po ilu dniach bez decyzji przypominać o wysłanej ofercie */
+  offerFollowUpDays: string;
+  /** Czy pokazywać koszt własny i marżę (tylko w programie, nigdy na dokumencie) */
+  showCosts: boolean;
 }
 
 export interface AppState {
@@ -148,11 +154,17 @@ export interface OfferItem {
   totalOverride?: string;
   /** Własna numeracja Lp. zamiast automatycznej */
   lpOverride?: string;
+  /** Koszt własny za sztukę — tylko do wyceny w programie, nie trafia na dokument */
+  cost?: string;
 }
 
 export interface OfferGroup {
   id: string;
   header: OfferColumnHeader;
+  /** Podpis nad tabelą, np. „Wariant A — materiał zaciemniający” */
+  title?: string;
+  /** Wariant alternatywny: wyceniany osobno, poza ceną całkowitą oferty */
+  variant?: boolean;
   items: OfferItem[];
 }
 
@@ -189,6 +201,8 @@ export interface Offer {
   /** Klauzula: dokument ma charakter informacyjny (art. 71 k.c.) */
   legalClause: boolean;
   status: OfferStatus;
+  /** Dokumenty WZ wystawione na podstawie tej oferty */
+  wzDocumentIds?: string[];
   printedAt?: string;
   emailedAt?: string;
   emailedTo?: string;

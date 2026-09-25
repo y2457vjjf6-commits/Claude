@@ -4,6 +4,8 @@ import { ViewName } from '../types';
 
 interface Props {
   view: ViewName;
+  /** Ile wysłanych ofert czeka na decyzję klienta — licznik przy zakładce */
+  offersAwaiting: number;
   theme: 'light' | 'dark';
   onNavigate: (view: ViewName) => void;
   onNewDoc: () => void;
@@ -36,7 +38,7 @@ function Monogram() {
   );
 }
 
-export default function Sidebar({ view, theme, onNavigate, onNewDoc, onToggleTheme, onNewOffer }: Props) {
+export default function Sidebar({ view, theme, onNavigate, onNewDoc, onToggleTheme, onNewOffer, offersAwaiting }: Props) {
   // W zakładce ofert główny przycisk zakłada ofertę, nie WZ
   const wOfertach = view === 'offers' || view === 'offerEdit';
 
@@ -68,6 +70,11 @@ export default function Sidebar({ view, theme, onNavigate, onNewDoc, onToggleThe
           >
             {item.icon}
             {item.label}
+            {item.key === 'offers' && offersAwaiting > 0 && (
+              <span className="nav-badge" data-testid="nav-offers-badge" title="Wysłane oferty bez decyzji klienta">
+                {offersAwaiting}
+              </span>
+            )}
           </button>
         ))}
       </nav>

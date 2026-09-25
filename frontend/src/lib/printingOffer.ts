@@ -1,6 +1,15 @@
 import { Offer, Settings } from '../types';
 import { LOGO_LECHROL } from '../assets/logo';
-import { columnHeaderLabel, formatMoney, groupLpNumbers, isItemEmpty, itemTotal, offerTotals, validUntil } from './offers';
+import {
+  columnHeaderLabel,
+  formatMoney,
+  groupLabel,
+  groupLpNumbers,
+  isItemEmpty,
+  itemTotal,
+  offerTotals,
+  validUntil
+} from './offers';
 import { esc, formatDatePl } from './printing';
 
 /** Dokument oferty w układzie stosowanym dotąd przez firmę (Word/PDF). */
@@ -9,10 +18,19 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
   const numery = groupLpNumbers(offer.groups || [], offer.continuousNumbering);
   const sumy = offerTotals(offer);
 
-  const tabele = (offer.groups || [])
+  const grupy = offer.groups || [];
+  const tabele = grupy
     .map((g, gi) => {
       const pozycje = g.items.filter((it) => !isItemEmpty(it));
       if (!pozycje.length) return '';
+      const podpis = groupLabel(grupy, gi);
+      const naglowekGrupy = podpis ? `<div class="of-group-title">${esc(podpis)}</div>` : '';
+      const wariantKwota = g.variant
+        ? sumy.variants.find((w) => w.id === g.id)
+        : undefined;
+      const podsumowanieWariantu = wariantKwota
+        ? `<div class="of-variant-total">Cena dla tego wariantu: ${formatMoney(wariantKwota.total)}</div>`
+        : '';
       const wiersze = g.items
         .map((it, ii) => {
           if (isItemEmpty(it)) return '';
@@ -27,19 +45,32 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
         })
         .join('');
       return `
-    <table class="of-items">
-      <thead>
-        <tr>
-          <th class="of-lp">Lp.</th>
-          <th class="of-name">${esc(columnHeaderLabel(g.header))}</th>
-          <th class="of-qty">Ilość (szt.)</th>
-          <th class="of-price">Cena (Brutto)</th>
-        </tr>
-      </thead>
-      <tbody>${wiersze}</tbody>
-    </table>`;
+    <div class="of-group">
+      ${naglowekGrupy}
+      <table class="of-items">
+        <thead>
+          <tr>
+            <th class="of-lp">Lp.</th>
+            <th class="of-name">${esc(columnHeaderLabel(g.header))}</th>
+            <th class="of-qty">Ilość (szt.)</th>
+            <th class="of-price">Cena (Brutto)</th>
+          </tr>
+        </thead>
+        <tbody>${wiersze}</tbody>
+      </table>
+      ${podsumowanieWariantu}
+    </div>`;
     })
     .join('');
+
+  // Oferta złożona wyłącznie z wariantów nie ma jednej ceny całkowitej —
+  // każdy wariant wyceniony jest pod swoją tabelą.
+  // Gdy obok są warianty, nazwa ceny mówi wprost, czego dotyczy
+  const etykietaCeny = sumy.variants.length ? 'Cena całkowita oferty podstawowej' : 'Cena całkowita';
+  const cenaCalkowita =
+    sumy.itemsSum > 0 || !sumy.variants.length
+      ? `<div class="of-total">${etykietaCeny}: ${formatMoney(sumy.total)}</div>`
+      : '';
 
   const rabat = offer.discountEnabled && sumy.discountAmount
     ? `<div class="of-sum-line">Rabat ${esc(offer.discountPercent)}%: −${formatMoney(sumy.discountAmount)}</div>`
@@ -86,12 +117,12 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
 
     <div class="of-summary">
       ${rabat}
-      <div class="of-total">Cena całkowita: ${formatMoney(sumy.total)}</div>
+      ${cenaCalkowita}
     </div>
 
     <div class="of-conditions">
       <div>Oferta sporządzona na podstawie ${esc(offer.measurementSource)} pomiarów.</div>
-      <div>Ceny ${offer.installationIncluded ? 'uwzględniają' : 'nie uwzględniają'} montażu.</div>
+      <div>Ceny ${offer.installationIncluded ? 'uwzględniają montaż' : 'nie uwzględniają montażu'}.</div>
       <div class="of-bullet">• Termin realizacji – do ${esc(offer.deadlineDays)} dni roboczych od daty ${esc(
         offer.deadlineBasis
       )} zamówienia.</div>

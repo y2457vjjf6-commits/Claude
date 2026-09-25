@@ -1,17 +1,20 @@
 import { useState } from 'react';
-import { Search, Plus, Eye, Pencil, Printer, FileDown, Mail, Trash2, FileSpreadsheet } from 'lucide-react';
+import { Search, Plus, Eye, Pencil, Mail, Trash2, FileSpreadsheet, FileOutput, BellRing } from 'lucide-react';
 import { Offer } from '../types';
 import { formatDatePl } from '../lib/printing';
 import StatusChips from '../components/StatusChips';
-import { formatMoney, offerTotals, OFFER_STATUS_LABELS } from '../lib/offers';
+import { formatMoney, offerCosts, offersAwaitingReply, offerTotals, OFFER_STATUS_LABELS } from '../lib/offers';
 
 interface Props {
   offers: Offer[];
+  /** Po ilu dniach bez odpowiedzi przypominać o wysłanej ofercie */
+  followUpDays: number;
+  /** Czy pokazywać kolumnę marży (dane wewnętrzne) */
+  showCosts: boolean;
+  onIssueWz: (offer: Offer) => void;
   onEdit: (id: string) => void;
   onNewOffer: () => void;
   onPreview: (offer: Offer) => void;
-  onPrint: (offer: Offer) => void;
-  onPdf: (offer: Offer) => void;
   onEmail: (offer: Offer) => void;
   onDelete: (offer: Offer) => void;
   onStatusChange: (offer: Offer, status: Offer['status']) => void;
@@ -19,11 +22,12 @@ interface Props {
 
 export default function OffersView({
   offers,
+  followUpDays,
+  showCosts,
+  onIssueWz,
   onEdit,
   onNewOffer,
   onPreview,
-  onPrint,
-  onPdf,
   onEmail,
   onDelete,
   onStatusChange
@@ -48,6 +52,10 @@ export default function OffersView({
     });
 
   const anyOffers = offers.length > 0;
+  const przypomnienia = offersAwaitingReply(offers, followUpDays);
+  // Kolumna marży pojawia się tylko wtedy, gdy w ofertach są wpisane koszty
+  const kolumnaMarzy = showCosts && offers.some((o) => offerCosts(o).hasCosts);
+  const kolumn = kolumnaMarzy ? 7 : 6;
 
   return (
     <section className="view" data-testid="view-offers">
@@ -75,6 +83,50 @@ export default function OffersView({
         </button>
       </div>
 
+      {przypomnienia.length > 0 && (
+        <div className="notice-card" data-testid="offers-followup">
+          <div className="notice-head">
+            <BellRing className="icon" />
+            {przypomnienia.length === 1
+              ? 'Jedna wysłana oferta czeka na decyzję klienta'
+              : `Wysłane oferty czekające na decyzję: ${przypomnienia.length}`}
+          </div>
+          <div className="followup-list">
+            {przypomnienia.map(({ offer, days }) => (
+              <div className="followup-row" key={offer.id} data-testid={`followup-${offer.id}`}>
+                <span className="followup-client">{offer.client || '—'}</span>
+                <span className="followup-days">
+                  {formatMoney(offerTotals(offer).total)} · wysłana {days} {days === 1 ? 'dzień' : 'dni'} temu
+                </span>
+                <span className="spacer" />
+                <button className="btn btn-small btn-light" data-testid={`followup-open-${offer.id}`} onClick={() => onEdit(offer.id)}>
+                  <Pencil className="icon" />
+                  Otwórz
+                </button>
+                <button className="btn btn-small btn-light" data-testid={`followup-email-${offer.id}`} onClick={() => onEmail(offer)}>
+                  <Mail className="icon" />
+                  Wyślij ponownie
+                </button>
+                <button
+                  className="btn btn-small btn-light"
+                  data-testid={`followup-accepted-${offer.id}`}
+                  onClick={() => onStatusChange(offer, 'zaakceptowana')}
+                >
+                  Zaakceptowana
+                </button>
+                <button
+                  className="btn btn-small btn-light"
+                  data-testid={`followup-rejected-${offer.id}`}
+                  onClick={() => onStatusChange(offer, 'odrzucona')}
+                >
+                  Odrzucona
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {anyOffers && (
         <div className="table-card">
           <table className="table" data-testid="offers-table">
@@ -83,17 +135,38 @@ export default function OffersView({
                 <th style={{ width: 110 }}>Data</th>
                 <th>Klient</th>
                 <th className="th-num" style={{ width: 120 }}>Wartość</th>
-                <th style={{ width: 150 }}>Status</th>
+                {kolumnaMarzy && (
+                  <th className="th-num th-internal" style={{ width: 128 }} title="Dane wewnętrzne — nie trafiają na dokument">
+                    Marża
+                  </th>
+                )}
+                <th style={{ width: 190 }}>Status</th>
                 <th style={{ width: 86 }}>Wysłano</th>
-                <th style={{ width: 250 }}>Akcje</th>
+                <th style={{ width: 236 }}>Akcje</th>
               </tr>
             </thead>
             <tbody>
               {lista.map((o) => (
                 <tr key={o.id} data-testid={`offer-row-${o.id}`}>
                   <td className="num">{formatDatePl(o.date)}</td>
-                  <td>{o.client || '—'}</td>
+                  <td>
+                    {o.client || '—'}
+                    {!!o.wzDocumentIds?.length && (
+                      <span
+                        className="group-tag"
+                        data-testid={`offer-has-wz-${o.id}`}
+                        title="Z tej oferty wystawiono już dokument WZ"
+                      >
+                        WZ
+                      </span>
+                    )}
+                  </td>
                   <td className="td-num">{formatMoney(offerTotals(o).total)}</td>
+                  {kolumnaMarzy && (
+                    <td className="td-num muted" data-testid={`offer-margin-${o.id}`}>
+                      {offerCosts(o).hasCosts ? formatMoney(offerCosts(o).margin) : '—'}
+                    </td>
+                  )}
                   <td>
                     <select
                       className="input input-small"
@@ -120,14 +193,17 @@ export default function OffersView({
                         <Pencil className="icon" />
                         Edytuj
                       </button>
-                      <button className="btn btn-small btn-light" data-testid={`offer-print-${o.id}`} aria-label="Drukuj" title="Drukuj" onClick={() => onPrint(o)}>
-                        <Printer className="icon" />
-                      </button>
-                      <button className="btn btn-small btn-light" data-testid={`offer-pdf-${o.id}`} aria-label="Zapisz PDF" title="Zapisz PDF" onClick={() => onPdf(o)}>
-                        <FileDown className="icon" />
-                      </button>
                       <button className="btn btn-small btn-light" data-testid={`offer-email-${o.id}`} aria-label="Wyślij e-mailem" title="Wyślij e-mailem" onClick={() => onEmail(o)}>
                         <Mail className="icon" />
+                      </button>
+                      <button
+                        className="btn btn-small btn-light"
+                        data-testid={`offer-issue-wz-${o.id}`}
+                        aria-label="Wystaw WZ z tej oferty"
+                        title="Wystaw WZ z tej oferty"
+                        onClick={() => onIssueWz(o)}
+                      >
+                        <FileOutput className="icon" />
                       </button>
                       <button className="btn btn-small btn-danger" data-testid={`offer-delete-${o.id}`} aria-label="Usuń" title="Usuń" onClick={() => onDelete(o)}>
                         <Trash2 className="icon" />
@@ -138,7 +214,7 @@ export default function OffersView({
               ))}
               {!lista.length && (
                 <tr>
-                  <td colSpan={6} className="muted" style={{ textAlign: 'center', padding: 24 }}>
+                  <td colSpan={kolumn} className="muted" style={{ textAlign: 'center', padding: 24 }}>
                     Brak wyników dla „{q.trim()}”.
                   </td>
                 </tr>

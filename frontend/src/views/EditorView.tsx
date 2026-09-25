@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft } from 'lucide-react';
+import { Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft, FileOutput } from 'lucide-react';
 import { AppState, AskConfirm, Item, WZDocument } from '../types';
+import { WzPrefill } from '../lib/offerToWz';
 import { computeNumberFor, contractorCode } from '../lib/numbering';
 import { itemNameSuggestions, unitSuggestions } from '../lib/suggestions';
 import { uid } from '../lib/storage';
@@ -18,6 +19,8 @@ interface Props {
   emailConfirm: (message: string) => Promise<boolean>;
   onMark: (doc: WZDocument, patch: Partial<WZDocument>) => void;
   askConfirm: AskConfirm;
+  /** Dane przeniesione z oferty cenowej — tylko dla nowego dokumentu */
+  prefill?: WzPrefill | null;
 }
 
 function todayStr(): string {
@@ -29,30 +32,38 @@ function todayStr(): string {
 
 const EMPTY_ITEM: Item = { name: '', unit: 'szt.', qty: '' };
 
-export default function EditorView({ state, editingDocId, onPersist, onSaved, onBack, onDelete, toast, emailConfirm, onMark, askConfirm }: Props) {
+export default function EditorView({ state, editingDocId, onPersist, onSaved, onBack, onDelete, toast, emailConfirm, onMark, askConfirm, prefill }: Props) {
   const doc = editingDocId ? state.documents.find((d) => d.id === editingDocId) || null : null;
   const initRef = useRef<string | null>('__none__');
 
   const [form, setForm] = useState(() => initForm(doc));
-  const [items, setItems] = useState<Item[]>(() => (doc && doc.items.length ? doc.items.slice() : [{ ...EMPTY_ITEM }]));
+  const [items, setItems] = useState<Item[]>(() => initItems(doc));
   const focusLast = useRef(false);
   const itemsBodyRef = useRef<HTMLTableSectionElement>(null);
 
   function initForm(d: WZDocument | null) {
+    // Nowy dokument z oferty startuje z jej odbiorcą i uwagą o źródle
+    const z = d ? null : prefill || null;
     return {
       dateIssued: d ? d.dateIssued : todayStr(),
       place: d ? d.place : state.settings.place,
       orderNo: d ? d.orderNo || '' : '',
-      contractorSel: d?.contractorId || '',
+      contractorSel: d?.contractorId || z?.contractorId || '',
       saveContractor: false,
-      cName: d ? d.contractor?.name || '' : '',
-      cNip: d ? d.contractor?.nip || '' : '',
-      cAddress: d ? d.contractor?.address || '' : '',
-      cEmail: d ? d.contractor?.email || '' : '',
-      cCode: d ? d.contractor?.code || '' : '',
-      notes: d ? d.notes || '' : '',
+      cName: d ? d.contractor?.name || '' : z?.contractor.name || '',
+      cNip: d ? d.contractor?.nip || '' : z?.contractor.nip || '',
+      cAddress: d ? d.contractor?.address || '' : z?.contractor.address || '',
+      cEmail: d ? d.contractor?.email || '' : z?.contractor.email || '',
+      cCode: d ? d.contractor?.code || '' : z?.contractor.code || '',
+      notes: d ? d.notes || '' : z?.notes || '',
       receivedBy: d ? d.receivedBy || '' : ''
     };
+  }
+
+  function initItems(d: WZDocument | null): Item[] {
+    if (d && d.items.length) return d.items.slice();
+    if (!d && prefill?.items.length) return prefill.items.map((it) => ({ ...it }));
+    return [{ ...EMPTY_ITEM }];
   }
 
   useEffect(() => {
@@ -64,7 +75,7 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
       initRef.current = editingDocId;
       const d = editingDocId ? state.documents.find((x) => x.id === editingDocId) || null : null;
       setForm(initForm(d));
-      setItems(d && d.items.length ? d.items.slice() : [{ ...EMPTY_ITEM }]);
+      setItems(initItems(d));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingDocId]);
@@ -173,6 +184,8 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
     }
 
     const { seq, number } = computeNumberFor(state.documents, editingDocId, dateStr, name, form.cCode);
+    // Powiązanie z ofertą: dla nowego dokumentu z przeniesienia, dla edycji — to, co już miał
+    const zrodloOferty = editingDocId ? doc?.sourceOfferId : prefill?.sourceOfferId;
     const contractor = {
       name,
       address: form.cAddress.trim(),
@@ -208,6 +221,7 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
       items: collectItems(),
       notes: form.notes.trim(),
       receivedBy: form.receivedBy.trim(),
+      ...(zrodloOferty ? { sourceOfferId: zrodloOferty } : {}),
       createdAt: nowIso,
       updatedAt: nowIso
     };
@@ -218,6 +232,16 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
       next.documents[idx] = newDoc;
     } else {
       next.documents.push(newDoc);
+    }
+
+    // Oferta pamięta, że wystawiono z niej WZ — widać to na liście ofert
+    if (zrodloOferty) {
+      const oferta = next.offers.find((o) => o.id === zrodloOferty);
+      if (oferta) {
+        const dotychczas = oferta.wzDocumentIds || [];
+        if (!dotychczas.includes(newDoc.id)) oferta.wzDocumentIds = [...dotychczas, newDoc.id];
+        if (oferta.status === 'szkic' || oferta.status === 'wyslana') oferta.status = 'zaakceptowana';
+      }
     }
 
     await onPersist(next);
@@ -267,6 +291,19 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
           <strong data-testid="number-preview">{numberPreview || '—'}</strong>
         </div>
       </div>
+
+      {!doc && prefill && (
+        <div className="notice-card" data-testid="wz-from-offer-note">
+          <div className="notice-head">
+            <FileOutput className="icon" />
+            Dokument przeniesiony z oferty cenowej
+          </div>
+          <p className="muted" style={{ margin: 0 }}>
+            Pozycje i odbiorcę wypełniliśmy z oferty — sprawdź ilości i jednostki przed zapisem.
+            {prefill.hadVariants && ' Oferta miała warianty alternatywne, więc dopisz ręcznie ten, który klient wybrał.'}
+          </p>
+        </div>
+      )}
 
       <div className="card">
         <div className="grid3">

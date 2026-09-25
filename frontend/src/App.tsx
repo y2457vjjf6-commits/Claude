@@ -4,7 +4,8 @@ import { loadState, persistState, DEFAULT_STATE } from './lib/storage';
 import { printDocument, savePdfDocument, emailDocument, buildPrintHtml } from './lib/printing';
 import { printOffer, savePdfOffer, emailOffer } from './lib/offerActions';
 import { buildOfferHtml } from './lib/printingOffer';
-import { offerFileName } from './lib/offers';
+import { offerFileName, offersAwaitingReply, parseNumber } from './lib/offers';
+import { wzPrefillFromOffer, WzPrefill } from './lib/offerToWz';
 import OffersView from './views/OffersView';
 import OfferEditorView from './views/OfferEditorView';
 import { backupInBackground } from './lib/backup';
@@ -27,6 +28,10 @@ export default function App() {
   const [previewDoc, setPreviewDoc] = useState<WZDocument | null>(null);
   const [editingOfferId, setEditingOfferId] = useState<string | null>(null);
   const [previewOffer, setPreviewOffer] = useState<Offer | null>(null);
+  // Dane przeniesione z oferty do nowej WZ. Licznik zmienia klucz edytora, więc
+  // każde przeniesienie otwiera świeży formularz, a zwykła „Nowa WZ” go czyści.
+  const [wzPrefill, setWzPrefill] = useState<WzPrefill | null>(null);
+  const [wzPrefillSeq, setWzPrefillSeq] = useState(0);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toast = useCallback((msg: string, isError?: boolean) => {
@@ -109,6 +114,7 @@ export default function App() {
   }, []);
 
   const openEditor = useCallback((id: string | null) => {
+    setWzPrefill(null);
     setEditingDocId(id);
     setView('edit');
   }, []);
@@ -142,6 +148,27 @@ export default function App() {
     toast('Usunięto ofertę.');
   };
 
+  // Przepisanie oferty na nową WZ — pozycje i odbiorca gotowe do sprawdzenia
+  const issueWzFromOffer = async (offer: Offer) => {
+    if (offer.wzDocumentIds?.length) {
+      const ok = await askConfirm(
+        `Z tej oferty wystawiono już dokument WZ. Wystawić kolejny dla „${offer.client}”?`,
+        { confirmLabel: 'Wystaw kolejną', danger: false }
+      );
+      if (!ok) return;
+    } else if (offer.status !== 'zaakceptowana') {
+      const ok = await askConfirm(
+        `Oferta dla „${offer.client}” nie jest jeszcze oznaczona jako zaakceptowana. Wystawić z niej WZ?`,
+        { confirmLabel: 'Wystaw WZ', danger: false }
+      );
+      if (!ok) return;
+    }
+    setWzPrefill(wzPrefillFromOffer(offer, state.contractors));
+    setWzPrefillSeq((n) => n + 1);
+    setEditingDocId(null);
+    setView('edit');
+  };
+
   const deleteDocument = async (doc: WZDocument, backToList: boolean) => {
     if (!(await askConfirm(`Usunąć dokument ${doc.number}? Tej operacji nie można cofnąć.`))) return;
     const next = { ...state, documents: state.documents.filter((d) => d.id !== doc.id) };
@@ -155,6 +182,7 @@ export default function App() {
       <Sidebar
         view={view}
         theme={state.settings.theme}
+        offersAwaiting={offersAwaitingReply(state.offers, parseNumber(state.settings.offerFollowUpDays)).length}
         onNavigate={(v) => setView(v)}
         onNewDoc={() => openEditor(null)}
         onNewOffer={() => openOfferEditor(null)}
@@ -168,8 +196,9 @@ export default function App() {
             onNewDoc={() => openEditor(null)}
             onPreview={(doc) => setPreviewDoc(doc)}
             onPrint={async (doc) => {
-              await printDocument(doc, state.settings, toast);
-              markDocument(doc, { printedAt: new Date().toISOString() });
+              if (await printDocument(doc, state.settings, toast)) {
+                markDocument(doc, { printedAt: new Date().toISOString() });
+              }
             }}
             onPdf={(doc) => savePdfDocument(doc, state.settings, toast)}
             onEmail={async (doc) => {
@@ -183,8 +212,10 @@ export default function App() {
         )}
         {view === 'edit' && (
           <EditorView
+            key={editingDocId || (wzPrefill ? `z-oferty-${wzPrefillSeq}` : 'nowa')}
             state={state}
             editingDocId={editingDocId}
+            prefill={wzPrefill}
             onPersist={persist}
             onSaved={(id) => setEditingDocId(id)}
             onBack={() => setView('list')}
@@ -201,15 +232,12 @@ export default function App() {
         {view === 'offers' && (
           <OffersView
             offers={state.offers}
+            followUpDays={parseNumber(state.settings.offerFollowUpDays)}
+            showCosts={state.settings.showCosts !== false}
+            onIssueWz={issueWzFromOffer}
             onEdit={(id) => openOfferEditor(id)}
             onNewOffer={() => openOfferEditor(null)}
             onPreview={(offer) => setPreviewOffer(offer)}
-            onPrint={async (offer) => {
-              if (await printOffer(offer, state.settings, toast)) {
-                markOffer(offer, { printedAt: new Date().toISOString() });
-              }
-            }}
-            onPdf={(offer) => savePdfOffer(offer, state.settings, toast)}
             onEmail={async (offer) => {
               if (await emailOffer(offer, state.settings, toast, emailConfirm)) {
                 markOffer(offer, {
@@ -231,6 +259,7 @@ export default function App() {
             onSaved={(id) => setEditingOfferId(id)}
             onBack={() => setView('offers')}
             onDelete={(offer) => deleteOffer(offer, true)}
+            onIssueWz={issueWzFromOffer}
             toast={toast}
             emailConfirm={emailConfirm}
             onMark={markOffer}
@@ -249,7 +278,11 @@ export default function App() {
           title={`Podgląd WZ ${previewDoc.number}`}
           html={buildPrintHtml(previewDoc, state.settings)}
           onClose={() => setPreviewDoc(null)}
-          onPrint={() => printDocument(previewDoc, state.settings, toast)}
+          onPrint={async () => {
+            if (await printDocument(previewDoc, state.settings, toast)) {
+              markDocument(previewDoc, { printedAt: new Date().toISOString() });
+            }
+          }}
           onPdf={() => savePdfDocument(previewDoc, state.settings, toast)}
         />
       )}
@@ -258,7 +291,11 @@ export default function App() {
           title={`Podgląd oferty — ${previewOffer.client}`}
           html={buildOfferHtml(previewOffer, state.settings)}
           onClose={() => setPreviewOffer(null)}
-          onPrint={() => printOffer(previewOffer, state.settings, toast)}
+          onPrint={async () => {
+            if (await printOffer(previewOffer, state.settings, toast)) {
+              markOffer(previewOffer, { printedAt: new Date().toISOString() });
+            }
+          }}
           onPdf={() => savePdfOffer(previewOffer, state.settings, toast)}
         />
       )}

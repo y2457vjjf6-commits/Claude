@@ -24,10 +24,19 @@ export function isItemEmpty(item: OfferItem): boolean {
   return !String(item.name || '').trim() && !String(item.material || '').trim() && !itemTotal(item);
 }
 
-/** Numery Lp. dla każdej grupy — ciągłe albo od nowa w każdej tabeli. */
+/** Numery Lp. dla każdej grupy — ciągłe albo od nowa w każdej tabeli.
+ *  Wariant alternatywny zawsze liczy się od 1 i nie wpływa na numerację
+ *  tabel podstawowych: to osobna propozycja, nie kolejne pozycje zamówienia. */
 export function groupLpNumbers(groups: OfferGroup[], continuous: boolean): string[][] {
   let licznik = 0;
   return groups.map((g) => {
+    if (g.variant) {
+      let wariantowy = 0;
+      return g.items.map((it) => {
+        wariantowy += 1;
+        return String(it.lpOverride ?? '').trim() || String(wariantowy);
+      });
+    }
     if (!continuous) licznik = 0;
     return g.items.map((it) => {
       licznik += 1;
@@ -37,26 +46,126 @@ export function groupLpNumbers(groups: OfferGroup[], continuous: boolean): strin
   });
 }
 
+/** Suma pozycji jednej tabeli. */
+export function groupSum(group: OfferGroup): number {
+  return (group.items || []).reduce((s, it) => s + itemTotal(it), 0);
+}
+
+/** Kolejna litera wariantu: „Wariant A”, „Wariant B”… (puste dla tabel podstawowych). */
+export function variantLetter(groups: OfferGroup[], index: number): string {
+  if (!groups[index]?.variant) return '';
+  const kolejnosc = groups.slice(0, index + 1).filter((x) => x.variant).length;
+  return 'Wariant ' + String.fromCharCode(64 + kolejnosc);
+}
+
+/** Podpis nad tabelą: własny albo — dla wariantów — automatyczne „Wariant A”. */
+export function groupLabel(groups: OfferGroup[], index: number): string {
+  const wlasny = String(groups[index]?.title || '').trim();
+  return wlasny || variantLetter(groups, index);
+}
+
+export interface OfferVariantTotal {
+  id: string;
+  label: string;
+  /** Kwota wariantu po tym samym rabacie, jaki ma cała oferta */
+  total: number;
+}
+
 export interface OfferTotals {
-  /** Suma wszystkich pozycji, przed rabatem */
+  /** Suma pozycji podstawowych (bez wariantów), przed rabatem */
   itemsSum: number;
   discountAmount: number;
   /** Po odjęciu rabatu — kwota pokazywana jako „Cena całkowita” */
   total: number;
   deliveryAmount: number;
+  /** Wyceny wariantów alternatywnych — każda osobno, poza ceną całkowitą */
+  variants: OfferVariantTotal[];
+}
+
+/** Rabat liczony tym samym procentem dla ceny całkowitej i dla wariantów. */
+function poRabacie(kwota: number, offer: Offer): { discount: number; net: number } {
+  const procent = offer.discountEnabled ? parseNumber(offer.discountPercent) : 0;
+  const discount = Math.round(kwota * procent) / 100;
+  return { discount, net: kwota - discount };
 }
 
 export function offerTotals(offer: Offer): OfferTotals {
-  const itemsSum = (offer.groups || []).reduce(
-    (suma, g) => suma + g.items.reduce((s, it) => s + itemTotal(it), 0),
-    0
-  );
-  const procent = offer.discountEnabled ? parseNumber(offer.discountPercent) : 0;
-  const discountAmount = Math.round(itemsSum * procent) / 100;
-  const total = itemsSum - discountAmount;
+  const grupy = offer.groups || [];
+  const itemsSum = grupy.filter((g) => !g.variant).reduce((suma, g) => suma + groupSum(g), 0);
+  const { discount: discountAmount, net: total } = poRabacie(itemsSum, offer);
+  const variants = grupy
+    .map((g, i) => ({ g, i }))
+    .filter(({ g }) => g.variant)
+    .map(({ g, i }) => ({
+      id: g.id,
+      label: groupLabel(grupy, i),
+      total: poRabacie(groupSum(g), offer).net
+    }));
   const deliveryAmount =
     offer.deliveryEnabled && !offer.deliveryNotApplicable ? parseNumber(offer.deliveryPrice) : 0;
-  return { itemsSum, discountAmount, total, deliveryAmount };
+  return { itemsSum, discountAmount, total, deliveryAmount, variants };
+}
+
+/* ---------------- Koszt własny i marża (tylko w programie) ---------------- */
+
+/** Koszt własny pozycji: ilość × koszt za sztukę. */
+export function itemCost(item: OfferItem): number {
+  const koszt = String(item.cost ?? '').trim();
+  if (!koszt) return 0;
+  return parseNumber(item.qty) * parseNumber(koszt);
+}
+
+export interface OfferCosts {
+  /** Koszt własny pozycji podstawowych */
+  costSum: number;
+  /** Cena całkowita minus koszt własny */
+  margin: number;
+  /** Marża w procentach ceny całkowitej */
+  marginPercent: number;
+  /** Czy w ofercie wpisano choć jeden koszt — bez tego marża nic nie znaczy */
+  hasCosts: boolean;
+}
+
+export function offerCosts(offer: Offer): OfferCosts {
+  const podstawowe = (offer.groups || []).filter((g) => !g.variant);
+  const costSum = podstawowe.reduce((suma, g) => suma + g.items.reduce((s, it) => s + itemCost(it), 0), 0);
+  const hasCosts = podstawowe.some((g) => g.items.some((it) => String(it.cost ?? '').trim() !== ''));
+  const { total } = offerTotals(offer);
+  const margin = total - costSum;
+  const marginPercent = total ? (margin / total) * 100 : 0;
+  return { costSum, margin, marginPercent, hasCosts };
+}
+
+/* ------------------- Oferty bez odpowiedzi (przypomnienia) ------------------- */
+
+export interface OfferFollowUp {
+  offer: Offer;
+  /** Ile dni minęło od wysłania (albo od daty wystawienia, gdy nie wysłano mailem) */
+  days: number;
+}
+
+const DZIEN_MS = 24 * 60 * 60 * 1000;
+
+/** Data, od której liczymy czekanie: wysyłka maila, a gdy jej nie było — data oferty. */
+function odKiedyCzeka(offer: Offer): number | null {
+  const zrodlo = offer.emailedAt || (offer.date ? offer.date + 'T12:00:00' : '');
+  if (!zrodlo) return null;
+  const t = new Date(zrodlo).getTime();
+  return Number.isFinite(t) ? t : null;
+}
+
+/** Wysłane oferty, na które klient nie odpowiedział dłużej niż `afterDays` dni. */
+export function offersAwaitingReply(offers: Offer[], afterDays: number, now: Date = new Date()): OfferFollowUp[] {
+  if (!(afterDays > 0)) return [];
+  const lista: OfferFollowUp[] = [];
+  for (const offer of offers || []) {
+    if (offer.status !== 'wyslana') continue;
+    const od = odKiedyCzeka(offer);
+    if (od === null) continue;
+    const days = Math.floor((now.getTime() - od) / DZIEN_MS);
+    if (days >= afterDays) lista.push({ offer, days });
+  }
+  return lista.sort((a, b) => b.days - a.days);
 }
 
 const NAGLOWKI: Record<OfferColumnHeader, string> = {

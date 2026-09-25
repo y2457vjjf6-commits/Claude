@@ -515,6 +515,11 @@ input[type='checkbox'] {
   text-align: right;
 }
 
+/* Kwota nie łamie się na dwie linie w wąskiej kolumnie */
+.td-num {
+  white-space: nowrap;
+}
+
 .doc-number-cell {
   color: var(--primary);
   font-weight: 600;
@@ -773,12 +778,26 @@ input[type='checkbox'] {
 
 /* Oferty cenowe */
 .group-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
   margin-bottom: 14px;
+}
+
+/* Nazwa tabeli w jednym wierszu, jej ustawienia w drugim — nic się nie ściska */
+.group-head-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.group-head-top .spacer {
+  flex: 1;
+}
+
+.group-head-fields {
+  display: flex;
   flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 20px;
 }
 
 .group-head .card-title {
@@ -791,8 +810,8 @@ input[type='checkbox'] {
 }
 
 .group-header-select {
-  flex: 1;
-  max-width: 320px;
+  flex: 1 1 210px;
+  max-width: 300px;
 }
 
 .offer-items-table .item-material {
@@ -1097,4 +1116,135 @@ kbd {
   border-radius: 5px;
   background: var(--card);
   color: var(--ink);
+}
+
+/* ---------- Warianty oferty ---------- */
+.group-title-field {
+  flex: 1 1 220px;
+  max-width: 320px;
+}
+
+.group-variant-check {
+  flex: none;
+  align-self: center;
+  padding-top: 18px;
+  white-space: nowrap;
+}
+
+/* „wyceniany osobno” przy nagłówku wariantu */
+.group-tag {
+  margin-left: 10px;
+  padding: 2px 8px;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: var(--row-hover);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: 0;
+  vertical-align: middle;
+}
+
+/* ---------- Dane wewnętrzne: koszt własny i marża ---------- */
+.th-internal {
+  color: var(--muted);
+}
+
+.input-internal {
+  border-style: dashed;
+}
+
+.offer-margin {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--hairline);
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px 16px;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.offer-margin strong {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.internal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border: 1px dashed var(--hairline);
+  border-radius: 999px;
+  font-size: var(--text-xs);
+}
+
+.internal-badge .icon {
+  width: 13px;
+  height: 13px;
+}
+
+/* ---------- Karta komunikatu (przypomnienia, notka o źródle dokumentu) ---------- */
+.notice-card {
+  border: 1px solid var(--primary);
+  border-radius: 10px;
+  background: var(--row-hover);
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+
+.notice-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.notice-head .icon {
+  color: var(--primary);
+}
+
+.followup-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.followup-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.followup-days {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.followup-row .followup-client {
+  font-weight: 500;
+}
+
+.followup-row .spacer {
+  flex: 1;
+}
+
+/* Licznik przy zakładce w pasku bocznym */
+.nav-badge {
+  margin-left: auto;
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #FBF4E8;
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }

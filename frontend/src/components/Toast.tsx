@@ -1,7 +1,11 @@
+import { Undo2 } from 'lucide-react';
+
 export interface ToastState {
   msg: string;
   isError: boolean;
   key: number;
+  /** Działanie do cofnięcia — pokazywane jako przycisk obok treści */
+  action?: { label: string; run: () => void };
 }
 
 export default function Toast({ toast }: { toast: ToastState | null }) {
@@ -14,7 +18,13 @@ export default function Toast({ toast }: { toast: ToastState | null }) {
       aria-live="polite"
       data-testid="toast"
     >
-      {toast.msg}
+      <span className="toast-msg">{toast.msg}</span>
+      {toast.action && (
+        <button className="btn btn-small toast-action" data-testid="toast-action" onClick={toast.action.run}>
+          <Undo2 className="icon" />
+          {toast.action.label}
+        </button>
+      )}
     </div>
   );
 }

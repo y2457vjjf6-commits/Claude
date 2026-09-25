@@ -1,30 +1,53 @@
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Search, Plus, Pencil, Trash2, Save, Handshake, X } from 'lucide-react';
-import { AppState, AskConfirm, Contractor, Employee } from '../types';
+import { AppState, Contractor, Employee } from '../types';
+import SortableTh from '../components/SortableTh';
+import { nextSort, sortRows, SortState } from '../lib/listing';
+import { isRowBackgroundClick, useRowKeyboard } from '../hooks/useRowKeyboard';
 import { contractorCode } from '../lib/numbering';
 import { uid } from '../lib/storage';
 
 interface Props {
   state: AppState;
   onPersist: (next: AppState) => Promise<void>;
-  toast: (msg: string, isError?: boolean) => void;
-  askConfirm: AskConfirm;
+  toast: (msg: string, isError?: boolean, action?: { label: string; run: () => void }) => void;
 }
 
-export default function ContractorsView({ state, onPersist, toast, askConfirm }: Props) {
+/** Wartość kolumny do sortowania. */
+function wartosc(c: Contractor, key: string): unknown {
+  switch (key) {
+    case 'nip':
+      return c.nip || '';
+    case 'adres':
+      return c.address || '';
+    case 'email':
+      return c.email || '';
+    case 'kod':
+      return c.code || contractorCode(c.name);
+    default:
+      return c.name;
+  }
+}
+
+export default function ContractorsView({ state, onPersist, toast }: Props) {
   const [q, setQ] = useState('');
+  const [sort, setSort] = useState<SortState>({ key: 'firma', dir: 'asc' });
+  // zawsze świeży stan — potrzebny przy cofaniu usunięcia
+  const stateRef = useRef(state);
+  stateRef.current = state;
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', nip: '', address: '', email: '', code: '' });
   const [employees, setEmployees] = useState<Employee[]>([]);
 
   const query = q.trim().toLowerCase();
-  const list = state.contractors
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name, 'pl'))
-    .filter(
+  const list = useMemo(() => {
+    const znalezieni = state.contractors.filter(
       (c) => !query || [c.name, c.nip, c.address, c.email].some((v) => String(v || '').toLowerCase().includes(query))
     );
+    return sortRows(znalezieni, sort, wartosc);
+  }, [state.contractors, query, sort]);
+  const sortuj = (key: string) => setSort((s) => nextSort(s, key, false));
 
   const anyContractors = state.contractors.length > 0;
   const editingContractor = editingId ? state.contractors.find((c) => c.id === editingId) : null;
@@ -68,11 +91,20 @@ export default function ContractorsView({ state, onPersist, toast, askConfirm }:
 
   const removeEmployee = (id: string) => setEmployees((arr) => arr.filter((e) => e.id !== id));
 
+  // Usuwamy od razu, z możliwością cofnięcia — bez okienka z pytaniem
   const deleteContractor = async (id: string) => {
-    const c = state.contractors.find((x) => x.id === id);
-    if (!(await askConfirm(`Usunąć kontrahenta „${c?.name}” z bazy? Wystawione dokumenty pozostaną bez zmian.`))) return;
-    const next = { ...state, contractors: state.contractors.filter((x) => x.id !== id) };
-    await onPersist(next);
+    const kopia = state.contractors.find((x) => x.id === id);
+    if (!kopia) return;
+    const zapasowa = structuredClone(kopia);
+    await onPersist({ ...state, contractors: state.contractors.filter((x) => x.id !== id) });
+    toast(`Usunięto kontrahenta „${zapasowa.name}”. Wystawione dokumenty zostały bez zmian.`, false, {
+      label: 'Cofnij',
+      run: () => {
+        const teraz = stateRef.current;
+        if (teraz.contractors.some((c) => c.id === zapasowa.id)) return;
+        onPersist({ ...teraz, contractors: [...teraz.contractors, zapasowa] });
+      }
+    });
   };
 
   return (
@@ -99,43 +131,20 @@ export default function ContractorsView({ state, onPersist, toast, askConfirm }:
 
       {anyContractors && (
         <div className="table-card">
-          <table className="table" data-testid="contractors-table">
+          <table className="table table-rows" data-testid="contractors-table">
             <thead>
               <tr>
-                <th>Firma / Imię</th>
-                <th style={{ width: 140 }}>NIP</th>
-                <th>Adres</th>
-                <th style={{ width: 210 }}>E-mail</th>
-                <th style={{ width: 70 }}>Kod</th>
+                <SortableTh label="Firma / Imię" sortKey="firma" sort={sort} onSort={sortuj} />
+                <SortableTh label="NIP" sortKey="nip" sort={sort} onSort={sortuj} style={{ width: 150 }} />
+                <SortableTh label="Adres" sortKey="adres" sort={sort} onSort={sortuj} />
+                <SortableTh label="E-mail" sortKey="email" sort={sort} onSort={sortuj} style={{ width: 210 }} />
+                <SortableTh label="Kod" sortKey="kod" sort={sort} onSort={sortuj} style={{ width: 84 }} />
                 <th className="th-actions" style={{ width: 170 }}>Akcje</th>
               </tr>
             </thead>
             <tbody>
               {list.map((c) => (
-                <tr key={c.id} data-testid={`contractor-row-${c.id}`}>
-                  <td>{c.name}</td>
-                  <td className="num">{c.nip}</td>
-                  <td>{c.address}</td>
-                  <td>{c.email}</td>
-                  <td>{c.code || contractorCode(c.name)}</td>
-                  <td>
-                    <div className="row-actions">
-                      <button className="btn btn-small btn-light" data-testid={`contractor-edit-${c.id}`} onClick={() => openForm(c)}>
-                        <Pencil className="icon" />
-                        Edytuj
-                      </button>
-                      <button
-                        className="btn btn-small btn-danger"
-                        data-testid={`contractor-delete-${c.id}`}
-                        aria-label="Usuń"
-                        title="Usuń"
-                        onClick={() => deleteContractor(c.id)}
-                      >
-                        <Trash2 className="icon" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                <ContractorRow key={c.id} contractor={c} onOpen={openForm} onDelete={deleteContractor} />
               ))}
               {!list.length && (
                 <tr>
@@ -279,5 +288,49 @@ export default function ContractorsView({ state, onPersist, toast, askConfirm }:
         </div>
       )}
     </section>
+  );
+}
+
+interface RowProps {
+  contractor: Contractor;
+  onOpen: (c: Contractor) => void;
+  onDelete: (id: string) => void;
+}
+
+function ContractorRow({ contractor: c, onOpen, onDelete }: RowProps) {
+  const naKlawisz = useRowKeyboard({ onEnter: () => onOpen(c) });
+  return (
+    <tr
+      data-row
+      tabIndex={0}
+      data-testid={`contractor-row-${c.id}`}
+      aria-label={`Kontrahent ${c.name}`}
+      onClick={(e) => isRowBackgroundClick(e) && e.currentTarget.focus()}
+      onDoubleClick={(e) => isRowBackgroundClick(e) && onOpen(c)}
+      onKeyDown={naKlawisz}
+    >
+      <td>{c.name}</td>
+      <td className="num">{c.nip}</td>
+      <td>{c.address}</td>
+      <td>{c.email}</td>
+      <td className="num">{c.code || contractorCode(c.name)}</td>
+      <td>
+        <div className="row-actions">
+          <button className="btn btn-small btn-light" data-testid={`contractor-edit-${c.id}`} onClick={() => onOpen(c)}>
+            <Pencil className="icon" />
+            Edytuj
+          </button>
+          <button
+            className="btn btn-small btn-danger"
+            data-testid={`contractor-delete-${c.id}`}
+            aria-label="Usuń"
+            title="Usuń"
+            onClick={() => onDelete(c.id)}
+          >
+            <Trash2 className="icon" />
+          </button>
+        </div>
+      </td>
+    </tr>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft, FileOutput } from 'lucide-react';
 import { AppState, AskConfirm, Item, WZDocument } from '../types';
 import { WzPrefill } from '../lib/offerToWz';
+import Combobox from '../components/Combobox';
 import { computeNumberFor, contractorCode } from '../lib/numbering';
 import { itemNameSuggestions, unitSuggestions } from '../lib/suggestions';
 import { uid } from '../lib/storage';
@@ -125,6 +126,12 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
     state.contractors.find((c) => c.id === form.contractorSel)?.employees?.filter((e) => e.name) || [];
 
   const selectContractor = (id: string) => {
+    if (!id) {
+      // „wyczyść wybór” zdejmuje powiązanie, ale zostawia wpisane dane —
+      // to one trafiają na dokument
+      set({ contractorSel: '' });
+      return;
+    }
     set({ contractorSel: id });
     const c = state.contractors.find((x) => x.id === id);
     if (c) {
@@ -288,7 +295,7 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
         </h1>
         <div className="doc-number" data-testid="number-preview-pill">
           <span className="doc-number-label">Numer</span>
-          <strong data-testid="number-preview">{numberPreview || '—'}</strong>
+          <strong data-testid="number-preview">{form.cName.trim() ? numberPreview : '—'}</strong>
         </div>
       </div>
 
@@ -331,20 +338,25 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
       <div className="card">
         <h3 className="card-title">Odbiorca / Nabywca</h3>
         <div className="grid2">
-          <label className="field">
+          <div className="field">
             <span>Wybierz z bazy kontrahentów</span>
-            <select className="input" data-testid="contractor-select" value={form.contractorSel} onChange={(e) => selectContractor(e.target.value)}>
-              <option value="">— wpisz ręcznie lub wybierz —</option>
-              {state.contractors
+            <Combobox
+              testId="contractor-select"
+              label="Wybierz z bazy kontrahentów"
+              placeholder="Szukaj: nazwa, NIP, adres…"
+              value={form.contractorSel}
+              items={state.contractors
                 .slice()
                 .sort((a, b) => a.name.localeCompare(b.name, 'pl'))
-                .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-            </select>
-          </label>
+                .map((c) => ({
+                  id: c.id,
+                  label: c.name,
+                  sub: [c.nip, c.address].filter(Boolean).join(' · '),
+                  search: [c.name, c.nip, c.address, c.email].filter(Boolean).join(' ')
+                }))}
+              onPick={selectContractor}
+            />
+          </div>
           <label className="checkbox-field">
             <input
               type="checkbox"

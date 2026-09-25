@@ -1,7 +1,12 @@
 import { Settings } from '../types';
 import { hasApi } from './storage';
 
-export type ToastFn = (msg: string, isError?: boolean) => void;
+export interface ToastAction {
+  label: string;
+  run: () => void;
+}
+
+export type ToastFn = (msg: string, isError?: boolean, action?: ToastAction) => void;
 
 /** Wszystko, czego potrzeba, żeby wydrukować, zapisać albo wysłać dokument. */
 export interface PrintableDocument {

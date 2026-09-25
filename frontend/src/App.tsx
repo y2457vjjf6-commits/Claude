@@ -14,6 +14,7 @@ import Sidebar from './components/Sidebar';
 import Toast, { ToastState } from './components/Toast';
 import ConfirmDialog, { ConfirmRequest } from './components/ConfirmDialog';
 import PreviewModal from './components/PreviewModal';
+import CommandPalette from './components/CommandPalette';
 import DocumentsView from './views/DocumentsView';
 import EditorView from './views/EditorView';
 import ContractorsView from './views/ContractorsView';
@@ -32,12 +33,16 @@ export default function App() {
   // każde przeniesienie otwiera świeży formularz, a zwykła „Nowa WZ” go czyści.
   const [wzPrefill, setWzPrefill] = useState<WzPrefill | null>(null);
   const [wzPrefillSeq, setWzPrefillSeq] = useState(0);
+  const [paletaOtwarta, setPaletaOtwarta] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const toast = useCallback((msg: string, isError?: boolean) => {
-    setToastState({ msg, isError: !!isError, key: Date.now() });
+  const toast = useCallback((msg: string, isError?: boolean, action?: { label: string; run: () => void }) => {
+    const zamknij = () => setToastState(null);
+    const opakowane = action ? { label: action.label, run: () => { action.run(); zamknij(); } } : undefined;
+    setToastState({ msg, isError: !!isError, key: Date.now(), action: opakowane });
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToastState(null), isError ? 6000 : 3000);
+    // na cofnięcie trzeba dać czas: 9 sekund zamiast 3
+    toastTimer.current = setTimeout(zamknij, action ? 9000 : isError ? 6000 : 3000);
   }, []);
 
   const persist = useCallback(async (next: AppState) => {
@@ -121,6 +126,11 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (ev: KeyboardEvent) => {
+      if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'k') {
+        ev.preventDefault();
+        setPaletaOtwarta((o) => !o);
+        return;
+      }
       if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'n') {
         ev.preventDefault();
         // Ctrl+N zakłada to, co pasuje do miejsca, w którym jesteś
@@ -140,12 +150,23 @@ export default function App() {
     persist(next);
   };
 
+  // Usunięcie działa od razu, a przez 9 sekund można je cofnąć — szybciej
+  // niż potwierdzanie i bezpieczniej, bo ratuje też odruchowe „tak”.
   const deleteOffer = async (offer: Offer, backToList: boolean) => {
-    if (!(await askConfirm(`Usunąć ofertę dla „${offer.client}”? Tej operacji nie można cofnąć.`))) return;
+    const kopia = structuredClone(offer);
     const next = { ...state, offers: state.offers.filter((o) => o.id !== offer.id) };
     await persist(next);
     if (backToList) setView('offers');
-    toast('Usunięto ofertę.');
+    toast(`Usunięto ofertę dla „${kopia.client}”.`, false, {
+      label: 'Cofnij',
+      run: () =>
+        setState((biezacy) => {
+          if (!biezacy || biezacy.offers.some((o) => o.id === kopia.id)) return biezacy;
+          const przywrocone = { ...biezacy, offers: [...biezacy.offers, kopia] };
+          persistState(przywrocone).then(() => backupInBackground(przywrocone));
+          return przywrocone;
+        })
+    });
   };
 
   // Przepisanie oferty na nową WZ — pozycje i odbiorca gotowe do sprawdzenia
@@ -170,11 +191,20 @@ export default function App() {
   };
 
   const deleteDocument = async (doc: WZDocument, backToList: boolean) => {
-    if (!(await askConfirm(`Usunąć dokument ${doc.number}? Tej operacji nie można cofnąć.`))) return;
+    const kopia = structuredClone(doc);
     const next = { ...state, documents: state.documents.filter((d) => d.id !== doc.id) };
     await persist(next);
     if (backToList) setView('list');
-    toast(`Usunięto dokument ${doc.number}.`);
+    toast(`Usunięto dokument ${kopia.number}.`, false, {
+      label: 'Cofnij',
+      run: () =>
+        setState((biezacy) => {
+          if (!biezacy || biezacy.documents.some((d) => d.id === kopia.id)) return biezacy;
+          const przywrocone = { ...biezacy, documents: [...biezacy.documents, kopia] };
+          persistState(przywrocone).then(() => backupInBackground(przywrocone));
+          return przywrocone;
+        })
+    });
   };
 
   return (
@@ -227,7 +257,7 @@ export default function App() {
           />
         )}
         {view === 'contractors' && (
-          <ContractorsView state={state} onPersist={persist} toast={toast} askConfirm={askConfirm} />
+          <ContractorsView state={state} onPersist={persist} toast={toast} />
         )}
         {view === 'offers' && (
           <OffersView
@@ -271,6 +301,19 @@ export default function App() {
           <SettingsView state={state} onPersist={persist} toast={toast} askConfirm={askConfirm} />
         )}
       </main>
+      {paletaOtwarta && (
+        <CommandPalette
+          state={state}
+          onClose={() => setPaletaOtwarta(false)}
+          handlers={{
+            otworzDokument: (id) => openEditor(id),
+            otworzOferte: (id) => openOfferEditor(id),
+            idzDo: (v) => setView(v),
+            nowaWz: () => openEditor(null),
+            nowaOferta: () => openOfferEditor(null)
+          }}
+        />
+      )}
       <Toast toast={toastState} />
       {confirmReq && <ConfirmDialog request={confirmReq} onClose={closeConfirm} />}
       {previewDoc && (

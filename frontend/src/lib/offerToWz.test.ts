@@ -31,7 +31,6 @@ const oferta = (patch: Partial<Offer> = {}): Offer =>
     deliveryEnabled: false,
     deliveryPrice: '',
     deliveryNotApplicable: false,
-    measurementSource: 'przesłanych',
     installationIncluded: true,
     deadlineDays: '14',
     deadlineBasis: 'akceptacji',

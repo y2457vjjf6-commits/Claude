@@ -343,6 +343,13 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Uwagi końcowe — ten sam tekst pod każdą ofertą */
+.of-closing {
+  margin-top: 12pt;
+  font-size: 9.5pt;
+  line-height: 1.45;
+}
+
 /* Klauzula prawna pod warunkami */
 .of-legal {
   margin-top: 14pt;
@@ -372,9 +379,12 @@
 /* ---------- Podpis ---------- */
 
 .of-sign {
-  margin-top: 26pt;
+  margin-top: 22pt;
   text-align: right;
   font-family: Arial, Helvetica, sans-serif;
+  /* „Z poważaniem” nigdy nie zostaje bez nazwiska na następnej stronie */
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .of-sign-regards {

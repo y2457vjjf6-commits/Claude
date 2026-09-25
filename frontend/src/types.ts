@@ -90,12 +90,13 @@ export interface Settings {
     deadlineDays: string;
     validityDays: string;
     installationIncluded: boolean;
-    measurementSource: 'dokonanych' | 'przesłanych';
     /** Czy nowe oferty mają klauzulę informacyjną */
     legalClause: boolean;
   };
   /** Treść klauzuli drukowanej na ofercie */
   offerLegalText: string;
+  /** Uwagi końcowe dopisywane do każdej oferty (puste = nie drukujemy) */
+  offerClosingText: string;
   /** Po ilu dniach bez decyzji przypominać o wysłanej ofercie */
   offerFollowUpDays: string;
   /** Czy pokazywać koszt własny i marżę (tylko w programie, nigdy na dokumencie) */
@@ -188,8 +189,6 @@ export interface Offer {
   /** Kwota dostawy; puste przy „nie dotyczy” */
   deliveryPrice: string;
   deliveryNotApplicable: boolean;
-  /** „dokonanych” albo „przesłanych” pomiarów */
-  measurementSource: 'dokonanych' | 'przesłanych';
   installationIncluded: boolean;
   deadlineDays: string;
   deadlineBasis: 'akceptacji' | 'potwierdzenia';

@@ -83,7 +83,6 @@ export default function OfferEditorView({
           deliveryEnabled: false,
           deliveryPrice: '',
           deliveryNotApplicable: false,
-          measurementSource: d.measurementSource,
           installationIncluded: d.installationIncluded,
           deadlineDays: d.deadlineDays,
           deadlineBasis: 'akceptacji',
@@ -568,13 +567,6 @@ export default function OfferEditorView({
       <div className="card">
         <h3 className="card-title">Warunki oferty</h3>
         <div className="grid2">
-          <label className="field">
-            <span>Oferta sporządzona na podstawie…</span>
-            <select className="input" data-testid="offer-measurement" value={offer.measurementSource} onChange={(e) => set({ measurementSource: e.target.value as Offer['measurementSource'] })}>
-              <option value="dokonanych">dokonanych pomiarów</option>
-              <option value="przesłanych">przesłanych pomiarów</option>
-            </select>
-          </label>
           <label className="field">
             <span>Montaż</span>
             <select className="input" data-testid="offer-installation" value={offer.installationIncluded ? 'tak' : 'nie'} onChange={(e) => set({ installationIncluded: e.target.value === 'tak' })}>

@@ -33,9 +33,9 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
     offerDeadlineDays: st.offerDefaults?.deadlineDays || '21',
     offerValidityDays: st.offerDefaults?.validityDays || '30',
     offerInstallation: st.offerDefaults?.installationIncluded ?? true,
-    offerMeasurement: (st.offerDefaults?.measurementSource || 'przesłanych') as string,
     offerLegalClause: st.offerDefaults?.legalClause ?? true,
     offerLegalText: st.offerLegalText || '',
+    offerClosingText: st.offerClosingText || '',
     offerFollowUpDays: st.offerFollowUpDays || '7',
     showCosts: st.showCosts !== false,
     mBody: st.emailBody
@@ -76,10 +76,10 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
       deadlineDays: form.offerDeadlineDays.trim(),
       validityDays: form.offerValidityDays.trim(),
       installationIncluded: form.offerInstallation,
-      measurementSource: form.offerMeasurement as 'dokonanych' | 'przesłanych',
       legalClause: form.offerLegalClause
     };
     next.settings.offerLegalText = form.offerLegalText;
+    next.settings.offerClosingText = form.offerClosingText;
     next.settings.offerFollowUpDays = form.offerFollowUpDays.trim() || '0';
     next.settings.showCosts = form.showCosts;
     next.settings.emailBody = form.mBody;
@@ -204,6 +204,20 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
           />
         </label>
         <label className="field" style={{ marginTop: 14 }}>
+          <span>Uwagi końcowe dopisywane do każdej oferty</span>
+          <textarea
+            className="input"
+            data-testid="offer-closing-text"
+            rows={8}
+            value={form.offerClosingText}
+            onChange={(e) => set({ offerClosingText: e.target.value })}
+          />
+          <span className="muted field-hint">
+            Drukowane pod warunkami oferty, na każdym dokumencie. Każdy wiersz to osobna linia;
+            znak • na początku wiersza robi punkt listy. Puste pole wyłącza ten tekst.
+          </span>
+        </label>
+        <label className="field" style={{ marginTop: 14 }}>
           <span>Klauzula drukowana na ofercie</span>
           <textarea
             className="input"
@@ -258,13 +272,6 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
           <label className="field">
             <span>Domyślna ważność oferty (dni)</span>
             <input type="text" className="input num" data-testid="offer-default-validity" value={form.offerValidityDays} onChange={(e) => set({ offerValidityDays: e.target.value })} />
-          </label>
-          <label className="field">
-            <span>Domyślnie: pomiary</span>
-            <select className="input" data-testid="offer-default-measurement" value={form.offerMeasurement} onChange={(e) => set({ offerMeasurement: e.target.value })}>
-              <option value="przesłanych">przesłane przez klienta</option>
-              <option value="dokonanych">dokonane przez nas</option>
-            </select>
           </label>
           <label className="field">
             <span>Domyślnie: montaż</span>

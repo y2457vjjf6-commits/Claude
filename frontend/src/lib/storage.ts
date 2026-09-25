@@ -20,12 +20,25 @@ export const DEFAULT_STATE: AppState = {
       deadlineDays: '21',
       validityDays: '30',
       installationIncluded: true,
-      measurementSource: 'przesłanych',
       legalClause: true
     },
     offerLegalText:
       'Niniejsza oferta ma charakter informacyjny i nie stanowi oferty handlowej ' +
       'w rozumieniu art. 66 § 1 Kodeksu cywilnego. Ceny podano w złotych, w kwotach brutto.',
+    offerClosingText:
+      'Wycena została sporządzona na podstawie wymiarów przekazanych przez Zamawiającego. ' +
+      'Przed przyjęciem zamówienia do realizacji wykonujemy pomiar kontrolny — jeżeli rzeczywiste ' +
+      'wymiary będą odbiegać od podanych, cena może ulec zmianie. O każdej takiej zmianie ' +
+      'informujemy przed rozpoczęciem produkcji.\n' +
+      '• Zamówienie przyjmujemy do realizacji po akceptacji oferty przez Zamawiającego.\n' +
+      '• Produkty wykonywane są na indywidualne zamówienie, w wymiarach i kolorach wskazanych ' +
+      'przez Zamawiającego. Zgodnie z art. 38 ust. 1 pkt 3 ustawy o prawach konsumenta nie ' +
+      'podlegają one zwrotowi.\n' +
+      '• Kolory materiałów we wzornikach i na zdjęciach mogą nieznacznie różnić się od rzeczywistych.\n' +
+      '• Na wykonane produkty udzielamy 24 miesięcy gwarancji. Gwarancja nie obejmuje uszkodzeń ' +
+      'mechanicznych ani skutków niewłaściwego użytkowania.\n' +
+      '• Podany termin realizacji może ulec wydłużeniu z przyczyn niezależnych od nas, ' +
+      'np. z powodu dostępności materiału u producenta.',
     offerFollowUpDays: '7',
     showCosts: true,
     emailBody:

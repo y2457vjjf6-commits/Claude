@@ -90,6 +90,11 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
     ? `<div class="of-notes">${esc(offer.notes).replace(/\n/g, '<br>')}</div>`
     : '';
 
+  // Uwagi końcowe: ten sam tekst pod każdą ofertą, z Ustawień
+  const uwagiKoncowe = String(settings.offerClosingText || '').trim()
+    ? `<div class="of-closing">${esc(settings.offerClosingText.trim()).replace(/\n/g, '<br>')}</div>`
+    : '';
+
   const klauzula = offer.legalClause && String(settings.offerLegalText || '').trim()
     ? `<div class="of-legal">${esc(settings.offerLegalText)}</div>`
     : '';
@@ -121,7 +126,6 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
     </div>
 
     <div class="of-conditions">
-      <div>Oferta sporządzona na podstawie ${esc(offer.measurementSource)} pomiarów.</div>
       <div>Ceny ${offer.installationIncluded ? 'uwzględniają montaż' : 'nie uwzględniają montażu'}.</div>
       <div class="of-bullet">• Termin realizacji – do ${esc(offer.deadlineDays)} dni roboczych od daty ${esc(
         offer.deadlineBasis
@@ -131,6 +135,7 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
       ${uwagi}
     </div>
 
+    ${uwagiKoncowe}
     ${klauzula}
 
     <div class="of-sign">

@@ -1,4 +1,5 @@
 import { Settings, WZDocument } from '../types';
+import { LOGO_LECHROL } from '../assets/logo';
 import { hasApi } from './storage';
 
 export function esc(str: unknown): string {
@@ -47,7 +48,7 @@ export function buildPrintHtml(doc: WZDocument, settings: Settings): string {
   <div class="wz-doc">
     <div class="wz-header">
       <div>
-        <div class="wz-logo-name">LECHROL</div>
+        <div class="wz-logo"><img src="${LOGO_LECHROL}" alt="LECHROL"></div>
         <div class="wz-seller-lines">
           ${esc(s.name)}<br>
           ${esc(s.address)}<br>

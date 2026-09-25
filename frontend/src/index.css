@@ -770,6 +770,55 @@ input[type='checkbox'] {
   color: var(--ink);
 }
 
+/* Oferty cenowe */
+.group-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.group-head .card-title {
+  margin: 0;
+  flex: none;
+}
+
+.group-header-select {
+  flex: 1;
+  max-width: 320px;
+}
+
+.offer-items-table .item-material {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.item-lp-input {
+  text-align: right;
+}
+
+.offer-summary-box {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: var(--row-hover);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+
+.offer-summary-total {
+  font-size: 17px;
+  color: var(--primary);
+}
+
+.input-small {
+  padding: 4px 8px;
+  font-size: 13.5px;
+}
+
 /* Znaczniki wydruku i wysyłki na liście dokumentów */
 .doc-status {
   display: flex;

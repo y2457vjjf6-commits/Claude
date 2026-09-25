@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, AskConfirm, ViewName, WZDocument } from './types';
+import { AppState, AskConfirm, Offer, ViewName, WZDocument } from './types';
 import { loadState, persistState, DEFAULT_STATE } from './lib/storage';
-import { printDocument, savePdfDocument, emailDocument } from './lib/printing';
+import { printDocument, savePdfDocument, emailDocument, buildPrintHtml } from './lib/printing';
+import { printOffer, savePdfOffer, emailOffer } from './lib/offerActions';
+import { buildOfferHtml } from './lib/printingOffer';
+import { offerFileName } from './lib/offers';
+import OffersView from './views/OffersView';
+import OfferEditorView from './views/OfferEditorView';
 import { backupInBackground } from './lib/backup';
 import ReportsView from './views/ReportsView';
 import Sidebar from './components/Sidebar';
@@ -20,6 +25,8 @@ export default function App() {
   const [toastState, setToastState] = useState<ToastState | null>(null);
   const [confirmReq, setConfirmReq] = useState<ConfirmRequest | null>(null);
   const [previewDoc, setPreviewDoc] = useState<WZDocument | null>(null);
+  const [editingOfferId, setEditingOfferId] = useState<string | null>(null);
+  const [previewOffer, setPreviewOffer] = useState<Offer | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toast = useCallback((msg: string, isError?: boolean) => {
@@ -84,6 +91,23 @@ export default function App() {
     document.documentElement.dataset.theme = theme;
   }, [state?.settings.theme]);
 
+  const markOffer = useCallback(async (offer: Offer, patch: Partial<Offer>) => {
+    setState((biezacy) => {
+      if (!biezacy) return biezacy;
+      const next = {
+        ...biezacy,
+        offers: biezacy.offers.map((o) => (o.id === offer.id ? { ...o, ...patch } : o))
+      };
+      persistState(next).then(() => backupInBackground(next));
+      return next;
+    });
+  }, []);
+
+  const openOfferEditor = useCallback((id: string | null) => {
+    setEditingOfferId(id);
+    setView('offerEdit');
+  }, []);
+
   const openEditor = useCallback((id: string | null) => {
     setEditingDocId(id);
     setView('edit');
@@ -106,6 +130,14 @@ export default function App() {
     const next = structuredClone(state);
     next.settings.theme = state.settings.theme === 'light' ? 'dark' : 'light';
     persist(next);
+  };
+
+  const deleteOffer = async (offer: Offer, backToList: boolean) => {
+    if (!(await askConfirm(`Usunąć ofertę dla „${offer.client}”? Tej operacji nie można cofnąć.`))) return;
+    const next = { ...state, offers: state.offers.filter((o) => o.id !== offer.id) };
+    await persist(next);
+    if (backToList) setView('offers');
+    toast('Usunięto ofertę.');
   };
 
   const deleteDocument = async (doc: WZDocument, backToList: boolean) => {
@@ -162,6 +194,44 @@ export default function App() {
         {view === 'contractors' && (
           <ContractorsView state={state} onPersist={persist} toast={toast} askConfirm={askConfirm} />
         )}
+        {view === 'offers' && (
+          <OffersView
+            offers={state.offers}
+            onEdit={(id) => openOfferEditor(id)}
+            onNewOffer={() => openOfferEditor(null)}
+            onPreview={(offer) => setPreviewOffer(offer)}
+            onPrint={async (offer) => {
+              if (await printOffer(offer, state.settings, toast)) {
+                markOffer(offer, { printedAt: new Date().toISOString() });
+              }
+            }}
+            onPdf={(offer) => savePdfOffer(offer, state.settings, toast)}
+            onEmail={async (offer) => {
+              if (await emailOffer(offer, state.settings, toast, emailConfirm)) {
+                markOffer(offer, {
+                  emailedAt: new Date().toISOString(),
+                  emailedTo: offer.clientEmail,
+                  status: offer.status === 'szkic' ? 'wyslana' : offer.status
+                });
+              }
+            }}
+            onDelete={(offer) => deleteOffer(offer, false)}
+            onStatusChange={(offer, status) => markOffer(offer, { status })}
+          />
+        )}
+        {view === 'offerEdit' && (
+          <OfferEditorView
+            state={state}
+            editingOfferId={editingOfferId}
+            onPersist={persist}
+            onSaved={(id) => setEditingOfferId(id)}
+            onBack={() => setView('offers')}
+            onDelete={(offer) => deleteOffer(offer, true)}
+            toast={toast}
+            emailConfirm={emailConfirm}
+            onMark={markOffer}
+          />
+        )}
         {view === 'reports' && <ReportsView state={state} />}
         {view === 'settings' && (
           <SettingsView state={state} onPersist={persist} toast={toast} askConfirm={askConfirm} />
@@ -171,11 +241,20 @@ export default function App() {
       {confirmReq && <ConfirmDialog request={confirmReq} onClose={closeConfirm} />}
       {previewDoc && (
         <PreviewModal
-          doc={previewDoc}
-          settings={state.settings}
+          title={`Podgląd WZ ${previewDoc.number}`}
+          html={buildPrintHtml(previewDoc, state.settings)}
           onClose={() => setPreviewDoc(null)}
-          onPrint={(doc) => printDocument(doc, state.settings, toast)}
-          onPdf={(doc) => savePdfDocument(doc, state.settings, toast)}
+          onPrint={() => printDocument(previewDoc, state.settings, toast)}
+          onPdf={() => savePdfDocument(previewDoc, state.settings, toast)}
+        />
+      )}
+      {previewOffer && (
+        <PreviewModal
+          title={`Podgląd oferty — ${previewOffer.client}`}
+          html={buildOfferHtml(previewOffer, state.settings)}
+          onClose={() => setPreviewOffer(null)}
+          onPrint={() => printOffer(previewOffer, state.settings, toast)}
+          onPdf={() => savePdfOffer(previewOffer, state.settings, toast)}
         />
       )}
     </div>

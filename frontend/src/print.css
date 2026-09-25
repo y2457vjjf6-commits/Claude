@@ -41,11 +41,13 @@
   margin-bottom: 8pt;
 }
 
-.wz-logo-name {
-  font-size: 22pt;
-  font-weight: 800;
-  letter-spacing: 3pt;
-  margin-bottom: 6pt;
+.wz-logo {
+  margin-bottom: 7pt;
+}
+
+.wz-logo img {
+  height: 30pt;
+  width: auto;
 }
 
 .wz-seller-lines { font-size: 9pt; }
@@ -196,4 +198,137 @@
   text-align: center;
   font-size: 8pt;
   color: #333;
+}
+
+/* ============================ Oferta cenowa ============================ */
+
+.of-doc {
+  font-family: 'Century Schoolbook', Century, Georgia, serif;
+  font-size: 11.5pt;
+  color: #000;
+  line-height: 1.35;
+}
+
+.of-logo {
+  margin-bottom: 10pt;
+}
+
+.of-logo img {
+  height: 34pt;
+  width: auto;
+}
+
+.of-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14pt;
+}
+
+.of-seller {
+  font-size: 11pt;
+  line-height: 1.45;
+}
+
+.of-date {
+  font-size: 11pt;
+  white-space: nowrap;
+  padding-top: 1pt;
+}
+
+.of-client {
+  margin-bottom: 12pt;
+  font-size: 11.5pt;
+}
+
+.of-client-label {
+  font-weight: 700;
+  margin-right: 4pt;
+}
+
+/* ---------- Tabele pozycji ---------- */
+
+.of-items {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12pt;
+  page-break-inside: auto;
+}
+
+.of-items th {
+  border: 0.5pt solid var(--wz-rule-strong);
+  background: var(--wz-head-bg);
+  font-size: 10.5pt;
+  font-weight: 700;
+  padding: 3pt 6pt;
+  text-align: left;
+}
+
+.of-items td {
+  border: 0.5pt solid var(--wz-rule);
+  padding: 4pt 6pt;
+  font-size: 11pt;
+  vertical-align: top;
+}
+
+.of-items tr {
+  page-break-inside: avoid;
+}
+
+.of-items .of-lp { width: 28pt; }
+.of-items .of-qty { width: 64pt; }
+.of-items .of-price { width: 84pt; }
+
+.of-material {
+  font-size: 10.5pt;
+}
+
+/* ---------- Podsumowanie ---------- */
+
+.of-summary {
+  text-align: right;
+  margin: 14pt 0 16pt;
+}
+
+.of-sum-line {
+  font-size: 11pt;
+  margin-bottom: 3pt;
+}
+
+.of-total {
+  font-size: 12.5pt;
+  font-weight: 700;
+}
+
+/* ---------- Warunki ---------- */
+
+.of-conditions {
+  font-size: 11pt;
+  line-height: 1.5;
+}
+
+.of-bullet {
+  margin-top: 6pt;
+}
+
+.of-notes {
+  margin-top: 8pt;
+  white-space: pre-wrap;
+}
+
+/* ---------- Podpis ---------- */
+
+.of-sign {
+  margin-top: 26pt;
+  text-align: right;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.of-sign-regards {
+  font-size: 12pt;
+}
+
+.of-sign-name {
+  font-size: 15pt;
+  margin-top: 2pt;
 }

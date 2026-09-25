@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Save, PlugZap, Loader2, FolderOpen, HardDriveDownload, HardDriveUpload } from 'lucide-react';
+import { Save, PlugZap, Loader2, FolderOpen, HardDriveDownload, HardDriveUpload, Plus, X } from 'lucide-react';
 import { AppState } from '../types';
 import { dataLocation, hasApi } from '../lib/storage';
 import { backupNow, chooseBackupFolder, restoreBackup } from '../lib/backup';
@@ -29,6 +29,11 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
     mSubject: st.emailSubject,
     mCopyTo: st.emailCopyTo || '',
     backupFolder: st.backupFolder || '',
+    issuers: (st.issuers || []).join('\n'),
+    offerDeadlineDays: st.offerDefaults?.deadlineDays || '21',
+    offerValidityDays: st.offerDefaults?.validityDays || '30',
+    offerInstallation: st.offerDefaults?.installationIncluded ?? true,
+    offerMeasurement: (st.offerDefaults?.measurementSource || 'przesłanych') as string,
     mBody: st.emailBody
   });
   const [location, setLocation] = useState<string | null>(null);
@@ -58,6 +63,16 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
     next.settings.emailSubject = form.mSubject;
     next.settings.emailCopyTo = form.mCopyTo.trim();
     next.settings.backupFolder = form.backupFolder.trim();
+    next.settings.issuers = form.issuers
+      .split('\n')
+      .map((n) => n.trim())
+      .filter(Boolean);
+    next.settings.offerDefaults = {
+      deadlineDays: form.offerDeadlineDays.trim(),
+      validityDays: form.offerValidityDays.trim(),
+      installationIncluded: form.offerInstallation,
+      measurementSource: form.offerMeasurement as 'dokonanych' | 'przesłanych'
+    };
     next.settings.emailBody = form.mBody;
     await onPersist(next);
     toast('Zapisano ustawienia.');
@@ -81,6 +96,16 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
     }
     const next = structuredClone(state);
     next.settings.backupFolder = form.backupFolder.trim();
+    next.settings.issuers = form.issuers
+      .split('\n')
+      .map((n) => n.trim())
+      .filter(Boolean);
+    next.settings.offerDefaults = {
+      deadlineDays: form.offerDeadlineDays.trim(),
+      validityDays: form.offerValidityDays.trim(),
+      installationIncluded: form.offerInstallation,
+      measurementSource: form.offerMeasurement as 'dokonanych' | 'przesłanych'
+    };
     const res = await backupNow(next);
     toast(res.ok ? `Zapisano kopię: ${res.file}` : `Nie udało się zapisać kopii: ${res.error}`, !res.ok);
   };
@@ -156,6 +181,49 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
           <label className="field">
             <span>Domyślne miejsce wystawienia</span>
             <input type="text" className="input" data-testid="seller-place-input" value={form.sPlace} onChange={(e) => set({ sPlace: e.target.value })} />
+          </label>
+        </div>
+      </div>
+
+      <div className="card">
+        <h3 className="card-title">Oferty cenowe</h3>
+        <p className="muted card-note">
+          Osoby wystawiające oferty — jedna w wierszu. Do listy dopisują się automatycznie także
+          pracownicy kontrahenta „Lechrol”, jeśli taki jest w bazie kontrahentów.
+        </p>
+        <label className="field">
+          <span>Kto wystawia oferty</span>
+          <textarea
+            className="input"
+            data-testid="offer-issuers"
+            rows={3}
+            placeholder={'Sebastian Wajcht\nJacek Wajcht'}
+            value={form.issuers}
+            onChange={(e) => set({ issuers: e.target.value })}
+          />
+        </label>
+        <div className="grid2" style={{ marginTop: 14 }}>
+          <label className="field">
+            <span>Domyślny termin realizacji (dni roboczych)</span>
+            <input type="text" className="input num" data-testid="offer-default-deadline" value={form.offerDeadlineDays} onChange={(e) => set({ offerDeadlineDays: e.target.value })} />
+          </label>
+          <label className="field">
+            <span>Domyślna ważność oferty (dni)</span>
+            <input type="text" className="input num" data-testid="offer-default-validity" value={form.offerValidityDays} onChange={(e) => set({ offerValidityDays: e.target.value })} />
+          </label>
+          <label className="field">
+            <span>Domyślnie: pomiary</span>
+            <select className="input" data-testid="offer-default-measurement" value={form.offerMeasurement} onChange={(e) => set({ offerMeasurement: e.target.value })}>
+              <option value="przesłanych">przesłane przez klienta</option>
+              <option value="dokonanych">dokonane przez nas</option>
+            </select>
+          </label>
+          <label className="field">
+            <span>Domyślnie: montaż</span>
+            <select className="input" data-testid="offer-default-installation" value={form.offerInstallation ? 'tak' : 'nie'} onChange={(e) => set({ offerInstallation: e.target.value === 'tak' })}>
+              <option value="tak">ceny uwzględniają montaż</option>
+              <option value="nie">ceny nie uwzględniają montażu</option>
+            </select>
           </label>
         </div>
       </div>

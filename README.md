@@ -37,6 +37,22 @@ wszystkie dane zapisywane są lokalnie na komputerze.
 - **Kopia zapasowa** — wskazany folder (pendrive, dysk sieciowy, OneDrive)
   dostaje kopię wszystkich danych przy każdej zmianie, jeden plik na dzień;
   z tego samego miejsca można dane przywrócić.
+- **Oferty cenowe** — osobna zakładka, dokument w firmowym układzie (logo, dane
+  firmy, data, „Dla: …”, tabele pozycji, cena całkowita, warunki, podpis):
+  - dowolna liczba tabel, każda z własnym nagłówkiem kolumny
+    („Produkt (+ Materiał)”, „(+ Wymiar)”, „(+ Materiał + Wymiar)”),
+  - numeracja Lp. ciągła przez wszystkie tabele albo od nowa w każdej,
+    z możliwością wpisania własnego numeru,
+  - cena za sztukę mnożona przez ilość, z ręcznym nadpisaniem kwoty pozycji,
+  - opcjonalny **rabat procentowy** i **dostawa kurierem** (kwota albo
+    „nie dotyczy”) — niezaznaczone nie pojawiają się na dokumencie,
+  - warunki jako przełączniki: pomiary dokonane/przesłane, montaż w cenie lub
+    nie, termin realizacji w dniach od akceptacji/potwierdzenia,
+  - opcjonalny termin ważności oferty, własne uwagi,
+  - **status**: szkic / wysłana / zaakceptowana / odrzucona, zmieniany także
+    z listy ofert,
+  - wydruk, PDF i e-mail z kopią na adres firmowy; nazwa pliku w formacie
+    `Oferta_cenowa_25.09.2026_Akacjowa_12_Koczargi_Stare.pdf`.
 - **Ciemny motyw** (domyślny) z przełącznikiem jasny/ciemny w pasku górnym;
   wybór jest zapamiętywany. Wydruk zawsze pozostaje czarno-biały na białym tle.
 
@@ -166,7 +182,10 @@ frontend/electron/preload.js   bezpieczny mostek IPC (contextBridge)
 frontend/src/App.tsx           główny komponent (widoki, motyw, skróty klawiszowe)
 frontend/src/views/            lista WZ, edytor, kontrahenci, ustawienia
 frontend/src/lib/numbering.ts  numeracja dokumentów (z testami numbering.test.ts)
-frontend/src/lib/printing.ts   szablon wydruku A4 wg wzoru Lechrol
+frontend/src/lib/printing.ts   szablon wydruku WZ (A4 wg wzoru Lechrol)
+frontend/src/lib/printingOffer.ts szablon wydruku oferty cenowej
+frontend/src/lib/offers.ts     obliczenia oferty: sumy, rabat, dostawa, numeracja Lp.
+frontend/src/assets/logo.ts    logo firmowe osadzone w kodzie (wydruk i PDF)
 frontend/src/lib/storage.ts    zapis stanu (plik JSON w Electronie / localStorage w przeglądarce)
 frontend/src/index.css         tokeny motywu jasnego i ciemnego
 ```

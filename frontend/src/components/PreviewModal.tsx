@@ -1,17 +1,17 @@
 import { useEffect } from 'react';
 import { X, Printer, FileDown } from 'lucide-react';
-import { Settings, WZDocument } from '../types';
-import { buildPrintHtml } from '../lib/printing';
 
 interface Props {
-  doc: WZDocument;
-  settings: Settings;
+  /** Tytuł okna, np. „Podgląd WZ 1001/RS/2026” */
+  title: string;
+  /** Gotowy dokument w HTML (szablon wydruku) */
+  html: string;
   onClose: () => void;
-  onPrint: (doc: WZDocument) => void;
-  onPdf: (doc: WZDocument) => void;
+  onPrint: () => void;
+  onPdf: () => void;
 }
 
-export default function PreviewModal({ doc, settings, onClose, onPrint, onPdf }: Props) {
+export default function PreviewModal({ title, html, onClose, onPrint, onPdf }: Props) {
   useEffect(() => {
     const onKey = (ev: KeyboardEvent) => {
       if (ev.key === 'Escape') onClose();
@@ -25,13 +25,13 @@ export default function PreviewModal({ doc, settings, onClose, onPrint, onPdf }:
       <div className="preview-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
         <div className="preview-toolbar">
           <h2 className="preview-title" data-testid="preview-title">
-            Podgląd WZ {doc.number}
+            {title}
           </h2>
-          <button className="btn" data-testid="preview-print-btn" onClick={() => onPrint(doc)}>
+          <button className="btn" data-testid="preview-print-btn" onClick={onPrint}>
             <Printer className="icon" />
             Drukuj
           </button>
-          <button className="btn" data-testid="preview-pdf-btn" onClick={() => onPdf(doc)}>
+          <button className="btn" data-testid="preview-pdf-btn" onClick={onPdf}>
             <FileDown className="icon" />
             Zapisz PDF
           </button>
@@ -40,11 +40,7 @@ export default function PreviewModal({ doc, settings, onClose, onPrint, onPdf }:
           </button>
         </div>
         <div className="preview-scroll">
-          <div
-            className="preview-page"
-            data-testid="preview-page"
-            dangerouslySetInnerHTML={{ __html: buildPrintHtml(doc, settings) }}
-          />
+          <div className="preview-page" data-testid="preview-page" dangerouslySetInnerHTML={{ __html: html }} />
         </div>
       </div>
     </div>

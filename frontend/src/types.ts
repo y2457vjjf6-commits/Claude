@@ -81,15 +81,25 @@ export interface Settings {
   emailCopyTo: string;
   /** Folder, do którego trafiają kopie zapasowe danych (pusty = wyłączone) */
   backupFolder: string;
+  /** Osoby wystawiające oferty (imiona i nazwiska) */
+  issuers: string[];
+  /** Domyślne ustawienia nowej oferty */
+  offerDefaults: {
+    deadlineDays: string;
+    validityDays: string;
+    installationIncluded: boolean;
+    measurementSource: 'dokonanych' | 'przesłanych';
+  };
 }
 
 export interface AppState {
   settings: Settings;
   contractors: Contractor[];
   documents: WZDocument[];
+  offers: Offer[];
 }
 
-export type ViewName = 'list' | 'edit' | 'contractors' | 'reports' | 'settings';
+export type ViewName = 'list' | 'edit' | 'offers' | 'offerEdit' | 'contractors' | 'reports' | 'settings';
 
 export type AskConfirm = (message: string, opts?: { confirmLabel?: string; danger?: boolean }) => Promise<boolean>;
 
@@ -115,4 +125,67 @@ declare global {
       restoreBackup: (folder: string) => Promise<{ ok: boolean; state?: AppState; canceled?: boolean; error?: string }>;
     };
   }
+}
+
+/* ============================ Oferty cenowe ============================ */
+
+/** Nagłówek drugiej kolumny w tabeli oferty. */
+export type OfferColumnHeader = 'material' | 'size' | 'materialSize' | 'plain';
+
+export interface OfferItem {
+  /** Nazwa produktu, np. „Rolety wolnowiszące FI32” */
+  name: string;
+  /** Wiersz w nawiasie pod nazwą, np. „Materiał C102” albo „186 x 202 cm” */
+  material: string;
+  qty: string;
+  /** Cena za sztukę */
+  unitPrice: string;
+  /** Kwota za pozycję — normalnie ilość × cena, można nadpisać ręcznie */
+  totalOverride?: string;
+  /** Własna numeracja Lp. zamiast automatycznej */
+  lpOverride?: string;
+}
+
+export interface OfferGroup {
+  id: string;
+  header: OfferColumnHeader;
+  items: OfferItem[];
+}
+
+export type OfferStatus = 'szkic' | 'wyslana' | 'zaakceptowana' | 'odrzucona';
+
+export interface Offer {
+  id: string;
+  /** Data wystawienia (RRRR-MM-DD) */
+  date: string;
+  place: string;
+  /** Dla kogo oferta — trafia na dokument i do nazwy pliku */
+  client: string;
+  clientEmail: string;
+  groups: OfferGroup[];
+  /** true = Lp. biegnie przez wszystkie tabele; false = każda tabela od 1 */
+  continuousNumbering: boolean;
+  discountEnabled: boolean;
+  /** Rabat w procentach */
+  discountPercent: string;
+  deliveryEnabled: boolean;
+  /** Kwota dostawy; puste przy „nie dotyczy” */
+  deliveryPrice: string;
+  deliveryNotApplicable: boolean;
+  /** „dokonanych” albo „przesłanych” pomiarów */
+  measurementSource: 'dokonanych' | 'przesłanych';
+  installationIncluded: boolean;
+  deadlineDays: string;
+  deadlineBasis: 'akceptacji' | 'potwierdzenia';
+  validityEnabled: boolean;
+  validityDays: string;
+  notes: string;
+  /** Kto wystawił ofertę */
+  issuedBy: string;
+  status: OfferStatus;
+  printedAt?: string;
+  emailedAt?: string;
+  emailedTo?: string;
+  createdAt: string;
+  updatedAt: string;
 }

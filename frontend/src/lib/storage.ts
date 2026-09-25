@@ -6,7 +6,7 @@ export const DEFAULT_STATE: AppState = {
     seller: {
       name: 'ZPHU Lechrol Jacek Wajcht',
       address: 'ul. Leśna 6, 05-092 Łomianki',
-      nip: '',
+      nip: '118-135-62-66',
       phone: '511 697 697',
       www: 'lechrol.pl'
     },
@@ -15,11 +15,19 @@ export const DEFAULT_STATE: AppState = {
     emailSubject: 'Dokument WZ {numer} — Lechrol',
     emailCopyTo: 'lechrol@lechrol.pl',
     backupFolder: '',
+    issuers: ['Sebastian Wajcht', 'Jacek Wajcht'],
+    offerDefaults: {
+      deadlineDays: '21',
+      validityDays: '30',
+      installationIncluded: true,
+      measurementSource: 'przesłanych'
+    },
     emailBody:
       'Dzień dobry,\n\nw załączniku przesyłamy dokument WZ {numer} (wydanie zewnętrzne).\nTowar odebrał: {odebral}\n\nPozdrawiamy,\nZPHU Lechrol Jacek Wajcht\ntel. 511 697 697 · lechrol.pl'
   },
   contractors: [],
-  documents: []
+  documents: [],
+  offers: []
 };
 
 export const hasApi = typeof window !== 'undefined' && typeof window.wzApi !== 'undefined';

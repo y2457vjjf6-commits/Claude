@@ -26,10 +26,7 @@ export const DEFAULT_STATE: AppState = {
       'Niniejsza oferta ma charakter informacyjny i nie stanowi oferty handlowej ' +
       'w rozumieniu art. 66 § 1 Kodeksu cywilnego. Ceny podano w złotych, w kwotach brutto.',
     offerClosingText:
-      'Wycena została sporządzona na podstawie wymiarów przekazanych przez Zamawiającego. ' +
-      'Przed przyjęciem zamówienia do realizacji wykonujemy pomiar kontrolny — jeżeli rzeczywiste ' +
-      'wymiary będą odbiegać od podanych, cena może ulec zmianie. O każdej takiej zmianie ' +
-      'informujemy przed rozpoczęciem produkcji.\n' +
+      'Wycena została sporządzona na podstawie dokonanych pomiarów.\n' +
       '• Zamówienie przyjmujemy do realizacji po akceptacji oferty przez Zamawiającego.\n' +
       '• Produkty wykonywane są na indywidualne zamówienie, w wymiarach i kolorach wskazanych ' +
       'przez Zamawiającego. Zgodnie z art. 38 ust. 1 pkt 3 ustawy o prawach konsumenta nie ' +

@@ -90,9 +90,22 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
     ? `<div class="of-notes">${esc(offer.notes).replace(/\n/g, '<br>')}</div>`
     : '';
 
-  // Uwagi końcowe: ten sam tekst pod każdą ofertą, z Ustawień
+  // Uwagi końcowe: ten sam tekst pod każdą ofertą, z Ustawień.
+  // Wiersz zaczynający się od • składa się jak punkt listy, z wcięciem
+  // dalszych linii; zwykły wiersz jest akapitem z odstępem pod spodem.
+  const wierszeUwag = String(settings.offerClosingText || '')
+    .trim()
+    .split('\n')
+    .map((linia) => {
+      const tekst = linia.trim();
+      if (!tekst) return '<div class="of-closing-space"></div>';
+      const punkt = tekst.startsWith('•');
+      return `<div class="${punkt ? 'of-closing-bullet' : 'of-closing-para'}">${esc(tekst)}</div>`;
+    })
+    .join('');
+
   const uwagiKoncowe = String(settings.offerClosingText || '').trim()
-    ? `<div class="of-closing">${esc(settings.offerClosingText.trim()).replace(/\n/g, '<br>')}</div>`
+    ? `<div class="of-closing">${wierszeUwag}</div>`
     : '';
 
   const klauzula = offer.legalClause && String(settings.offerLegalText || '').trim()

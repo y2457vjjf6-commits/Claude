@@ -350,6 +350,21 @@
   line-height: 1.45;
 }
 
+.of-closing-para {
+  margin-bottom: 5pt;
+}
+
+/* Dalsze linie punktu wyrównane do tekstu, nie do kropki */
+.of-closing-bullet {
+  padding-left: 9pt;
+  text-indent: -9pt;
+  margin-bottom: 2pt;
+}
+
+.of-closing-space {
+  height: 5pt;
+}
+
 /* Klauzula prawna pod warunkami */
 .of-legal {
   margin-top: 14pt;

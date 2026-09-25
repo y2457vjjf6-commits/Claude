@@ -111,6 +111,24 @@ test('oferta złożona tylko z wariantów nie pokazuje ceny całkowitej', () => 
   expect(html).toContain('Cena dla tego wariantu: 1200,00 zł');
 });
 
+/* ---------------- Uwagi końcowe pod ofertą ---------------- */
+
+test('uwagi końcowe z ustawień trafiają na każdą ofertę', () => {
+  const html = buildOfferHtml(oferta(), DEFAULT_STATE.settings);
+  expect(html).toContain('Wycena została sporządzona na podstawie dokonanych pomiarów.');
+  expect(html).toContain('24 miesięcy gwarancji');
+  // wiersz z kropką składa się jak punkt listy, zwykły wiersz jak akapit
+  expect(html).toContain('<div class="of-closing-para">Wycena została sporządzona na podstawie dokonanych pomiarów.</div>');
+  expect(html).toContain('<div class="of-closing-bullet">• Zamówienie');
+});
+
+test('puste uwagi w ustawieniach nie drukują pustej sekcji', () => {
+  const html = buildOfferHtml(oferta(), { ...DEFAULT_STATE.settings, offerClosingText: '   ' });
+  expect(html).not.toContain('of-closing');
+  // klauzula prawna zostaje niezależnie od uwag
+  expect(html).toContain('art. 66 § 1');
+});
+
 /* ---------------- Koszt własny i marża ---------------- */
 
 test('marża liczona od ceny całkowitej, koszt tylko z pozycji podstawowych', () => {

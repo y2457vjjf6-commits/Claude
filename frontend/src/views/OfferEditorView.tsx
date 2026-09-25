@@ -8,6 +8,7 @@ import {
   groupLpNumbers,
   isItemEmpty,
   itemTotal,
+  normalizeAmount,
   offerCosts,
   offerTotals,
   OFFER_STATUS_LABELS,
@@ -18,6 +19,7 @@ import {
 import { itemNameSuggestions } from '../lib/suggestions';
 import { printOffer, savePdfOffer, emailOffer } from '../lib/offerActions';
 import { useEditorShortcuts } from '../hooks/useEditorShortcuts';
+import SuffixField from '../components/SuffixField';
 
 interface Props {
   state: AppState;
@@ -196,6 +198,16 @@ export default function OfferEditorView({
       client: offer.client.trim(),
       clientEmail: offer.clientEmail.trim(),
       issuedBy: offer.issuedBy.trim(),
+      deliveryPrice: normalizeAmount(offer.deliveryPrice),
+      groups: offer.groups.map((g) => ({
+        ...g,
+        items: g.items.map((it) => ({
+          ...it,
+          unitPrice: normalizeAmount(it.unitPrice),
+          totalOverride: it.totalOverride ? normalizeAmount(it.totalOverride) : it.totalOverride,
+          cost: it.cost ? normalizeAmount(it.cost) : it.cost
+        }))
+      })),
       createdAt: offer.createdAt || nowIso,
       updatedAt: nowIso
     };
@@ -418,30 +430,37 @@ export default function OfferEditorView({
                     <input type="text" className="input num" data-testid={`offer-qty-${gi}-${ii}`} inputMode="decimal" aria-label="Ilość" value={it.qty} onChange={(e) => setItem(gi, ii, { qty: e.target.value })} />
                   </td>
                   <td>
-                    <input type="text" className="input num" data-testid={`offer-unit-${gi}-${ii}`} inputMode="decimal" aria-label="Cena za sztukę" value={it.unitPrice} onChange={(e) => setItem(gi, ii, { unitPrice: e.target.value })} />
+                    <SuffixField
+                      suffix="zł"
+                      normalizuj
+                      testId={`offer-unit-${gi}-${ii}`}
+                      ariaLabel="Cena za sztukę"
+                      value={it.unitPrice}
+                      onChange={(v) => setItem(gi, ii, { unitPrice: v })}
+                    />
                   </td>
                   {pokazKoszty && (
                     <td>
-                      <input
-                        type="text"
-                        className="input num input-internal"
-                        data-testid={`offer-cost-${gi}-${ii}`}
-                        inputMode="decimal"
-                        aria-label="Koszt własny za sztukę"
+                      <SuffixField
+                        suffix="zł"
+                        normalizuj
+                        className="internal"
+                        testId={`offer-cost-${gi}-${ii}`}
+                        ariaLabel="Koszt własny za sztukę"
                         value={it.cost || ''}
-                        onChange={(e) => setItem(gi, ii, { cost: e.target.value })}
+                        onChange={(v) => setItem(gi, ii, { cost: v })}
                       />
                     </td>
                   )}
                   <td>
-                    <input
-                      type="text"
-                      className="input num"
-                      data-testid={`offer-total-${gi}-${ii}`} inputMode="decimal"
-                      aria-label="Kwota za pozycję"
-                      placeholder={isItemEmpty(it) ? '' : formatMoney(itemTotal(it))}
+                    <SuffixField
+                      suffix="zł"
+                      normalizuj
+                      testId={`offer-total-${gi}-${ii}`}
+                      ariaLabel="Kwota za pozycję"
+                      placeholder={isItemEmpty(it) ? '' : formatMoney(itemTotal(it)).replace(' zł', '')}
                       value={it.totalOverride || ''}
-                      onChange={(e) => setItem(gi, ii, { totalOverride: e.target.value })}
+                      onChange={(v) => setItem(gi, ii, { totalOverride: v })}
                     />
                   </td>
                   <td>
@@ -491,8 +510,14 @@ export default function OfferEditorView({
             </label>
             {offer.discountEnabled && (
               <label className="field" style={{ marginTop: 8 }}>
-                <span>Wysokość rabatu (%)</span>
-                <input type="text" className="input num" data-testid="offer-discount-percent" inputMode="decimal" value={offer.discountPercent} onChange={(e) => set({ discountPercent: e.target.value })} />
+                <span>Wysokość rabatu</span>
+                <SuffixField
+                  suffix="%"
+                  testId="offer-discount-percent"
+                  ariaLabel="Wysokość rabatu w procentach"
+                  value={offer.discountPercent}
+                  onChange={(v) => set({ discountPercent: v })}
+                />
               </label>
             )}
           </div>
@@ -504,14 +529,15 @@ export default function OfferEditorView({
             {offer.deliveryEnabled && (
               <>
                 <label className="field" style={{ marginTop: 8 }}>
-                  <span>Szacunkowy koszt dostawy (zł)</span>
-                  <input
-                    type="text"
-                    className="input num"
-                    data-testid="offer-delivery-price" inputMode="decimal"
+                  <span>Szacunkowy koszt dostawy</span>
+                  <SuffixField
+                    suffix="zł"
+                    normalizuj
+                    testId="offer-delivery-price"
+                    ariaLabel="Szacunkowy koszt dostawy"
                     disabled={offer.deliveryNotApplicable}
                     value={offer.deliveryPrice}
-                    onChange={(e) => set({ deliveryPrice: e.target.value })}
+                    onChange={(v) => set({ deliveryPrice: v })}
                   />
                 </label>
                 <label className="checkbox-field">

@@ -52,7 +52,7 @@ export default function Sidebar({ view, theme, onNavigate, onNewDoc, onToggleThe
         <Monogram />
         <div className="brand-text">
           <div className="brand-logo">LECHROL</div>
-          <div className="brand-sub">Wydania zewnętrzne (WZ)</div>
+          <div className="brand-sub">Wydania i oferty</div>
         </div>
       </div>
 

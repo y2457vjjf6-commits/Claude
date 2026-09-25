@@ -6,6 +6,9 @@ import { printOffer, savePdfOffer, emailOffer } from './lib/offerActions';
 import { buildOfferHtml } from './lib/printingOffer';
 import { offerFileName, offersAwaitingReply, parseNumber } from './lib/offers';
 import { wzPrefillFromOffer, WzPrefill } from './lib/offerToWz';
+import { emailMany, opiszWysylke, printManyDocs, printManyOffers } from './lib/bulk';
+import { wzPrintable } from './lib/printing';
+import { offerPrintable } from './lib/offerActions';
 import OffersView from './views/OffersView';
 import OfferEditorView from './views/OfferEditorView';
 import { backupInBackground } from './lib/backup';
@@ -26,9 +29,9 @@ export default function App() {
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
   const [toastState, setToastState] = useState<ToastState | null>(null);
   const [confirmReq, setConfirmReq] = useState<ConfirmRequest | null>(null);
-  const [previewDoc, setPreviewDoc] = useState<WZDocument | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<{ lista: WZDocument[]; idx: number } | null>(null);
   const [editingOfferId, setEditingOfferId] = useState<string | null>(null);
-  const [previewOffer, setPreviewOffer] = useState<Offer | null>(null);
+  const [previewOffer, setPreviewOffer] = useState<{ lista: Offer[]; idx: number } | null>(null);
   // Dane przeniesione z oferty do nowej WZ. Licznik zmienia klucz edytora, więc
   // każde przeniesienie otwiera świeży formularz, a zwykła „Nowa WZ” go czyści.
   const [wzPrefill, setWzPrefill] = useState<WzPrefill | null>(null);
@@ -190,6 +193,97 @@ export default function App() {
     setView('edit');
   };
 
+  /* ----------------------- działania na zaznaczonych ----------------------- */
+
+  const printManyDocuments = async (docs: WZDocument[]) => {
+    if (await printManyDocs(docs, state.settings, toast)) {
+      const kiedy = new Date().toISOString();
+      docs.forEach((d) => markDocument(d, { printedAt: kiedy }));
+      toast(`Wysłano do drukarki: ${docs.length} dokumentów.`);
+    }
+  };
+
+  const emailManyDocuments = async (docs: WZDocument[]) => {
+    const adresaci = docs.map((d) => d.contractor?.email).filter(Boolean);
+    const potwierdzone = await emailConfirm(
+      `Wysłać ${docs.length} dokumentów osobnymi wiadomościami?\nAdresaci: ${adresaci.join(', ') || 'brak adresów'}`
+    );
+    if (!potwierdzone) return;
+    const wynik = await emailMany(
+      docs,
+      state.settings,
+      toast,
+      (d) => ({ printable: wzPrintable(d, state.settings), nazwa: d.number }),
+      (d) => markDocument(d, { emailedAt: new Date().toISOString(), emailedTo: d.contractor?.email || '' })
+    );
+    const { tekst, blad } = opiszWysylke(wynik);
+    toast(tekst, blad);
+  };
+
+  const deleteManyDocuments = async (docs: WZDocument[]) => {
+    const kopie = docs.map((d) => structuredClone(d));
+    const doUsuniecia = new Set(kopie.map((d) => d.id));
+    await persist({ ...state, documents: state.documents.filter((d) => !doUsuniecia.has(d.id)) });
+    toast(`Usunięto ${kopie.length} dokumentów.`, false, {
+      label: 'Cofnij',
+      run: () =>
+        setState((biezacy) => {
+          if (!biezacy) return biezacy;
+          const brakujace = kopie.filter((k) => !biezacy.documents.some((d) => d.id === k.id));
+          const przywrocone = { ...biezacy, documents: [...biezacy.documents, ...brakujace] };
+          persistState(przywrocone).then(() => backupInBackground(przywrocone));
+          return przywrocone;
+        })
+    });
+  };
+
+  const printManyOffersFn = async (oferty: Offer[]) => {
+    if (await printManyOffers(oferty, state.settings, toast)) {
+      const kiedy = new Date().toISOString();
+      oferty.forEach((o) => markOffer(o, { printedAt: kiedy }));
+      toast(`Wysłano do drukarki: ${oferty.length} ofert.`);
+    }
+  };
+
+  const emailManyOffers = async (oferty: Offer[]) => {
+    const adresaci = oferty.map((o) => o.clientEmail).filter(Boolean);
+    const potwierdzone = await emailConfirm(
+      `Wysłać ${oferty.length} ofert osobnymi wiadomościami?\nAdresaci: ${adresaci.join(', ') || 'brak adresów'}`
+    );
+    if (!potwierdzone) return;
+    const wynik = await emailMany(
+      oferty,
+      state.settings,
+      toast,
+      (o) => ({ printable: offerPrintable(o, state.settings), nazwa: o.client }),
+      (o) =>
+        markOffer(o, {
+          emailedAt: new Date().toISOString(),
+          emailedTo: o.clientEmail,
+          status: o.status === 'szkic' ? 'wyslana' : o.status
+        })
+    );
+    const { tekst, blad } = opiszWysylke(wynik);
+    toast(tekst, blad);
+  };
+
+  const deleteManyOffers = async (oferty: Offer[]) => {
+    const kopie = oferty.map((o) => structuredClone(o));
+    const doUsuniecia = new Set(kopie.map((o) => o.id));
+    await persist({ ...state, offers: state.offers.filter((o) => !doUsuniecia.has(o.id)) });
+    toast(`Usunięto ${kopie.length} ofert.`, false, {
+      label: 'Cofnij',
+      run: () =>
+        setState((biezacy) => {
+          if (!biezacy) return biezacy;
+          const brakujace = kopie.filter((k) => !biezacy.offers.some((o) => o.id === k.id));
+          const przywrocone = { ...biezacy, offers: [...biezacy.offers, ...brakujace] };
+          persistState(przywrocone).then(() => backupInBackground(przywrocone));
+          return przywrocone;
+        })
+    });
+  };
+
   const deleteDocument = async (doc: WZDocument, backToList: boolean) => {
     const kopia = structuredClone(doc);
     const next = { ...state, documents: state.documents.filter((d) => d.id !== doc.id) };
@@ -224,7 +318,10 @@ export default function App() {
             documents={state.documents}
             onEdit={(id) => openEditor(id)}
             onNewDoc={() => openEditor(null)}
-            onPreview={(doc) => setPreviewDoc(doc)}
+            onPreview={(doc, lista) => setPreviewDoc({ lista, idx: lista.indexOf(doc) })}
+            onPrintMany={printManyDocuments}
+            onEmailMany={emailManyDocuments}
+            onDeleteMany={deleteManyDocuments}
             onPrint={async (doc) => {
               if (await printDocument(doc, state.settings, toast)) {
                 markDocument(doc, { printedAt: new Date().toISOString() });
@@ -267,7 +364,16 @@ export default function App() {
             onIssueWz={issueWzFromOffer}
             onEdit={(id) => openOfferEditor(id)}
             onNewOffer={() => openOfferEditor(null)}
-            onPreview={(offer) => setPreviewOffer(offer)}
+            onPreview={(offer, lista) => setPreviewOffer({ lista, idx: lista.indexOf(offer) })}
+            onPrint={async (offer) => {
+              if (await printOffer(offer, state.settings, toast)) {
+                markOffer(offer, { printedAt: new Date().toISOString() });
+              }
+            }}
+            onPdf={(offer) => savePdfOffer(offer, state.settings, toast)}
+            onPrintMany={printManyOffersFn}
+            onEmailMany={emailManyOffers}
+            onDeleteMany={deleteManyOffers}
             onEmail={async (offer) => {
               if (await emailOffer(offer, state.settings, toast, emailConfirm)) {
                 markOffer(offer, {
@@ -316,30 +422,56 @@ export default function App() {
       )}
       <Toast toast={toastState} />
       {confirmReq && <ConfirmDialog request={confirmReq} onClose={closeConfirm} />}
-      {previewDoc && (
+      {previewDoc && previewDoc.lista[previewDoc.idx] && (
         <PreviewModal
-          title={`Podgląd WZ ${previewDoc.number}`}
-          html={buildPrintHtml(previewDoc, state.settings)}
+          title={`Podgląd WZ ${previewDoc.lista[previewDoc.idx].number}`}
+          html={buildPrintHtml(previewDoc.lista[previewDoc.idx], state.settings)}
+          licznik={`${previewDoc.idx + 1} z ${previewDoc.lista.length}`}
           onClose={() => setPreviewDoc(null)}
+          onPrev={previewDoc.idx > 0 ? () => setPreviewDoc((p) => (p ? { ...p, idx: p.idx - 1 } : p)) : undefined}
+          onNext={
+            previewDoc.idx < previewDoc.lista.length - 1
+              ? () => setPreviewDoc((p) => (p ? { ...p, idx: p.idx + 1 } : p))
+              : undefined
+          }
+          onEdit={() => {
+            const dok = previewDoc.lista[previewDoc.idx];
+            setPreviewDoc(null);
+            openEditor(dok.id);
+          }}
           onPrint={async () => {
-            if (await printDocument(previewDoc, state.settings, toast)) {
-              markDocument(previewDoc, { printedAt: new Date().toISOString() });
+            const dok = previewDoc.lista[previewDoc.idx];
+            if (await printDocument(dok, state.settings, toast)) {
+              markDocument(dok, { printedAt: new Date().toISOString() });
             }
           }}
-          onPdf={() => savePdfDocument(previewDoc, state.settings, toast)}
+          onPdf={() => savePdfDocument(previewDoc.lista[previewDoc.idx], state.settings, toast)}
         />
       )}
-      {previewOffer && (
+      {previewOffer && previewOffer.lista[previewOffer.idx] && (
         <PreviewModal
-          title={`Podgląd oferty — ${previewOffer.client}`}
-          html={buildOfferHtml(previewOffer, state.settings)}
+          title={`Podgląd oferty — ${previewOffer.lista[previewOffer.idx].client}`}
+          html={buildOfferHtml(previewOffer.lista[previewOffer.idx], state.settings)}
+          licznik={`${previewOffer.idx + 1} z ${previewOffer.lista.length}`}
           onClose={() => setPreviewOffer(null)}
+          onPrev={previewOffer.idx > 0 ? () => setPreviewOffer((p) => (p ? { ...p, idx: p.idx - 1 } : p)) : undefined}
+          onNext={
+            previewOffer.idx < previewOffer.lista.length - 1
+              ? () => setPreviewOffer((p) => (p ? { ...p, idx: p.idx + 1 } : p))
+              : undefined
+          }
+          onEdit={() => {
+            const of = previewOffer.lista[previewOffer.idx];
+            setPreviewOffer(null);
+            openOfferEditor(of.id);
+          }}
           onPrint={async () => {
-            if (await printOffer(previewOffer, state.settings, toast)) {
-              markOffer(previewOffer, { printedAt: new Date().toISOString() });
+            const of = previewOffer.lista[previewOffer.idx];
+            if (await printOffer(of, state.settings, toast)) {
+              markOffer(of, { printedAt: new Date().toISOString() });
             }
           }}
-          onPdf={() => savePdfOffer(previewOffer, state.settings, toast)}
+          onPdf={() => savePdfOffer(previewOffer.lista[previewOffer.idx], state.settings, toast)}
         />
       )}
     </div>

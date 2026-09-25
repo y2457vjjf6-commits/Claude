@@ -5,6 +5,13 @@
   margin: 12mm;
 }
 
+/* Kilka dokumentów w jednym wydruku — każdy zaczyna nową stronę */
+.page-break {
+  break-after: page;
+  page-break-after: always;
+  height: 0;
+}
+
 @media print {
   /* Interfejs działa w schemacie ciemnym; bez tej linii przeglądarka maluje
      nim tło strony i wychodzi ono na marginesy wydruku oraz PDF-a. */

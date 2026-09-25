@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { BarChart3 } from 'lucide-react';
 import { AppState, WZDocument } from '../types';
 import { formatDatePl } from '../lib/printing';
-import StatusChips from '../components/StatusChips';
+import DocState from '../components/DocState';
 
 interface Props {
   state: AppState;
@@ -77,7 +77,10 @@ export default function ReportsView({ state }: Props) {
 
   return (
     <section className="view" data-testid="view-reports">
-      <h1 className="page-title">Zestawienia</h1>
+      <header className="view-head">
+        <h1 className="page-title">Zestawienia</h1>
+        <p className="view-meta">Co i komu wydaliśmy — z podziałem na odbiorcę i miesiąc.</p>
+      </header>
 
       <div className="card">
         <div className="grid2">
@@ -172,7 +175,7 @@ export default function ReportsView({ state }: Props) {
                       <td>{d.receivedBy || ''}</td>
                       <td className="td-num">{d.items.filter((i) => i.name).length}</td>
                       <td>
-                        <StatusChips printedAt={d.printedAt} emailedAt={d.emailedAt} emailedTo={d.emailedTo} />
+                        <DocState printedAt={d.printedAt} emailedAt={d.emailedAt} emailedTo={d.emailedTo} />
                       </td>
                     </tr>
                   ))}

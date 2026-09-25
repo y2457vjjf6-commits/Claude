@@ -8,6 +8,15 @@ export function parseNumber(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/** Kwota wpisana w polu doprowadzona do postaci „1234,56”.
+ *  Tekstu, którego nie da się odczytać jako liczby, nie ruszamy. */
+export function normalizeAmount(text: string | undefined): string {
+  const surowy = String(text ?? '').trim();
+  const liczba = Number(surowy.replace(/\s/g, '').replace(',', '.'));
+  if (!surowy || !Number.isFinite(liczba)) return surowy;
+  return liczba.toFixed(2).replace('.', ',');
+}
+
 /** Kwota po polsku, np. 3480 -> „3480,00 zł”. */
 export function formatMoney(value: number): string {
   return value.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' zł';

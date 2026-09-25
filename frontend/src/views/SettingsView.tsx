@@ -155,7 +155,10 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
 
   return (
     <section className="view" data-testid="view-settings">
-      <h1 className="page-title">Ustawienia</h1>
+      <header className="view-head">
+        <h1 className="page-title">Ustawienia</h1>
+        <p className="view-meta">Dane firmy, poczta, kopia zapasowa i domyślne ustawienia ofert.</p>
+      </header>
       <div className="card">
         <h3 className="card-title">Dane sprzedawcy / wydającego (nagłówek dokumentu)</h3>
         <div className="grid2">

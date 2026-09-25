@@ -109,7 +109,16 @@ export default function ContractorsView({ state, onPersist, toast }: Props) {
 
   return (
     <section className="view" data-testid="view-contractors">
-      <h1 className="page-title">Kontrahenci</h1>
+      <header className="view-head">
+        <h1 className="page-title">Kontrahenci</h1>
+        {anyContractors && (
+          <p className="view-meta" data-testid="contractors-count">
+            {state.contractors.length} {state.contractors.length === 1 ? 'firma' : 'firm'} ·{' '}
+            {state.contractors.filter((c) => c.email).length} z adresem e-mail ·{' '}
+            {state.contractors.filter((c) => c.employees?.length).length} z pracownikami
+          </p>
+        )}
+      </header>
       <div className="toolbar">
         <div className="search-wrap">
           <Search className="icon" />

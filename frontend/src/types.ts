@@ -110,9 +110,34 @@ export interface AppState {
   contractors: Contractor[];
   documents: WZDocument[];
   offers: Offer[];
+  /** Cennik zakupowy — tabele producenta, z których liczymy koszt własny */
+  priceTables: PriceTable[];
 }
 
-export type ViewName = 'list' | 'edit' | 'offers' | 'offerEdit' | 'contractors' | 'reports' | 'settings';
+/** Tabela cennika producenta: koszt zależny od szerokości i wysokości.
+ *  Ceny czytamy z zaokrągleniem w górę do najbliższej kratki siatki. */
+export interface PriceTable {
+  id: string;
+  /** Nazwa grupy cenowej, np. „Rolety wolnowiszące FI32 — grupa 1” */
+  name: string;
+  /** Producent albo dostawca */
+  supplier?: string;
+  /** Fraza szukana w nazwie produktu, np. „FI32”; pusta = dowolny produkt */
+  product?: string;
+  /** Kody materiałów należące do tej grupy, np. C101, C102 */
+  materials?: string[];
+  /** Szerokości w cm, rosnąco — nagłówki kolumn */
+  widths: number[];
+  /** Wysokości w cm, rosnąco — nagłówki wierszy */
+  heights: number[];
+  /** prices[wiersz][kolumna] w złotych; null = producent nie podaje ceny */
+  prices: (number | null)[][];
+  /** Skąd pochodzi, np. „Cennik 01.2026, s. 4” — do porównania z oryginałem */
+  source?: string;
+  updatedAt: string;
+}
+
+export type ViewName = 'list' | 'edit' | 'offers' | 'offerEdit' | 'prices' | 'contractors' | 'reports' | 'settings';
 
 export type AskConfirm = (message: string, opts?: { confirmLabel?: string; danger?: boolean }) => Promise<boolean>;
 
@@ -159,6 +184,9 @@ export interface OfferItem {
   lpOverride?: string;
   /** Koszt własny za sztukę — tylko do wyceny w programie, nie trafia na dokument */
   cost?: string;
+  /** 'cennik' = kwota podstawiona z tabeli producenta i wolno ją nadpisać
+   *  automatycznie; brak wartości = wpisana ręcznie i nietykalna */
+  costSource?: 'cennik';
 }
 
 export interface OfferGroup {

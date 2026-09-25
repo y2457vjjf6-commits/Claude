@@ -44,7 +44,8 @@ export const DEFAULT_STATE: AppState = {
   },
   contractors: [],
   documents: [],
-  offers: []
+  offers: [],
+  priceTables: []
 };
 
 export const hasApi = typeof window !== 'undefined' && typeof window.wzApi !== 'undefined';

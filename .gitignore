@@ -87,3 +87,9 @@ credentials.json
 *.key
 .credentials
 frontend/node_modules/electron/dist/electron
+
+# Bot
+bot/.env
+bot/config.yaml
+bot/profile/
+runs/

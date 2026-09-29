@@ -1,0 +1,43 @@
+# Przyklad konfiguracji bota. Skopiuj do config.yaml i dostosuj.
+name: "Zgloszenie na warsztaty"
+
+# Strona otwierana na starcie (mozesz tez uzyc kroku `goto`).
+url: "http://localhost:8765/demo_form.html"
+
+timeout_ms: 20000
+runs_dir: "runs"          # tu ladują zrzuty ekranu i raport JSON z kazdego uruchomienia
+
+timing:
+  # Jednorazowo o konkretnej dacie i godzinie (czas lokalny maszyny):
+  at: "2026-10-01 09:59:58"
+  # ...albo codziennie o tej samej porze (zakomentuj `at`, odkomentuj `daily`):
+  # daily: "09:59:58"
+  # Ile sekund przed terminem otworzyc strone i wypelnic pola.
+  # Formularz jest gotowy wczesniej, a klikniecie "Wyslij" nastepuje co do sekundy.
+  open_page_seconds_before: 60
+
+retries:
+  attempts: 3             # ponowienia dotycza TYLKO bledow przed wyslaniem
+  backoff_seconds: 2
+
+browser:
+  headless: true
+  locale: "pl-PL"
+  timezone: "Europe/Warsaw"
+  slow_mo_ms: 0
+  # executable_path: "/usr/bin/chromium"   # gdy Chromium jest juz zainstalowany w systemie
+  # user_data_dir: "./profile"   # trwaly profil - zachowuje sesje logowania miedzy uruchomieniami
+
+steps:
+  - wait_for: "#form"
+  - fill: { selector: "#imie", value: "Jan Kowalski" }
+  # Dane wrazliwe trzymaj w bot/.env, nie w tym pliku:
+  - fill: { selector: "#email", value: "${FORM_EMAIL}" }
+  - fill: { selector: "#telefon", value: "600100200" }
+  - select: { selector: "#miasto", value: "Warszawa" }
+  - check: { selector: "#zgoda" }
+  # - upload: { selector: "input[type=file]", path: "./cv.pdf" }
+  # Krok oznaczony `submit: true` czeka na dokladna godzine z sekcji `timing`
+  # i jest pomijany w trybie --dry-run.
+  - click: { selector: "#wyslij", submit: true }
+  - expect_text: { value: "Dziekujemy", timeout_ms: 15000 }

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pl">
+<head><meta charset="utf-8"><title>Demo formularz</title></head>
+<body>
+  <h1>Zapisy na warsztaty</h1>
+  <form id="form">
+    <label>Imie i nazwisko <input id="imie" name="imie" required></label><br>
+    <label>E-mail <input id="email" name="email" type="email" required></label><br>
+    <label>Telefon <input id="telefon" name="telefon"></label><br>
+    <label>Miasto
+      <select id="miasto" name="miasto">
+        <option value="">-- wybierz --</option>
+        <option value="Warszawa">Warszawa</option>
+        <option value="Krakow">Krakow</option>
+      </select>
+    </label><br>
+    <label><input id="zgoda" name="zgoda" type="checkbox" required> Zgoda na przetwarzanie danych</label><br>
+    <button id="wyslij" type="submit">Wyslij zgloszenie</button>
+  </form>
+  <div id="wynik"></div>
+  <script>
+    document.getElementById('form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var d = new FormData(e.target);
+      document.getElementById('wynik').textContent =
+        'Dziekujemy, ' + d.get('imie') + '! Zgloszenie przyjete (' + d.get('email') + ', ' + d.get('miasto') + ').';
+      e.target.style.display = 'none';
+    });
+  </script>
+</body>
+</html>

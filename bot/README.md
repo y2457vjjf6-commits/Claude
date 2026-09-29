@@ -61,6 +61,49 @@ Bot sam czeka do wyznaczonej godziny, więc wystarczy go wystartować wcześniej
   `55 9 * * * cd /sciezka/do/projektu && python -m bot.form_bot bot/config.yaml >> bot.log 2>&1`
 - Windows: Harmonogram zadań → akcja uruchamiająca to samo polecenie.
 
+## Microsoft Forms
+
+Microsoft Forms to aplikacja JavaScript — pola dostają **losowe `id` przy każdym
+załadowaniu**, więc selektory typu `#input3` nie działają. Dlatego jest akcja
+`answer`, która szuka pola po **treści pytania**:
+
+```yaml
+- wait_for: { selector: "div[data-automation-id='questionItem']", timeout_ms: 30000 }
+- answer: { label: "Numer albumu", value: "${FORM_NR_ALBUMU}" }
+- click:  { selector: "button[data-automation-id='submitButton']", submit: true }
+- expect_text: { value: "Twoja odpowiedź została przesłana" }
+```
+
+Gotowa konfiguracja: `bot/config.msforms.yaml`. Dane osobowe i adres formularza
+trzymaj w `bot/.env` (ignorowany przez git), nie w pliku YAML.
+
+### Krok 1: zbadaj formularz
+
+```bash
+python -m bot.inspect_form "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=..."
+```
+
+Skrypt **niczego nie wysyła**. Wypisuje listę pytań, sprawdza obecność CAPTCHA
+i ekranu logowania, robi zrzut ekranu i drukuje gotową sekcję `steps:` do wklejenia.
+Etykiety z `answer:` muszą pasować do tego, co wypisze inspektor.
+
+### Krok 2: test na sucho
+
+```bash
+python -m bot.form_bot bot/config.msforms.yaml --now --dry-run --headful
+```
+
+Zobaczysz wypełniony formularz w oknie przeglądarki; przycisk wysyłki **nie**
+zostanie kliknięty. Sprawdź zrzut `runs/<data>/00-wypelniony-formularz.png`.
+
+### Krok 3: ustaw godzinę i uruchom
+
+W `timing.at` wpisz datę i godzinę startu zapisów, potem:
+
+```bash
+python -m bot.form_bot bot/config.msforms.yaml
+```
+
 ## Ograniczenia — przeczytaj przed użyciem
 
 - **CAPTCHA / reCAPTCHA** — bot jej nie obejdzie i nie będzie tego robił.

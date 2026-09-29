@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="pl"><head><meta charset="utf-8"><title>Makieta Microsoft Forms</title></head>
+<body>
+  <div role="heading">Rejestracja pojazdu</div>
+  <form>
+    <div data-automation-id="questionItem"><label>1. Imię i nazwisko *</label>
+      <input data-automation-id="textInput" type="text"></div>
+    <div data-automation-id="questionItem"><label>2. Numer albumu *</label>
+      <input data-automation-id="textInput" type="text"></div>
+    <div data-automation-id="questionItem"><label>3. Numer rejestracyjny pojazdu *</label>
+      <input data-automation-id="textInput" type="text"></div>
+    <button data-automation-id="submitButton" type="button">Prześlij</button>
+  </form>
+  <div id="ok"></div>
+  <script>
+    // Makieta odwzorowuje strukture DOM Microsoft Forms: pytania w kontenerach
+    // data-automation-id="questionItem", brak stabilnych id na polach.
+    document.querySelector('[data-automation-id=submitButton]').addEventListener('click', function () {
+      var v = Array.from(document.querySelectorAll('input')).map(function (i) { return i.value; });
+      document.querySelector('form').style.display = 'none';
+      document.getElementById('ok').textContent = 'Twoja odpowiedź została przesłana. [' + v.join(' | ') + ']';
+    });
+  </script>
+</body></html>

@@ -1,0 +1,54 @@
+# Konfiguracja pod formularz Microsoft Forms.
+#
+# WAZNE: ten plik trafia do repozytorium, wiec NIE MA W NIM zadnych danych
+# osobowych. Wszystkie wartosci (${...}) sa pobierane z pliku bot/.env,
+# ktory jest ignorowany przez git. Skopiuj bot/.env.example do bot/.env
+# i uzupelnij swoimi danymi.
+#
+# Pola dopasowywane sa po TRESCI PYTANIA, nie po id - Microsoft Forms generuje
+# id losowo przy kazdym zaladowaniu, wiec selektory typu "#input3" sa bezuzyteczne.
+#
+# PRZED URUCHOMIENIEM:
+#   1) python -m bot.inspect_form "$FORM_URL"   <- pokaze prawdziwe pytania
+#   2) popraw ponizsze `label:` tak, by pasowaly do tekstu pytan (fragment wystarczy)
+#   3) test na sucho: python -m bot.form_bot bot/config.msforms.yaml --now --dry-run --headful
+
+name: "Zgloszenie - Microsoft Forms"
+
+url: "${FORM_URL}"
+
+timeout_ms: 30000
+runs_dir: "runs"
+
+timing:
+  # USTAW DATE I GODZINE STARTU ZAPISOW (czas lokalny komputera):
+  at: "2026-10-01 10:00:00"
+  # Strona otwiera sie i wypelnia 90 s wczesniej; klikniecie "Przeslij"
+  # nastepuje dokladnie o godzinie podanej wyzej.
+  open_page_seconds_before: 90
+
+retries:
+  attempts: 3
+  backoff_seconds: 3
+
+browser:
+  headless: false          # zostaw false: widzisz co sie dzieje i mozesz reagowac
+  locale: "pl-PL"
+  timezone: "Europe/Warsaw"
+  # executable_path: "/usr/bin/chromium"
+
+steps:
+  # Microsoft Forms laduje sie dluzej niz sama strona - czekamy na pytania.
+  - wait_for: { selector: "div[data-automation-id='questionItem']", timeout_ms: 30000 }
+
+  - answer: { label: "Imię i nazwisko",     value: "${FORM_IMIE_NAZWISKO}" }
+  - answer: { label: "Numer albumu",        value: "${FORM_NR_ALBUMU}" }
+  - answer: { label: "Numer rejestracyjny", value: "${FORM_NR_REJESTRACYJNY}" }
+
+  - screenshot: "wypelniony-formularz"
+
+  # Ten krok czeka na godzine z sekcji `timing` i jest pomijany w --dry-run.
+  - click: { selector: "button[data-automation-id='submitButton']", submit: true }
+
+  # Potwierdzenie Microsoft Forms po wyslaniu:
+  - expect_text: { value: "Twoja odpowiedź została przesłana", timeout_ms: 30000 }

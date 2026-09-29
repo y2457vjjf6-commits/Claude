@@ -167,10 +167,45 @@ class FormBot:
                 return
             text = str(params.get("value") or params.get("text"))
             page.wait_for_selector(f"text={text}", timeout=int(params.get("timeout_ms", self.timeout)))
+        elif action == "answer":
+            self._answer(page, params)
         elif action == "click":
             self._click(page, selector, params)
         else:
             raise ValueError(f"Nieznana akcja: {action}")
+
+
+    # Microsoft Forms i inne SPA nie maja stabilnych id/name - pole znajdujemy
+    # po tresci pytania, ktora widzi uzytkownik.
+    QUESTION_CONTAINERS = (
+        "div[data-automation-id='questionItem']",
+        "[role='listitem']",
+        "form div:has(input), form div:has(textarea)",
+    )
+
+    def _answer(self, page, params: dict) -> None:
+        label = str(params["label"])
+        value = str(params["value"])
+        timeout = int(params.get("timeout_ms", self.timeout))
+
+        for container_sel in self.QUESTION_CONTAINERS:
+            container = page.locator(container_sel).filter(has_text=label).first
+            try:
+                container.wait_for(state="visible", timeout=3000)
+            except PlaywrightTimeout:
+                continue
+            field = container.locator(
+                "input[data-automation-id='textInput'], textarea[data-automation-id='textInput'], "
+                "input[type='text'], input[type='email'], input[type='tel'], input:not([type]), textarea"
+            ).first
+            if field.count():
+                field.fill(value, timeout=timeout)
+                log(f"  -> wpisano w pytanie zawierajace '{label}'")
+                return
+
+        # ostatnia proba: standardowe powiazanie label <-> input
+        page.get_by_label(label, exact=False).first.fill(value, timeout=timeout)
+        log(f"  -> wpisano przez etykiete '{label}'")
 
     def _click(self, page, selector: str, params: dict) -> None:
         is_submit = bool(params.get("submit"))
@@ -249,7 +284,7 @@ class FormBot:
             page = context.new_page()
             try:
                 if self.config.get("url"):
-                    page.goto(self.config["url"], wait_until="domcontentloaded", timeout=self.timeout)
+                    page.goto(expand(self.config["url"]), wait_until="domcontentloaded", timeout=self.timeout)
                 for step in self.config.get("steps", []):
                     name = next(iter(step))
                     log(f"krok: {name} {json.dumps(step[name], ensure_ascii=False, default=str) if not isinstance(step[name], str) else step[name]}")

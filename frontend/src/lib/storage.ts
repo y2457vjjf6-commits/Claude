@@ -20,12 +20,8 @@ export const DEFAULT_STATE: AppState = {
       deadlineDays: '21',
       validityDays: '30',
       validityEnabled: false,
-      installationIncluded: true,
-      legalClause: true
+      installationIncluded: true
     },
-    offerLegalText:
-      'Niniejsza oferta ma charakter informacyjny i nie stanowi oferty handlowej ' +
-      'w rozumieniu art. 66 § 1 Kodeksu cywilnego. Ceny podano w złotych, w kwotach brutto.',
     offerClosingText:
       'Wycena została sporządzona na podstawie dokonanych pomiarów.\n' +
       '• Zamówienie przyjmujemy do realizacji po akceptacji oferty przez Zamawiającego.\n' +

@@ -92,11 +92,7 @@ export interface Settings {
     /** Czy nowe oferty mają od razu ograniczoną ważność */
     validityEnabled: boolean;
     installationIncluded: boolean;
-    /** Czy nowe oferty mają klauzulę informacyjną */
-    legalClause: boolean;
   };
-  /** Treść klauzuli drukowanej na ofercie */
-  offerLegalText: string;
   /** Uwagi końcowe dopisywane do każdej oferty (puste = nie drukujemy) */
   offerClosingText: string;
   /** Po ilu dniach bez decyzji przypominać o wysłanej ofercie */
@@ -225,8 +221,6 @@ export interface Offer {
   notes: string;
   /** Kto wystawił ofertę */
   issuedBy: string;
-  /** Klauzula: dokument ma charakter informacyjny (art. 71 k.c.) */
-  legalClause: boolean;
   status: OfferStatus;
   /** Dokumenty WZ wystawione na podstawie tej oferty */
   wzDocumentIds?: string[];

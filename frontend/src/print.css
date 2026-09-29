@@ -212,152 +212,284 @@
 }
 
 /* ============================ Oferta cenowa ============================ */
+/* Układ arkusza pomiarowego: po lewej wąska kolumna etykiet, po prawej treść
+   i kwoty na wspólnej osi. Linie rozdzielają dane, nie zdobią — żadnych ramek
+   dookoła komórek. Na stronie jest dokładnie jedna duża liczba: cena. */
+
+/* Oferta ma własny, szerszy margines niż WZ — stąd nazwana strona.
+   Sprawdzone w Electronie: printToPDF kończy się w kilka milisekund. */
+@page oferta {
+  size: A4;
+  margin: 17mm 18mm 15mm;
+}
 
 .of-doc {
-  /* Century to krój z firmowych ofert w Wordzie; dalej bezpieczne zamienniki
-     na wypadek komputera bez pakietu Office. */
-  font-family: Century, 'Century Schoolbook', 'Bookman Old Style', Georgia, 'Times New Roman', serif;
-  font-size: 11.5pt;
-  color: #000;
-  line-height: 1.35;
-}
-
-.of-logo {
-  margin-bottom: 10pt;
-}
-
-.of-logo img {
-  height: 34pt;
-  width: auto;
-}
-
-.of-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 14pt;
-}
-
-.of-seller {
-  font-size: 11pt;
+  page: oferta;
+  --of-label: 34mm;      /* szerokość kolumny etykiet */
+  --of-ink: #111315;     /* tekst zasadniczy */
+  --of-mid: #55595e;     /* etykiety, opisy, stopka */
+  --of-hair: #d4d7da;    /* linie między wierszami danych */
+  --of-rule: #111315;    /* linie niosące podział dokumentu */
+  --of-money: 96mm;      /* oś kwot po prawej */
+  font-family: 'Geist Variable', Geist, 'Inter', Helvetica, Arial, sans-serif;
+  font-size: 9.5pt;
   line-height: 1.45;
+  color: var(--of-ink);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1, 'cv05' 1;
 }
 
-.of-date {
-  font-size: 11pt;
-  white-space: nowrap;
-  padding-top: 1pt;
+/* ---------- Nagłówek ---------- */
+
+.of-top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: 7pt;
+  border-bottom: 0.75pt solid var(--of-rule);
 }
 
-.of-client {
-  margin-bottom: 12pt;
+.of-mark {
+  height: 21pt;
+  width: auto;
+  display: block;
+}
+
+.of-kind {
+  font-size: 7.5pt;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--of-mid);
+  padding-bottom: 1pt;
+}
+
+/* ---------- Pary etykieta — wartość ---------- */
+
+.of-row {
+  display: flex;
+  align-items: baseline;
+  padding: 3pt 0;
+}
+
+.of-label {
+  flex: 0 0 var(--of-label);
+  font-size: 7.5pt;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--of-mid);
+  line-height: 1.5;
+}
+
+.of-value {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Odbiorca to pierwsza rzecz, którą czyta klient — jedyne wyróżnienie w tym bloku */
+.of-value-lead {
   font-size: 11.5pt;
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
-.of-client-label {
-  font-weight: 700;
-  margin-right: 4pt;
+.of-meta {
+  margin: 13pt 0 17pt;
 }
 
 /* ---------- Tabele pozycji ---------- */
 
-/* Podpis nie zostaje sam na końcu strony — trzyma się swojej tabeli.
-   Sama tabela może się łamać, żeby długa lista nie skakała na nową stronę. */
-.of-group-title {
-  font-size: 11pt;
-  font-weight: 700;
-  margin: 4pt 0 4pt;
-  break-after: avoid;
-  page-break-after: avoid;
+.of-group {
+  margin-bottom: 13pt;
 }
 
-.of-variant-total {
-  text-align: right;
-  font-size: 11pt;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  margin: -6pt 0 14pt;
+/* Podpis grupy trzyma się swojej tabeli i nie zostaje sam na końcu strony */
+.of-group-title {
+  font-size: 7.5pt;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--of-mid);
+  margin-bottom: 6pt;
+  break-after: avoid;
+  page-break-after: avoid;
 }
 
 .of-items {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 12pt;
   page-break-inside: auto;
 }
 
 .of-items th {
-  border: 0.5pt solid var(--wz-rule-strong);
-  background: var(--wz-head-bg);
-  font-size: 10.5pt;
-  font-weight: 700;
-  padding: 3pt 6pt;
+  font-size: 7.5pt;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 400;
+  color: var(--of-mid);
   text-align: left;
+  padding: 0 0 5pt;
+  border-bottom: 0.75pt solid var(--of-rule);
 }
 
 .of-items td {
-  border: 0.5pt solid var(--wz-rule);
-  padding: 4pt 6pt;
-  font-size: 11pt;
-  vertical-align: top;
+  padding: 6pt 0;
+  border-bottom: 0.4pt solid var(--of-hair);
+  vertical-align: baseline;
 }
 
 .of-items tr {
   page-break-inside: avoid;
 }
 
-.of-items .of-qty,
-.of-items .of-price,
-.of-items .of-lp {
-  font-variant-numeric: tabular-nums;
+.of-items th + th,
+.of-items td + td {
+  padding-left: 10pt;
 }
 
-.of-items td.of-price {
+/* Numer pozycji jest jej etykietą — stoi w tej samej kolumnie co „Dla”,
+   „Data” czy „Montaż”, dzięki czemu cały dokument ma jedną oś treści. */
+.of-items .of-lp {
+  width: var(--of-label);
+  color: var(--of-mid);
+  font-size: 8pt;
+}
+
+.of-items th + th,
+.of-items td + td {
+  padding-left: 0;
+}
+
+.of-items .of-qty,
+.of-items .of-price {
+  padding-left: 10pt;
+}
+
+.of-items .of-qty {
+  width: 38pt;
+  text-align: right;
+}
+
+.of-items .of-price {
+  width: 76pt;
   text-align: right;
   white-space: nowrap;
 }
 
-.of-items th.of-price {
-  text-align: right;
+.of-name-main {
+  font-weight: 500;
 }
 
-.of-items td.of-qty,
-.of-items th.of-qty {
-  text-align: center;
-}
-
-.of-items .of-lp { width: 28pt; text-align: center; }
-.of-items .of-qty { width: 64pt; }
-.of-items .of-price { width: 84pt; }
-
+/* Materiał i wymiar to opis pozycji, nie druga pozycja — stąd szarość i mniejszy stopień */
 .of-material {
-  font-size: 10.5pt;
+  display: block;
+  color: var(--of-mid);
+  font-size: 8.5pt;
+  margin-top: 1pt;
+}
+
+/* Wariant wyceniony jest osobno, więc jego kwota trzyma się swojej tabeli */
+.of-variant-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12pt;
+  width: var(--of-money);
+  margin: 8pt 0 0 auto;
+  padding-top: 7pt;
+  border-top: 0.4pt solid var(--of-hair);
+}
+
+.of-variant-label {
+  font-size: 7.5pt;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--of-mid);
+}
+
+.of-variant-value {
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 /* ---------- Podsumowanie ---------- */
 
-.of-summary {
-  text-align: right;
-  margin: 14pt 0 16pt;
+.of-sum {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin: 28pt 0 18pt;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .of-sum-line {
-  font-size: 11pt;
-  margin-bottom: 3pt;
-  font-variant-numeric: tabular-nums;
+  display: flex;
+  justify-content: space-between;
+  gap: 16pt;
+  width: var(--of-money);
+  padding: 2pt 0;
+  font-size: 9pt;
+  color: var(--of-mid);
 }
 
-.of-total {
-  font-size: 12.5pt;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+.of-sum-line span:last-child {
+  color: var(--of-ink);
 }
 
-/* Uwagi końcowe — ten sam tekst pod każdą ofertą */
+.of-grand {
+  width: var(--of-money);
+  margin-top: 8pt;
+  padding-top: 9pt;
+  border-top: 1pt solid var(--of-rule);
+  text-align: right;
+}
+
+/* Etykieta dostaje własny wiersz — w jednej linii z liczbą musiałaby się łamać */
+.of-grand-label {
+  display: block;
+  font-size: 7.5pt;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--of-mid);
+}
+
+/* Jedyna duża liczba w dokumencie */
+.of-grand-value {
+  display: block;
+  margin-top: 3pt;
+  font-size: 19pt;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+/* ---------- Warunki ---------- */
+
+.of-terms {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.of-terms .of-row + .of-row {
+  border-top: 0.4pt solid var(--of-hair);
+}
+
+/* ---------- Uwagi końcowe ---------- */
+
 .of-closing {
-  margin-top: 12pt;
-  font-size: 9.5pt;
-  line-height: 1.45;
+  margin-top: 14pt;
+  padding-top: 9pt;
+  border-top: 0.4pt solid var(--of-hair);
+  font-size: 8pt;
+  line-height: 1.5;
+  color: var(--of-mid);
+}
+
+/* Punkt nie łamie się w pół na granicy stron */
+.of-closing-para,
+.of-closing-bullet {
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .of-closing-para {
@@ -366,8 +498,8 @@
 
 /* Dalsze linie punktu wyrównane do tekstu, nie do kropki */
 .of-closing-bullet {
-  padding-left: 9pt;
-  text-indent: -9pt;
+  padding-left: 8pt;
+  text-indent: -8pt;
   margin-bottom: 2pt;
 }
 
@@ -375,48 +507,31 @@
   height: 5pt;
 }
 
-/* Klauzula prawna pod warunkami */
-.of-legal {
-  margin-top: 14pt;
-  padding-top: 8pt;
-  border-top: 0.5pt solid var(--wz-rule);
-  font-size: 9pt;
-  line-height: 1.45;
-  color: #333;
-}
-
-/* ---------- Warunki ---------- */
-
-.of-conditions {
-  font-size: 11pt;
-  line-height: 1.5;
-}
-
-.of-bullet {
-  margin-top: 6pt;
-}
-
-.of-notes {
-  margin-top: 8pt;
-  white-space: pre-wrap;
-}
-
-/* ---------- Podpis ---------- */
+/* ---------- Podpis i stopka ---------- */
 
 .of-sign {
-  margin-top: 22pt;
-  text-align: right;
-  font-family: Arial, Helvetica, sans-serif;
-  /* „Z poważaniem” nigdy nie zostaje bez nazwiska na następnej stronie */
+  margin-top: 18pt;
   break-inside: avoid;
   page-break-inside: avoid;
 }
 
-.of-sign-regards {
-  font-size: 12pt;
+.of-signer {
+  font-size: 11.5pt;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin-top: 2pt;
 }
 
-.of-sign-name {
-  font-size: 15pt;
-  margin-top: 2pt;
+/* Dane firmy schodzą na dół: nagłówek należy do oferty, nie do nadawcy */
+.of-foot {
+  margin-top: 20pt;
+  padding-top: 7pt;
+  border-top: 0.75pt solid var(--of-rule);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 14pt;
+  font-size: 7.5pt;
+  color: var(--of-mid);
+  break-inside: avoid;
+  page-break-inside: avoid;
 }

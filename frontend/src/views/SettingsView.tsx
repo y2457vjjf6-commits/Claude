@@ -34,8 +34,6 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
     offerValidityDays: st.offerDefaults?.validityDays || '30',
     offerValidityEnabled: st.offerDefaults?.validityEnabled ?? false,
     offerInstallation: st.offerDefaults?.installationIncluded ?? true,
-    offerLegalClause: st.offerDefaults?.legalClause ?? true,
-    offerLegalText: st.offerLegalText || '',
     offerClosingText: st.offerClosingText || '',
     offerFollowUpDays: st.offerFollowUpDays || '7',
     showCosts: st.showCosts !== false,
@@ -77,10 +75,8 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
       deadlineDays: form.offerDeadlineDays.trim(),
       validityDays: form.offerValidityDays.trim(),
       validityEnabled: form.offerValidityEnabled,
-      installationIncluded: form.offerInstallation,
-      legalClause: form.offerLegalClause
+      installationIncluded: form.offerInstallation
     };
-    next.settings.offerLegalText = form.offerLegalText;
     next.settings.offerClosingText = form.offerClosingText;
     next.settings.offerFollowUpDays = form.offerFollowUpDays.trim() || '0';
     next.settings.showCosts = form.showCosts;
@@ -221,28 +217,6 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
             Drukowane pod warunkami oferty, na każdym dokumencie. Każdy wiersz to osobna linia;
             znak • na początku wiersza robi punkt listy. Puste pole wyłącza ten tekst.
           </span>
-        </label>
-        <label className="field" style={{ marginTop: 14 }}>
-          <span>Klauzula drukowana na ofercie</span>
-          <textarea
-            className="input"
-            data-testid="offer-legal-text"
-            rows={2}
-            value={form.offerLegalText}
-            onChange={(e) => set({ offerLegalText: e.target.value })}
-          />
-          <span className="muted field-hint">
-            Dopisywana pod warunkami oferty. Każdą ofertę można z niej zwolnić osobnym przełącznikiem.
-          </span>
-        </label>
-        <label className="checkbox-field">
-          <input
-            type="checkbox"
-            data-testid="offer-legal-default"
-            checked={form.offerLegalClause}
-            onChange={(e) => set({ offerLegalClause: e.target.checked })}
-          />
-          <span>Nowe oferty domyślnie z klauzulą</span>
         </label>
         <div className="grid2" style={{ marginTop: 14 }}>
           <label className="field">

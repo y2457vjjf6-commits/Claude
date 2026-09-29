@@ -37,8 +37,7 @@ const oferta = (patch: Partial<Offer> = {}): Offer =>
     validityDays: '30',
     notes: '',
     issuedBy: 'Sebastian Wajcht',
-    legalClause: true,
-    status: 'szkic',
+      status: 'szkic',
     createdAt: '',
     updatedAt: '',
     ...patch
@@ -91,9 +90,11 @@ test('wariant numeruje pozycje od 1 i nie psuje numeracji ciągłej', () => {
 test('na dokumencie wariant ma własną wycenę, a cena całkowita dotyczy pozycji podstawowych', () => {
   const html = buildOfferHtml(zWariantem(), DEFAULT_STATE.settings);
   expect(html).toContain('Wariant A');
-  expect(html).toContain('Cena dla tego wariantu: 2600,00 zł');
+  expect(html).toContain('Cena wariantu');
+  expect(html).toContain('2600,00 zł');
   // przy wariantach nazwa ceny mówi wprost, czego dotyczy
-  expect(html).toContain('Cena całkowita oferty podstawowej: 2000,00 zł');
+  expect(html).toContain('Cena całkowita oferty podstawowej');
+  expect(html).toContain('2000,00 zł');
 });
 
 test('oferta złożona tylko z wariantów nie pokazuje ceny całkowitej', () => {
@@ -105,15 +106,16 @@ test('oferta złożona tylko z wariantów nie pokazuje ceny całkowitej', () => 
   });
   const html = buildOfferHtml(tylkoWarianty, DEFAULT_STATE.settings);
   expect(html).not.toContain('Cena całkowita');
-  expect(html).toContain('Cena dla tego wariantu: 1000,00 zł');
-  expect(html).toContain('Cena dla tego wariantu: 1200,00 zł');
+  expect(html).toContain('1000,00 zł');
+  expect(html).toContain('1200,00 zł');
+  expect(html.match(/Cena wariantu/g)).toHaveLength(2);
 });
 
 /* ---------------- Warunki na dokumencie ---------------- */
 
 test('termin realizacji zawsze liczony od akceptacji zamówienia', () => {
   const html = buildOfferHtml(oferta({ deadlineDays: '21' }), DEFAULT_STATE.settings);
-  expect(html).toContain('Termin realizacji – do 21 dni roboczych od daty akceptacji zamówienia.');
+  expect(html).toContain('do 21 dni roboczych od akceptacji zamówienia');
 });
 
 test('bez wpisanej liczby dni wiersz o terminie znika', () => {
@@ -125,9 +127,9 @@ test('dostawa bez kwoty drukuje się jako „nie dotyczy”', () => {
   const zKwota = buildOfferHtml(oferta({ deliveryEnabled: true, deliveryPrice: '108,33' }), DEFAULT_STATE.settings);
   const bezKwoty = buildOfferHtml(oferta({ deliveryEnabled: true, deliveryPrice: '' }), DEFAULT_STATE.settings);
   const wylaczona = buildOfferHtml(oferta({ deliveryEnabled: false }), DEFAULT_STATE.settings);
-  expect(zKwota).toContain('Szacunkowy koszt dostawy – 108,33 zł');
-  expect(bezKwoty).toContain('Szacunkowy koszt dostawy – nie dotyczy');
-  expect(wylaczona).not.toContain('koszt dostawy');
+  expect(zKwota).toContain('108,33 zł');
+  expect(bezKwoty).toContain('nie dotyczy');
+  expect(wylaczona).not.toContain('Dostawa');
 });
 
 /* ---------------- Uwagi końcowe pod ofertą ---------------- */
@@ -144,8 +146,23 @@ test('uwagi końcowe z ustawień trafiają na każdą ofertę', () => {
 test('puste uwagi w ustawieniach nie drukują pustej sekcji', () => {
   const html = buildOfferHtml(oferta(), { ...DEFAULT_STATE.settings, offerClosingText: '   ' });
   expect(html).not.toContain('of-closing');
-  // klauzula prawna zostaje niezależnie od uwag
-  expect(html).toContain('art. 66 § 1');
+});
+
+test('klauzula o art. 66 § 1 nie pojawia się na dokumencie', () => {
+  const html = buildOfferHtml(oferta(), DEFAULT_STATE.settings);
+  expect(html).not.toContain('art. 66');
+  expect(html).not.toContain('nie stanowi oferty handlowej');
+});
+
+/* ---------------- Dane firmy i nagłówek ---------------- */
+
+test('dokument nazywa się ofertą, a dane firmy są w stopce', () => {
+  const html = buildOfferHtml(oferta(), DEFAULT_STATE.settings);
+  expect(html).toContain('Oferta cenowa');
+  expect(html).toContain('of-foot');
+  const stopka = html.slice(html.indexOf('of-foot'));
+  expect(stopka).toContain('ZPHU Lechrol Jacek Wajcht');
+  expect(stopka).toContain('NIP 118-135-62-66');
 });
 
 /* ---------------- Koszt własny i marża ---------------- */

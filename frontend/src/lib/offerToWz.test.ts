@@ -36,8 +36,7 @@ const oferta = (patch: Partial<Offer> = {}): Offer =>
     validityDays: '30',
     notes: '',
     issuedBy: 'Sebastian Wajcht',
-    legalClause: true,
-    status: 'zaakceptowana',
+      status: 'zaakceptowana',
     createdAt: '',
     updatedAt: '',
     ...patch

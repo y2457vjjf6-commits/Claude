@@ -94,7 +94,6 @@ export default function OfferEditorView({
           validityDays: d.validityDays,
           notes: '',
           issuedBy: availableIssuers(state)[0] || '',
-          legalClause: d.legalClause ?? true,
           status: 'szkic',
           createdAt: '',
           updatedAt: ''
@@ -637,18 +636,6 @@ export default function OfferEditorView({
                 <input type="text" className="input num" data-testid="offer-validity-days" inputMode="numeric" value={offer.validityDays} onChange={(e) => set({ validityDays: e.target.value })} />
               </label>
             )}
-          </div>
-          <div className="switch-col">
-            <label className="checkbox-field">
-              <input
-                type="checkbox"
-                data-testid="offer-legal-clause"
-                checked={offer.legalClause}
-                onChange={(e) => set({ legalClause: e.target.checked })}
-              />
-              <span>Dopisz klauzulę informacyjną</span>
-            </label>
-            <span className="muted field-hint">Treść klauzuli ustawisz w Ustawieniach.</span>
           </div>
         </div>
         <label className="field" style={{ marginTop: 14 }}>

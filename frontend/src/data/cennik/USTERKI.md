@@ -46,6 +46,17 @@ a w grupie C roleta 120 × 240 cm jest tańsza od 120 × 230 cm o 104 zł.
 Dopłata do profilu montażowego, szerokość 300 cm: **385 zł** zamiast około
 277 zł — między 268 zł przy 290 cm a 286 zł przy 310 cm. Zawyżone o 108 zł.
 
+## Rolety kasetowe System UNI — str. 30-37
+
+| Kolor | Grupa | Wysokość | Szerokość | W cenniku | Powinno być | Skutek |
+|---|---|---|---|---|---|---|
+| biały/brązowy/czarny | A | 220 | 110 | 267 zł | ~285 zł | zaniżone o 18 zł |
+| antracyt | C | 170 | 80 | 408 zł | ~318 zł | **zawyżone o 90 zł** |
+
+Ten w antracycie jest najgroźniejszy z dotychczasowych: roleta 80 × 170 cm
+kosztuje więcej niż ta sama roleta o 10 cm szersza (346 zł) i o 10 cm wyższa
+(330 zł). Klient, który porówna trzy wymiary, zobaczy to od razu.
+
 ## Co z tym robi program
 
 Na razie nic — trzyma ceny takie, jakie są w cenniku, żeby oferta zgadzała się

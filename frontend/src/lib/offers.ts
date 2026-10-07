@@ -23,10 +23,23 @@ export function formatMoney(value: number): string {
 }
 
 /** Kwota za pozycję: ilość × cena, chyba że wpisano własną kwotę. */
+/** Suma dopłat doliczonych do jednej sztuki — profil montażowy, prowadnice,
+ *  silnik. Kwoty są zapisane przy pozycji, więc stara oferta się nie zmieni,
+ *  gdy producent podniesie cennik. */
+export function itemSurcharges(item: OfferItem): number {
+  return (item.surcharges || []).reduce((s, d) => s + (Number(d.amount) || 0), 0);
+}
+
+/** Cena jednej sztuki razem z dopłatami. Na dokumencie klient widzi jedną
+ *  kwotę — dopłaty są naszym sposobem jej policzenia, nie jego sprawą. */
+export function itemUnitPrice(item: OfferItem): number {
+  return parseNumber(item.unitPrice) + itemSurcharges(item);
+}
+
 export function itemTotal(item: OfferItem): number {
   const nadpisana = String(item.totalOverride ?? '').trim();
   if (nadpisana) return parseNumber(nadpisana);
-  return parseNumber(item.qty) * parseNumber(item.unitPrice);
+  return parseNumber(item.qty) * itemUnitPrice(item);
 }
 
 export function isItemEmpty(item: OfferItem): boolean {

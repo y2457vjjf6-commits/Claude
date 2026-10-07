@@ -1,4 +1,4 @@
-import { OfferItem, PriceTable } from '../types';
+import { OfferItem, PriceSurcharge, PriceTable } from '../types';
 
 /* =======================================================================
    Cennik producenta: tabela krzyżowa szerokość × wysokość.
@@ -63,37 +63,52 @@ export function parseDimensions(...teksty: (string | undefined)[]): Wymiar | nul
 
 /* --------------------------- Dobór tabeli --------------------------- */
 
-/** Kody materiału wypisane w pozycji — „Materiał C102” daje „C102”. */
-function zawieraKod(tekst: string, kod: string): boolean {
-  const k = kod.trim();
-  if (!k) return false;
-  const wzor = new RegExp('(?:^|[^\\p{L}\\p{N}])' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![\\p{L}\\p{N}])', 'iu');
+/** Czy `fraza` stoi w tekście jako całe wyrażenie.
+ *
+ *  Z prawej strony dopuszczamy jednostkę: fraza „Mini 19” ma trafić na
+ *  „Rolety wolnowiszące Mini 19mm”, bo tak te produkty bywają nazywane.
+ *  Poza jednostką granica jest szczelna — inaczej kod „C102” złapałby
+ *  tkaninę „C1020”, czyli zupełnie inną cenę.
+ */
+function zawieraFraze(tekst: string, fraza: string): boolean {
+  const f = fraza.trim().replace(/\s+/g, ' ');
+  if (!f) return false;
+  const wzor = new RegExp(
+    '(?:^|[^\\p{L}\\p{N}])' +
+      f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/ /g, '\\s+') +
+      '(?:mm|cm|m)?(?![\\p{L}\\p{N}])',
+    'iu'
+  );
   return wzor.test(tekst);
 }
 
-/** Dobiera tabelę do pozycji. Dopasowanie po kodzie materiału jest mocniejsze
- *  niż po nazwie produktu — kod jednoznacznie wskazuje grupę cenową. */
+/** Dobiera tabelę do pozycji.
+ *
+ *  Tabela odpada, gdy choć jeden człon jej nazwy produktu nie stoi w pozycji —
+ *  cennik rolet RT 32 nie może wycenić rolety UNI, choćby materiał się zgadzał.
+ *  Tak samo odpada, gdy tabela wymienia materiały, a żaden z nich nie pada:
+ *  bez materiału nie wiadomo, która grupa cenowa obowiązuje.
+ *
+ *  Z tych, które przeszły, wygrywa najbardziej szczegółowa: najpierw po liczbie
+ *  członów nazwy, potem po trafionym materiale. Dzięki temu pozycja „System UNI,
+ *  kaseta antracyt” trafia na cennik antracytowy, a nie na ogólny UNI — mimo że
+ *  oba pasują.
+ */
 export function matchTable(item: Pick<OfferItem, 'name' | 'material'>, tables: PriceTable[]): PriceTable | null {
-  const nazwa = item.name || '';
-  const material = item.material || '';
-  const caly = `${nazwa} · ${material}`;
+  const caly = `${item.name || ''} \u00b7 ${item.material || ''}`;
   let najlepsza: PriceTable | null = null;
   let najlepszyWynik = 0;
 
   for (const t of tables || []) {
+    const czlony = (t.product || []).map((f) => String(f).trim()).filter(Boolean);
     const kody = (t.materials || []).filter((k) => k.trim());
-    const produkt = (t.product || '').trim();
-    const pasujeKod = kody.some((k) => zawieraKod(caly, k));
-    const pasujeProdukt = produkt ? caly.toLowerCase().includes(produkt.toLowerCase()) : false;
 
-    // Tabela bez żadnego warunku łapie wszystko, ale najsłabiej — to ostatnia deska ratunku
-    let wynik = 0;
-    if (pasujeKod) wynik += 10;
-    if (pasujeProdukt) wynik += 4;
-    if (!kody.length && !produkt) wynik = 1;
-    if (produkt && !pasujeProdukt && !pasujeKod) continue;
-    if (kody.length && !pasujeKod && !pasujeProdukt) continue;
+    if (czlony.length && !czlony.every((f) => zawieraFraze(caly, f))) continue;
+    const pasujeKod = kody.some((k) => zawieraFraze(caly, k));
+    if (kody.length && !pasujeKod) continue;
 
+    // Tabela bez żadnego warunku łapie wszystko, ale najsłabiej — ostatnia deska ratunku
+    const wynik = czlony.length * 2 + (pasujeKod ? 10 : 0) || 1;
     if (wynik > najlepszyWynik) {
       najlepszyWynik = wynik;
       najlepsza = t;
@@ -124,6 +139,28 @@ export function lookupPrice(table: PriceTable, wymiar: Wymiar): OdczytCeny | nul
   const cena = table.prices?.[wier]?.[kol];
   if (cena === null || cena === undefined || !isFinite(cena)) return null;
   return { cost: cena, cellWidth: table.widths[kol], cellHeight: table.heights[wier] };
+}
+
+/* ----------------------------- Dopłaty ----------------------------- */
+
+/** Kwota dopłaty dla konkretnego wymiaru.
+ *
+ *  Dopłata stała ma kwotę wprost. Dopłata zależna od wymiaru — jak profil
+ *  montażowy, który rośnie z szerokością — czytana jest z progów tą samą
+ *  regułą co siatka cen: bierzemy pierwszy próg nie mniejszy od zamówionego
+ *  wymiaru. Wymiar większy od ostatniego progu daje `null`, bo zgadywanie
+ *  kwoty poza tabelą producenta kończyłoby się zaniżoną ofertą.
+ */
+export function surchargeAmount(doplata: PriceSurcharge, wymiar?: Wymiar | null): number | null {
+  if (typeof doplata.amount === 'number' && isFinite(doplata.amount)) return doplata.amount;
+  const progi = doplata.steps || [];
+  const kwoty = doplata.amounts || [];
+  if (!progi.length || progi.length !== kwoty.length || !doplata.by || !wymiar) return null;
+  const szukany = doplata.by === 'height' ? wymiar.height : wymiar.width;
+  const i = progi.findIndex((p) => p >= szukany - 0.001);
+  if (i < 0) return null;
+  const kwota = kwoty[i];
+  return typeof kwota === 'number' && isFinite(kwota) ? kwota : null;
 }
 
 export type StatusWyceny =

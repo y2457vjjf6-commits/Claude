@@ -15,7 +15,7 @@ import { PriceTable } from '../types';
 const TABELA: PriceTable = {
   id: 't1',
   name: 'Rolety wolnowiszące FI32 — grupa 1',
-  product: 'FI32',
+  product: ['FI32'],
   materials: ['C101', 'C102'],
   widths: [80, 100, 120],
   heights: [100, 150, 200],
@@ -87,8 +87,29 @@ describe('dobór tabeli do pozycji', () => {
   const tabele = [TABELA, GRUPA2];
 
   test('kod materiału wskazuje grupę cenową', () => {
-    expect(matchTable({ name: 'Roleta', material: 'Materiał C210 · 100 x 100 cm' }, tabele)?.id).toBe('t2');
-    expect(matchTable({ name: 'Roleta', material: 'Materiał C102 · 100 x 100 cm' }, tabele)?.id).toBe('t1');
+    expect(matchTable({ name: 'Roleta FI32', material: 'Materiał C210 · 100 x 100 cm' }, tabele)?.id).toBe('t2');
+    expect(matchTable({ name: 'Roleta FI32', material: 'Materiał C102 · 100 x 100 cm' }, tabele)?.id).toBe('t1');
+  });
+
+  test('tabela nazywająca produkt nie wycenia innego produktu', () => {
+    // ten sam materiał chodzi po wszystkich cennikach, więc bez nazwy produktu
+    // program wybrałby pierwszą tabelę z brzegu i podstawił cudzą cenę
+    expect(matchTable({ name: 'Roleta kasetowa UNI', material: 'C102' }, tabele)).toBeNull();
+  });
+
+  test('jednostka po nazwie produktu nie psuje dopasowania', () => {
+    // produkty bywają zapisane jako „Mini 19mm”, a cennik nazywa się „Mini 19”
+    const mini: PriceTable = { ...TABELA, id: 'm1', product: ['Mini 19'] };
+    expect(matchTable({ name: 'Roleta wolnowisząca Mini 19mm', material: 'C102' }, [mini])?.id).toBe('m1');
+  });
+
+  test('wygrywa tabela bardziej szczegółowa', () => {
+    // „UNI antracyt” i „UNI” pasują oba, ale antracytowy opisuje pozycję dokładniej
+    const uni: PriceTable = { ...TABELA, id: 'u1', product: ['UNI'] };
+    const antracyt: PriceTable = { ...TABELA, id: 'u2', product: ['UNI', 'antracyt'] };
+    expect(
+      matchTable({ name: 'Rolety kasetowe System UNI, kaseta antracyt', material: 'C102' }, [uni, antracyt])?.id
+    ).toBe('u2');
   });
 
   test('kod musi być osobnym słowem, a nie fragmentem innego', () => {
@@ -100,9 +121,9 @@ describe('dobór tabeli do pozycji', () => {
   });
 
   test('tabela bez warunków łapie wszystko, ale dopiero gdy nic nie pasuje', () => {
-    const uniwersalna: PriceTable = { ...TABELA, id: 't0', product: '', materials: [] };
+    const uniwersalna: PriceTable = { ...TABELA, id: 't0', product: [], materials: [] };
     expect(matchTable({ name: 'Cokolwiek', material: '' }, [uniwersalna])?.id).toBe('t0');
-    expect(matchTable({ name: 'Roleta', material: 'C210' }, [uniwersalna, GRUPA2])?.id).toBe('t2');
+    expect(matchTable({ name: 'Roleta FI32', material: 'C210' }, [uniwersalna, GRUPA2])?.id).toBe('t2');
   });
 });
 

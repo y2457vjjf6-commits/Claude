@@ -124,6 +124,20 @@ export interface AppState {
   priceTables: PriceTable[];
 }
 
+/** Dopłata do pozycji: albo stała kwota, albo kwota odczytana z progów
+ *  wymiaru — tak jak dopłata do profilu montażowego, która rośnie z szerokością. */
+export interface PriceSurcharge {
+  /** Nazwa pokazywana przy pozycji */
+  name: string;
+  /** Stała kwota — gdy dopłata nie zależy od wymiaru */
+  amount?: number;
+  /** Od którego wymiaru zależy kwota */
+  by?: 'width' | 'height';
+  /** Progi wymiaru rosnąco; kwota to `amounts` o tym samym numerze */
+  steps?: number[];
+  amounts?: number[];
+}
+
 /** Tabela cennika producenta: koszt zależny od szerokości i wysokości.
  *  Ceny czytamy z zaokrągleniem w górę do najbliższej kratki siatki. */
 export interface PriceTable {
@@ -132,8 +146,10 @@ export interface PriceTable {
   name: string;
   /** Producent albo dostawca */
   supplier?: string;
-  /** Fraza szukana w nazwie produktu, np. „FI32”; pusta = dowolny produkt */
-  product?: string;
+  /** Człony, które muszą stać w nazwie pozycji, np. ['UNI', 'antracyt'].
+   *  Wszystkie muszą pasować; pusta lista = dowolny produkt. Im więcej członów,
+   *  tym tabela bardziej szczegółowa i tym pewniej wygrywa z ogólniejszą. */
+  product?: string[];
   /** Kody materiałów należące do tej grupy, np. C101, C102 */
   materials?: string[];
   /** Szerokości w cm, rosnąco — nagłówki kolumn */
@@ -142,6 +158,8 @@ export interface PriceTable {
   heights: number[];
   /** prices[wiersz][kolumna] w złotych; null = producent nie podaje ceny */
   prices: (number | null)[][];
+  /** Dopłaty, które wolno doliczyć do pozycji wycenionej z tej tabeli */
+  surcharges?: PriceSurcharge[];
   /** Skąd pochodzi, np. „Cennik 01.2026, s. 4” — do porównania z oryginałem */
   source?: string;
   updatedAt: string;
@@ -197,6 +215,12 @@ export interface OfferItem {
   /** 'cennik' = kwota podstawiona z tabeli producenta i wolno ją nadpisać
    *  automatycznie; brak wartości = wpisana ręcznie i nietykalna */
   costSource?: 'cennik';
+  /** To samo dla ceny sprzedaży: 'cennik' = podstawiona z tabeli producenta
+   *  i wolno ją przeliczyć po zmianie wymiaru; brak = wpisana ręcznie */
+  priceSource?: 'cennik';
+  /** Dopłaty doliczone do tej pozycji. Zapisujemy je z kwotą, nie samą nazwą —
+   *  dzięki temu wystawiona oferta nie zmieni się, gdy producent podniesie cennik. */
+  surcharges?: PriceSurcharge[];
 }
 
 export interface OfferGroup {

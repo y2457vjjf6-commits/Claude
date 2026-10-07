@@ -25,6 +25,8 @@ import { itemNameSuggestions } from '../lib/suggestions';
 import { printOffer, savePdfOffer, emailOffer } from '../lib/offerActions';
 import { computeOfferNumberFor } from '../lib/numbering';
 import { photoFor } from '../lib/photos';
+import { priceTablesFor } from '../lib/cennik';
+import { opiszWycene, parseDimensions, priceItem, surchargeAmount } from '../lib/pricing';
 import { useEditorShortcuts } from '../hooks/useEditorShortcuts';
 import { useActionState } from '../hooks/useActionState';
 import SuffixField from '../components/SuffixField';
@@ -166,11 +168,51 @@ export default function OfferEditorView({
   const setGroup = (gi: number, patch: Partial<OfferGroup>) =>
     setOffer((o) => ({ ...o, groups: o.groups.map((g, i) => (i === gi ? { ...g, ...patch } : g)) }));
 
+  // --- cennik producenta ---
+  const tabeleCennika = priceTablesFor(state.priceTables);
+
+  /** Przelicza pozycję po cenniku: cenę i kwoty zaznaczonych dopłat.
+   *
+   *  Cena wpisana ręcznie jest nietykalna — podstawiamy tylko wtedy, gdy pole
+   *  jest puste albo poprzednia kwota też pochodzi z cennika. Dopłaty liczymy
+   *  od nowa po każdej zmianie wymiaru, bo profil montażowy rośnie z szerokością. */
+  const przelicz = (it: OfferItem): OfferItem => {
+    const wycena = priceItem(it, tabeleCennika);
+    const wymiar = parseDimensions(it.material, it.name);
+    const dostepne = wycena.table?.surcharges || [];
+    const doplaty = (it.surcharges || []).map((d) => {
+      const wzorzec = dostepne.find((x) => x.name === d.name);
+      if (!wzorzec) return d;
+      const kwota = surchargeAmount(wzorzec, wymiar);
+      return kwota === null ? d : { ...wzorzec, amount: kwota };
+    });
+
+    const reczna = String(it.unitPrice || '').trim() !== '' && it.priceSource !== 'cennik';
+    if (reczna) return { ...it, surcharges: doplaty };
+    if (wycena.status !== 'ok' || typeof wycena.cost !== 'number') {
+      // kwota z cennika przestała obowiązywać — czyścimy ją, zamiast zostawiać starą
+      return { ...it, unitPrice: '', priceSource: undefined, surcharges: doplaty };
+    }
+    return { ...it, unitPrice: String(wycena.cost), priceSource: 'cennik', surcharges: doplaty };
+  };
+
   const setItem = (gi: number, ii: number, patch: Partial<OfferItem>) =>
     setOffer((o) => ({
       ...o,
       groups: o.groups.map((g, i) =>
-        i === gi ? { ...g, items: g.items.map((it, j) => (j === ii ? { ...it, ...patch } : it)) } : g
+        i === gi
+          ? {
+              ...g,
+              items: g.items.map((it, j) => {
+                if (j !== ii) return it;
+                // ręczna zmiana ceny odbiera cennikowi prawo do jej nadpisywania
+                const zrodlo = 'unitPrice' in patch ? { priceSource: undefined } : {};
+                const nowa = { ...it, ...patch, ...zrodlo };
+                const zmianaOpisu = 'name' in patch || 'material' in patch;
+                return zmianaOpisu ? przelicz(nowa) : nowa;
+              })
+            }
+          : g
       )
     }));
 
@@ -489,6 +531,52 @@ export default function OfferEditorView({
                       value={it.material}
                       onChange={(e) => setItem(gi, ii, { material: e.target.value })}
                     />
+                    {!isItemEmpty(it) && (() => {
+                      const wycena = priceItem(it, tabeleCennika);
+                      const doplaty = wycena.table?.surcharges || [];
+                      const wymiar = parseDimensions(it.material, it.name);
+                      const wybrane = it.surcharges || [];
+                      return (
+                        <div className="item-cennik" data-testid={`offer-cennik-${gi}-${ii}`}>
+                          <span className={wycena.status === 'ok' ? 'cennik-ok' : 'cennik-brak'}>
+                            {opiszWycene(wycena)}
+                          </span>
+                          {doplaty.length > 0 && (
+                            <details className="cennik-doplaty">
+                              <summary data-testid={`offer-doplaty-${gi}-${ii}`}>
+                                Dopłaty{wybrane.length ? ` (${wybrane.length})` : ''}
+                              </summary>
+                              {doplaty.map((d, di) => {
+                                const kwota = surchargeAmount(d, wymiar);
+                                const zaznaczona = wybrane.some((x) => x.name === d.name);
+                                return (
+                                  <label className="checkbox-field cennik-doplata" key={d.name}>
+                                    <input
+                                      type="checkbox"
+                                      data-testid={`offer-doplata-${gi}-${ii}-${di}`}
+                                      checked={zaznaczona}
+                                      disabled={kwota === null}
+                                      onChange={(e) =>
+                                        setItem(gi, ii, {
+                                          surcharges: e.target.checked
+                                            ? [...wybrane, { ...d, amount: kwota ?? 0 }]
+                                            : wybrane.filter((x) => x.name !== d.name)
+                                        })
+                                      }
+                                    />
+                                    <span>
+                                      {d.name}
+                                      {' — '}
+                                      {kwota === null ? 'poza tabelą' : `${formatMoney(kwota)}`}
+                                    </span>
+                                  </label>
+                                );
+                              })}
+                            </details>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td>
                     <input type="text" className="input num" data-testid={`offer-qty-${gi}-${ii}`} inputMode="decimal" aria-label="Ilość" value={it.qty} onChange={(e) => setItem(gi, ii, { qty: e.target.value })} />

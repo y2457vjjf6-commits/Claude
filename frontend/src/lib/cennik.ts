@@ -1,0 +1,139 @@
+/** Cennik producenta wbudowany w program.
+ *
+ *  Pliki w `data/cennik/` są wiernym przepisaniem papierowego cennika i mają
+ *  jego układ: jeden plik na produkt, a w środku pięć siatek — po jednej na
+ *  grupę materiału. Silnik wyceny operuje na płaskich tabelach, więc tutaj
+ *  rozwijamy każdy plik na pięć `PriceTable` i dopinamy im listę materiałów
+ *  z osobnego pliku grup.
+ *
+ *  Dane są importowane, a nie wczytywane z dysku — mają jechać razem z .exe
+ *  i działać bez sieci.
+ */
+import { PriceSurcharge, PriceTable } from '../types';
+import grupyRolety from '../data/cennik/grupy-rolety.json';
+import mini19 from '../data/cennik/rolety-mini-19.json';
+import midi25 from '../data/cennik/rolety-midi-25.json';
+import rt32 from '../data/cennik/rolety-rt-32.json';
+import rt4045 from '../data/cennik/rolety-rt-40-45.json';
+import uni from '../data/cennik/rolety-kasetowe-uni.json';
+import uniAntracyt from '../data/cennik/rolety-kasetowe-uni-antracyt.json';
+
+/** Jak nazwać produkt, żeby trafił na swoją tabelę. Człony muszą stać
+ *  w nazwie pozycji — wszystkie naraz. Trzymamy je tutaj, a nie w plikach
+ *  z cenami, bo to decyzja o dopasowaniu, nie dana z cennika. */
+const CZLONY: Record<string, string[]> = {
+  'rolety-mini-19': ['Mini 19'],
+  'rolety-midi-25': ['Midi 25'],
+  'rolety-rt-32': ['RT 32'],
+  'rolety-rt-40-45': ['RT 40/45'],
+  'rolety-kasetowe-uni': ['UNI'],
+  'rolety-kasetowe-uni-antracyt': ['UNI', 'antracyt']
+};
+
+interface PlikGrup {
+  zrodlo: string;
+  dotyczy: string;
+  materialy: { nazwa: string; grupa: string }[];
+}
+
+interface PlikCen {
+  id: string;
+  kategoria: string;
+  nazwa: string;
+  strona: string;
+  maks?: string;
+  szerokosci: number[];
+  wysokosci: number[];
+  siatki: Record<string, (number | null)[][]>;
+  doplaty?: { nazwa: string; kwota: number }[];
+  doplatySilnik?: { nazwa: string; kwota: number }[];
+  doplatySzerokosc?: { nazwa: string; szerokosci: number[]; kwoty: number[] };
+  opcja23?: { opis: string; szerokosci: number[]; kwoty: number[] };
+  prowadnice?: { opis: string; wysokosci: number[]; typy: Record<string, number[]> };
+}
+
+const PLIKI = [mini19, midi25, rt32, rt4045, uni, uniAntracyt] as unknown as PlikCen[];
+const GRUPY = grupyRolety as PlikGrup;
+
+/** Materiały należące do grupy, plus sama nazwa grupy — bo na ofertach pisze
+ *  się i „Madagaskar”, i wprost „Grupa C”. */
+function materialyGrupy(kategoria: string, litera: string): string[] {
+  const nazwy = GRUPY.dotyczy === kategoria
+    ? GRUPY.materialy.filter((m) => m.grupa === litera).map((m) => m.nazwa)
+    : [];
+  return [...nazwy, `Grupa ${litera}`];
+}
+
+/** Dopłaty dostępne przy pozycji wycenionej z tego pliku. */
+function doplatyPliku(p: PlikCen): PriceSurcharge[] {
+  const lista: PriceSurcharge[] = [];
+  for (const d of p.doplaty || []) lista.push({ name: d.nazwa, amount: d.kwota });
+  for (const d of p.doplatySilnik || []) lista.push({ name: d.nazwa, amount: d.kwota });
+  if (p.doplatySzerokosc) {
+    lista.push({
+      name: p.doplatySzerokosc.nazwa,
+      by: 'width',
+      steps: p.doplatySzerokosc.szerokosci,
+      amounts: p.doplatySzerokosc.kwoty
+    });
+  }
+  if (p.opcja23) {
+    lista.push({ name: p.opcja23.opis, by: 'width', steps: p.opcja23.szerokosci, amounts: p.opcja23.kwoty });
+  }
+  if (p.prowadnice) {
+    // Każdy typ prowadnicy to osobny wybór, nie wariant jednej dopłaty
+    for (const [typ, kwoty] of Object.entries(p.prowadnice.typy)) {
+      lista.push({
+        name: `Prowadnice typ ${typ}`,
+        by: 'height',
+        steps: p.prowadnice.wysokosci,
+        amounts: kwoty
+      });
+    }
+  }
+  return lista;
+}
+
+function zbuduj(): PriceTable[] {
+  const tabele: PriceTable[] = [];
+  for (const p of PLIKI) {
+    const czlony = CZLONY[p.id] || [];
+    const doplaty = doplatyPliku(p);
+    for (const [litera, ceny] of Object.entries(p.siatki)) {
+      tabele.push({
+        id: `${p.id}-${litera}`,
+        name: `${p.nazwa} — grupa ${litera}`,
+        supplier: 'Lechrol',
+        product: czlony,
+        materials: materialyGrupy(p.kategoria, litera),
+        widths: p.szerokosci,
+        heights: p.wysokosci,
+        prices: ceny,
+        surcharges: doplaty,
+        source: `Cennik Lechrol 2026, ${p.strona}`,
+        updatedAt: '2026-01-01T00:00:00.000Z'
+      });
+    }
+  }
+  return tabele;
+}
+
+/** Wszystkie tabele producenta wbudowane w program. */
+export const CENNIK: PriceTable[] = zbuduj();
+
+/** Tabele do wyceny: wbudowane plus te, które ktoś wkleił sam. Własne idą
+ *  pierwsze, żeby dało się nadpisać cennik producenta bez ruszania kodu. */
+export function priceTablesFor(wlasne: PriceTable[] | undefined): PriceTable[] {
+  return [...(wlasne || []), ...CENNIK];
+}
+
+/** Kategorie i produkty do przeglądania cennika w programie. */
+export function cennikProdukty(): { id: string; nazwa: string; kategoria: string; strona: string; grupy: string[] }[] {
+  return PLIKI.map((p) => ({
+    id: p.id,
+    nazwa: p.nazwa,
+    kategoria: p.kategoria,
+    strona: p.strona,
+    grupy: Object.keys(p.siatki)
+  }));
+}

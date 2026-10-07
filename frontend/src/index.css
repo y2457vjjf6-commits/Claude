@@ -1460,6 +1460,34 @@ kbd {
   align-self: flex-start;
 }
 
+/* --------------------------------------------- cennik przy pozycji oferty */
+
+.item-cennik {
+  margin-top: 4px;
+  font-size: var(--text-xs, 11px);
+  line-height: 1.5;
+}
+
+.cennik-ok {
+  color: var(--muted, #6b7280);
+}
+
+/* Brak ceny musi być widoczny — inaczej pozycja pójdzie na ofertę z pustą kwotą */
+.cennik-brak {
+  color: var(--warn, #b45309);
+}
+
+.cennik-doplaty summary {
+  cursor: pointer;
+  color: var(--accent, #f15a28);
+  margin-top: 2px;
+}
+
+.cennik-doplata {
+  margin: 2px 0 0 12px;
+  font-size: var(--text-xs, 11px);
+}
+
 /* ------------------------------------------------------- zdjęcia produktów */
 
 /* Pole wyboru pliku chowamy, a klikalna jest etykieta — dzięki temu

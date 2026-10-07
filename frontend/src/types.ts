@@ -199,6 +199,10 @@ export type OfferStatus = 'szkic' | 'wyslana' | 'zaakceptowana' | 'odrzucona';
 
 export interface Offer {
   id: string;
+  /** Numer oferty, np. OF-0014/2026 — nadawany przy pierwszym zapisie */
+  number?: string;
+  /** Kolejny numer w roku; trzymany osobno, żeby numer dało się przeliczyć */
+  seq?: number;
   /** Data wystawienia (RRRR-MM-DD) */
   date: string;
   place: string;
@@ -222,6 +226,8 @@ export interface Offer {
   /** Kto wystawił ofertę */
   issuedBy: string;
   status: OfferStatus;
+  /** Rozbicie ceny na netto i VAT — dla ofert dla firm */
+  vatBreakdown?: boolean;
   /** Dokumenty WZ wystawione na podstawie tej oferty */
   wzDocumentIds?: string[];
   printedAt?: string;

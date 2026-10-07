@@ -114,6 +114,24 @@ export function offerTotals(offer: Offer): OfferTotals {
   return { itemsSum, discountAmount, total, deliveryAmount, variants };
 }
 
+/* ------------------------------ VAT ------------------------------ */
+
+/** Stawka podstawowa. Ceny w cenniku są brutto, więc netto liczymy wstecz. */
+export const VAT_RATE = 23;
+
+export interface OfferVat {
+  rate: number;
+  netto: number;
+  vat: number;
+  brutto: number;
+}
+
+/** Rozbicie kwoty brutto na netto i VAT — zaokrąglane do groszy. */
+export function offerVat(brutto: number, rate: number = VAT_RATE): OfferVat {
+  const netto = Math.round((brutto / (1 + rate / 100)) * 100) / 100;
+  return { rate, netto, vat: Math.round((brutto - netto) * 100) / 100, brutto };
+}
+
 /* ---------------- Koszt własny i marża (tylko w programie) ---------------- */
 
 /** Koszt własny pozycji: ilość × koszt za sztukę. */
@@ -195,7 +213,9 @@ export function offerFileName(offer: Offer): string {
     .replace(/[\\/:*?"<>|]/g, '-')
     .trim()
     .replace(/\s+/g, '_');
-  return `Oferta_cenowa_${data}_${klient}.pdf`;
+  // Numer na początku nazwy układa pliki w folderze tak samo, jak w programie
+  const numer = (offer.number || '').replace(/\//g, '-');
+  return `${numer ? numer + '_' : ''}Oferta_cenowa_${data}_${klient}.pdf`;
 }
 
 /** Data ważności oferty = data wystawienia + liczba dni. */

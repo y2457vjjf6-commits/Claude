@@ -90,7 +90,8 @@ test('wariant numeruje pozycje od 1 i nie psuje numeracji ciągłej', () => {
 test('na dokumencie wariant ma własną wycenę, a cena całkowita dotyczy pozycji podstawowych', () => {
   const html = buildOfferHtml(zWariantem(), DEFAULT_STATE.settings);
   expect(html).toContain('Wariant A');
-  expect(html).toContain('Cena wariantu');
+  expect(html).toContain('Warianty do wyboru');
+  expect(html).toContain('nie sumuje się z ceną całkowitą');
   expect(html).toContain('2600,00 zł');
   // przy wariantach nazwa ceny mówi wprost, czego dotyczy
   expect(html).toContain('Cena całkowita oferty podstawowej');
@@ -108,7 +109,9 @@ test('oferta złożona tylko z wariantów nie pokazuje ceny całkowitej', () => 
   expect(html).not.toContain('Cena całkowita');
   expect(html).toContain('1000,00 zł');
   expect(html).toContain('1200,00 zł');
-  expect(html.match(/Cena wariantu/g)).toHaveLength(2);
+  // oba warianty w jednym bloku „do wyboru”, każdy z własną kwotą
+  expect(html.match(/Warianty do wyboru/g)).toHaveLength(1);
+  expect(html.match(/of-room-sum/g)).toHaveLength(2);
 });
 
 /* ---------------- Warunki na dokumencie ---------------- */
@@ -152,6 +155,60 @@ test('klauzula o art. 66 § 1 nie pojawia się na dokumencie', () => {
   const html = buildOfferHtml(oferta(), DEFAULT_STATE.settings);
   expect(html).not.toContain('art. 66');
   expect(html).not.toContain('nie stanowi oferty handlowej');
+});
+
+/* ---------------- Numer, VAT i kolumny ---------------- */
+
+test('numer oferty trafia do nagłówka dokumentu', () => {
+  const html = buildOfferHtml(oferta({ number: 'OF-0014/2026' }), DEFAULT_STATE.settings);
+  expect(html).toContain('OF-0014/2026');
+  expect(html).toContain('of-number');
+});
+
+test('bez numeru nagłówek nie drukuje pustego miejsca', () => {
+  expect(buildOfferHtml(oferta(), DEFAULT_STATE.settings)).not.toContain('of-number');
+});
+
+test('cena za sztukę liczona z kwoty pozycji i ilości', () => {
+  const html = buildOfferHtml(
+    oferta({ groups: [grupa('g1', [poz('Roleta', '4', '250')])] }),
+    DEFAULT_STATE.settings
+  );
+  expect(html).toContain('Cena/szt.');
+  expect(html).toContain('250,00 zł');   // za sztukę
+  expect(html).toContain('1000,00 zł');  // za pozycję
+});
+
+test('rozbicie na netto i VAT tylko po włączeniu', () => {
+  const bez = buildOfferHtml(oferta({ groups: [grupa('g1', [poz('Roleta', '1', '1230')])] }), DEFAULT_STATE.settings);
+  const z = buildOfferHtml(
+    oferta({ vatBreakdown: true, groups: [grupa('g1', [poz('Roleta', '1', '1230')])] }),
+    DEFAULT_STATE.settings
+  );
+  expect(bez).not.toContain('VAT');
+  expect(z).toContain('VAT 23%');
+  expect(z).toContain('1000,00 zł');  // netto
+  expect(z).toContain('230,00 zł');   // podatek
+});
+
+test('kwota pomieszczenia pokazuje się dopiero przy kilku pomieszczeniach', () => {
+  const jedno = buildOfferHtml(
+    oferta({ groups: [{ ...grupa('g1', [poz('Roleta', '1', '500')]), title: 'Salon' }] }),
+    DEFAULT_STATE.settings
+  );
+  const dwa = buildOfferHtml(
+    oferta({
+      groups: [
+        { ...grupa('g1', [poz('Roleta', '1', '500')]), title: 'Salon' },
+        { ...grupa('g2', [poz('Roleta', '1', '700')]), title: 'Sypialnia' }
+      ]
+    }),
+    DEFAULT_STATE.settings
+  );
+  expect(jedno).toContain('Salon');
+  expect(jedno).not.toContain('of-room-sum');
+  expect(dwa).toContain('of-room-sum');
+  expect(dwa).toContain('700,00 zł');
 });
 
 /* ---------------- Dane firmy i nagłówek ---------------- */

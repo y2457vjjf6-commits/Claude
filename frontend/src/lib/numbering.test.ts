@@ -41,3 +41,45 @@ test('własny kod kontrahenta nadpisuje kod automatyczny', () => {
   expect(buildNumber('2026-01-01', 1, 'Rolety Siejka', '  ')).toBe('1001/RA/2026');
   expect(buildNumber('2026-01-01', 1, 'Rolety Siejka')).toBe('1001/RA/2026');
 });
+
+/* ---------------- Numeracja ofert ---------------- */
+
+import { buildOfferNumber, computeOfferNumberFor, nextOfferSeq } from './numbering';
+import { Offer } from '../types';
+
+const of = (id: string, date: string, seq?: number): Offer =>
+  ({ id, date, seq, client: '', clientEmail: '', place: '', groups: [], continuousNumbering: true,
+     discountEnabled: false, discountPercent: '', deliveryEnabled: false, deliveryPrice: '',
+     installationIncluded: true, deadlineDays: '', validityEnabled: false, validityDays: '',
+     notes: '', issuedBy: '', status: 'szkic', createdAt: '', updatedAt: '' } as Offer);
+
+test('numer oferty ma przedrostek i czterocyfrowy licznik', () => {
+  expect(buildOfferNumber('2026-10-07', 14)).toBe('OF-0014/2026');
+  expect(buildOfferNumber('2026-01-02', 1)).toBe('OF-0001/2026');
+  expect(buildOfferNumber('2026-12-31', 1234)).toBe('OF-1234/2026');
+});
+
+test('numeracja biegnie przez cały rok, nie resetuje się co miesiąc', () => {
+  const oferty = [of('a', '2026-01-10', 1), of('b', '2026-07-02', 2)];
+  expect(nextOfferSeq(oferty, '2026-10-07')).toBe(3);
+});
+
+test('nowy rok zaczyna numerację od początku', () => {
+  const oferty = [of('a', '2026-11-10', 7)];
+  expect(nextOfferSeq(oferty, '2027-01-03')).toBe(1);
+});
+
+test('edytowana oferta zachowuje swój numer', () => {
+  const oferty = [of('a', '2026-03-01', 1), of('b', '2026-04-01', 2)];
+  expect(computeOfferNumberFor(oferty, 'a', '2026-03-15').number).toBe('OF-0001/2026');
+});
+
+test('przeniesienie oferty na kolejny rok daje jej nowy numer', () => {
+  const oferty = [of('a', '2026-12-20', 9), of('b', '2027-01-05', 1)];
+  expect(computeOfferNumberFor(oferty, 'a', '2027-02-01').number).toBe('OF-0002/2027');
+});
+
+test('oferta bez numeru dostaje kolejny wolny', () => {
+  const oferty = [of('a', '2026-05-01', 3), of('nowa', '2026-05-02')];
+  expect(computeOfferNumberFor(oferty, 'nowa', '2026-05-02').number).toBe('OF-0004/2026');
+});

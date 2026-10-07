@@ -229,6 +229,9 @@
   --of-ink: #111315;     /* tekst zasadniczy */
   --of-mid: #55595e;     /* etykiety, opisy, stopka */
   --of-hair: #d4d7da;    /* linie między wierszami danych */
+  --of-accent: #F15A28;      /* pomarańcz z katalogu Lechrol — paski i linie */
+  --of-accent-text: #C2410C; /* ten sam kolor przyciemniony, czytelny w drobnym tekście */
+  --of-tint: #FAFAF9;        /* ledwie widoczne tło bloku wariantów */
   --of-rule: #111315;    /* linie niosące podział dokumentu */
   --of-money: 96mm;      /* oś kwot po prawej */
   font-family: 'Geist Variable', Geist, 'Inter', Helvetica, Arial, sans-serif;
@@ -255,12 +258,26 @@
   display: block;
 }
 
+.of-ident {
+  text-align: right;
+  padding-bottom: 1pt;
+}
+
 .of-kind {
   font-size: 7.5pt;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--of-mid);
-  padding-bottom: 1pt;
+}
+
+/* Numer w kolorze firmowym — przyciemnionym, bo surowy pomarańcz
+   na bieli daje 3,4:1 i jest za słaby na drobny tekst. */
+.of-number {
+  font-size: 10.5pt;
+  font-weight: 500;
+  color: var(--of-accent-text);
+  letter-spacing: -0.01em;
+  margin-top: 2pt;
 }
 
 /* ---------- Pary etykieta — wartość ---------- */
@@ -302,15 +319,41 @@
   margin-bottom: 13pt;
 }
 
-/* Podpis grupy trzyma się swojej tabeli i nie zostaje sam na końcu strony */
-.of-group-title {
-  font-size: 7.5pt;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--of-mid);
-  margin-bottom: 6pt;
+/* Nazwa pomieszczenia prowadzi przez ofertę — klient czyta ją pokój po pokoju.
+   Nagłówek trzyma się swojej tabeli i nie zostaje sam na końcu strony. */
+.of-room {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12pt;
+  margin-bottom: 7pt;
   break-after: avoid;
   page-break-after: avoid;
+}
+
+.of-room-name {
+  position: relative;
+  padding-left: 15pt;
+  font-size: 10pt;
+  font-weight: 500;
+  color: var(--of-ink);
+}
+
+/* Pomarańczowa kreska to jedyne miejsce, gdzie kolor niesie strukturę */
+.of-room-name::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.44em;
+  width: 9pt;
+  height: 2pt;
+  background: var(--of-accent);
+}
+
+.of-room-sum {
+  font-size: 9pt;
+  color: var(--of-mid);
+  white-space: nowrap;
 }
 
 .of-items {
@@ -359,17 +402,25 @@
 }
 
 .of-items .of-qty,
+.of-items .of-unit,
 .of-items .of-price {
   padding-left: 10pt;
 }
 
 .of-items .of-qty {
-  width: 38pt;
+  width: 32pt;
   text-align: right;
 }
 
+.of-items .of-unit {
+  width: 60pt;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--of-mid);
+}
+
 .of-items .of-price {
-  width: 76pt;
+  width: 72pt;
   text-align: right;
   white-space: nowrap;
 }
@@ -386,7 +437,36 @@
   margin-top: 1pt;
 }
 
-/* Wariant wyceniony jest osobno, więc jego kwota trzyma się swojej tabeli */
+/* Warianty to alternatywy, nie dodatkowe pozycje — stąd osobny blok,
+   własny podpis i pasek w kolorze firmowym u góry. */
+.of-variants {
+  margin: 10pt 0 16pt;
+  padding: 10pt 12pt 4pt;
+  background: var(--of-tint);
+  border-top: 2pt solid var(--of-accent);
+}
+
+.of-variants-head {
+  margin-bottom: 9pt;
+}
+
+.of-variants-title {
+  display: block;
+  font-size: 9.5pt;
+  font-weight: 500;
+}
+
+.of-variants-note {
+  display: block;
+  font-size: 8pt;
+  color: var(--of-mid);
+  margin-top: 1pt;
+}
+
+.of-variant + .of-variant {
+  margin-top: 13pt;
+}
+
 .of-variant-total {
   display: flex;
   justify-content: space-between;
@@ -439,7 +519,7 @@
   width: var(--of-money);
   margin-top: 8pt;
   padding-top: 9pt;
-  border-top: 1pt solid var(--of-rule);
+  border-top: 2pt solid var(--of-accent);
   text-align: right;
 }
 
@@ -461,6 +541,14 @@
   letter-spacing: -0.025em;
   line-height: 1.15;
   white-space: nowrap;
+}
+
+/* Rozbicie na netto i VAT — tylko gdy oferta idzie do firmy */
+.of-vat {
+  width: var(--of-money);
+  margin-top: 8pt;
+  padding-top: 7pt;
+  border-top: 0.4pt solid var(--of-hair);
 }
 
 /* ---------- Warunki ---------- */

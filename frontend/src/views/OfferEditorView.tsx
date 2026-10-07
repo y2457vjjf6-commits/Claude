@@ -17,10 +17,12 @@ import {
   OFFER_STATUS_LABELS,
   validUntil,
   variantLetter,
+  VAT_RATE,
   availableIssuers
 } from '../lib/offers';
 import { itemNameSuggestions } from '../lib/suggestions';
 import { printOffer, savePdfOffer, emailOffer } from '../lib/offerActions';
+import { computeOfferNumberFor } from '../lib/numbering';
 import { useEditorShortcuts } from '../hooks/useEditorShortcuts';
 import { useActionState } from '../hooks/useActionState';
 import SuffixField from '../components/SuffixField';
@@ -139,6 +141,8 @@ export default function OfferEditorView({
     )
   );
 
+  // Numer oferty liczymy na bieżąco, żeby był widoczny jeszcze przed zapisem
+  const numerOferty = computeOfferNumberFor(state.offers, editingOfferId, offer.date);
   const numery = groupLpNumbers(offer.groups, offer.continuousNumbering);
   const sumy = offerTotals(offer);
   const koszty = offerCosts(offer);
@@ -196,6 +200,8 @@ export default function OfferEditorView({
     const zapisana: Offer = {
       ...offer,
       id: offer.id || uid(),
+      seq: offer.seq || numerOferty.seq,
+      number: offer.number || numerOferty.number,
       client: offer.client.trim(),
       clientEmail: offer.clientEmail.trim(),
       issuedBy: offer.issuedBy.trim(),
@@ -275,7 +281,7 @@ export default function OfferEditorView({
           {existing ? `Edycja oferty — ${existing.client}` : 'Nowa oferta cenowa'}
         </h1>
         <div className="doc-number">
-          <span className="doc-number-label">Wartość</span>
+          <span className="doc-number-label">{offer.number || numerOferty.number}</span>
           <strong className="value" data-testid="offer-total">{formatMoney(sumy.total)}</strong>
         </div>
       </div>
@@ -636,6 +642,18 @@ export default function OfferEditorView({
                 <input type="text" className="input num" data-testid="offer-validity-days" inputMode="numeric" value={offer.validityDays} onChange={(e) => set({ validityDays: e.target.value })} />
               </label>
             )}
+          </div>
+          <div className="switch-col">
+            <label className="checkbox-field">
+              <input
+                type="checkbox"
+                data-testid="offer-vat-breakdown"
+                checked={!!offer.vatBreakdown}
+                onChange={(e) => set({ vatBreakdown: e.target.checked })}
+              />
+              <span>Pokaż rozbicie na netto i VAT</span>
+            </label>
+            <span className="muted field-hint">Dla ofert dla firm. Ceny są brutto, netto liczone wstecz po {VAT_RATE}%.</span>
           </div>
         </div>
         <label className="field" style={{ marginTop: 14 }}>

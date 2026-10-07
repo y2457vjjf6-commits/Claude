@@ -21,6 +21,7 @@ import CommandPalette from './components/CommandPalette';
 import DocumentsView from './views/DocumentsView';
 import EditorView from './views/EditorView';
 import ContractorsView from './views/ContractorsView';
+import PricesView from './views/PricesView';
 import SettingsView from './views/SettingsView';
 
 export default function App() {
@@ -361,6 +362,7 @@ export default function App() {
         {view === 'contractors' && (
           <ContractorsView state={state} onPersist={persist} toast={toast} />
         )}
+        {view === 'prices' && <PricesView state={state} />}
         {view === 'offers' && (
           <OffersView
             offers={state.offers}

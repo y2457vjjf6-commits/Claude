@@ -1460,6 +1460,59 @@ kbd {
   align-self: flex-start;
 }
 
+/* ------------------------------------------------------ przeglądarka cennika */
+
+.group-switch {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Siatka RT 40/45 ma 28 kolumn — bez przewijania nie zmieści się na ekranie */
+.prices-scroll {
+  overflow-x: auto;
+}
+
+.prices-grid {
+  font-size: var(--text-xs, 11px);
+  white-space: nowrap;
+}
+
+.prices-grid th,
+.prices-grid td {
+  text-align: right;
+  padding: 3px 7px;
+}
+
+.prices-grid thead th,
+.prices-grid tbody th {
+  color: var(--muted, #6b7280);
+  font-weight: 500;
+}
+
+.prices-corner {
+  text-align: left !important;
+}
+
+/* Trafiona kratka musi rzucać się w oczy — po to się tu zagląda */
+.prices-grid .prices-hit {
+  background: var(--accent, #f15a28);
+  color: #fff;
+  font-weight: 600;
+}
+
+.prices-grid .prices-hit-col,
+.prices-grid tr.prices-hit-row > th {
+  color: var(--accent, #f15a28);
+  font-weight: 700;
+}
+
+.prices-answer {
+  margin-top: 12px;
+  font-size: var(--text-lg, 16px);
+  font-weight: 600;
+}
+
 /* --------------------------------------------- cennik przy pozycji oferty */
 
 .item-cennik {

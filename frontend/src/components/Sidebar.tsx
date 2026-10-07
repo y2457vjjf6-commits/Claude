@@ -1,5 +1,5 @@
 import { ReactElement } from 'react';
-import { FileText, Handshake, Settings2, Plus, Sun, Moon, BarChart3, FileSpreadsheet } from 'lucide-react';
+import { FileText, Handshake, Settings2, Plus, Sun, Moon, BarChart3, FileSpreadsheet, Table2 } from 'lucide-react';
 import { ViewName } from '../types';
 
 interface Props {
@@ -50,6 +50,7 @@ export default function Sidebar({ view, theme, onNavigate, onNewDoc, onToggleThe
     { key: 'list', label: 'Dokumenty WZ', icon: <FileText className="icon" /> },
     { key: 'offers', label: 'Oferty cenowe', icon: <FileSpreadsheet className="icon" /> },
     { key: 'contractors', label: 'Kontrahenci', icon: <Handshake className="icon" /> },
+    { key: 'prices', label: 'Cennik', icon: <Table2 className="icon" /> },
     { key: 'reports', label: 'Zestawienia', icon: <BarChart3 className="icon" /> },
     { key: 'settings', label: 'Ustawienia', icon: <Settings2 className="icon" /> }
   ];

@@ -568,6 +568,26 @@
   border-top: 0.4pt solid var(--of-hair);
 }
 
+/* Kwota w nagłówku: ta sama co na dole, ale bez krzyku — ma tylko oszczędzić
+   klientowi szukania ceny na końcu dokumentu. */
+.of-value-sum {
+  font-weight: 500;
+}
+
+/* Ramka do sprawdzenia przed akceptacją — jedyny element w ramce na stronie,
+   więc nie trzeba jej niczym dodatkowo wyróżniać. */
+.of-check {
+  margin-top: 16pt;
+  padding: 9pt 11pt;
+  border: 0.75pt solid var(--of-hairline, var(--of-hair));
+  border-left: 2pt solid var(--of-accent);
+  max-width: var(--of-measure);
+  font-size: var(--of-s-1);
+  line-height: 1.5;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
 /* ---------- Warunki ---------- */
 
 .of-terms {

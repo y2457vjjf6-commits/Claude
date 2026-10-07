@@ -140,10 +140,45 @@ const PDF_OPTIONS = {
   preferCSSPageSize: true
 };
 
+function bezpieczny(tekst) {
+  return String(tekst || '').replace(/[&<>"]/g, (z) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[z]);
+}
+
+// Nagłówek i stopka rysują się w marginesie strony i powtarzają na każdej.
+// Element przyklejony w treści dokumentu nachodziłby na tekst od drugiej strony,
+// a licznik stron da się uzyskać wyłącznie tą drogą — CSS tego nie potrafi.
+const STYL_PAGINY = 'font-family:Arial,Helvetica,sans-serif;font-size:7pt;color:#55595e;width:100%;padding:0 18mm;';
+
+function szablonNaglowka(opis) {
+  return `<div style="${STYL_PAGINY}">${bezpieczny(opis)}</div>`;
+}
+
+const SZABLON_STOPKI =
+  `<div style="${STYL_PAGINY}text-align:right;">Strona <span class="pageNumber"></span>` +
+  ` z <span class="totalPages"></span></div>`;
+
+/** Opis do żywej paginy deklaruje sam dokument — WZ go nie ma i wtedy
+ *  w nagłówku zostaje sama kreska, a numer strony i tak się drukuje. */
+async function opisPaginy() {
+  try {
+    return await mainWindow.webContents.executeJavaScript(
+      `(document.querySelector('#print-area [data-pagina]') || {}).dataset?.pagina || ''`
+    );
+  } catch {
+    return '';
+  }
+}
+
 async function renderDocumentPdf() {
   mainWindow.setBackgroundColor('#ffffff');
   try {
-    return await mainWindow.webContents.printToPDF(PDF_OPTIONS);
+    const opis = await opisPaginy();
+    return await mainWindow.webContents.printToPDF({
+      ...PDF_OPTIONS,
+      displayHeaderFooter: true,
+      headerTemplate: szablonNaglowka(opis),
+      footerTemplate: SZABLON_STOPKI
+    });
   } finally {
     mainWindow.setBackgroundColor(WINDOW_BG);
   }

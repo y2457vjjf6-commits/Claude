@@ -38,6 +38,7 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
     offerValidityEnabled: st.offerDefaults?.validityEnabled ?? false,
     offerInstallation: st.offerDefaults?.installationIncluded ?? true,
     offerClosingText: st.offerClosingText || '',
+    offerCheckText: st.offerCheckText || '',
     offerFollowUpDays: st.offerFollowUpDays || '7',
     showCosts: st.showCosts !== false,
     mBody: st.emailBody
@@ -82,6 +83,7 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
       installationIncluded: form.offerInstallation
     };
     next.settings.offerClosingText = form.offerClosingText;
+    next.settings.offerCheckText = form.offerCheckText;
     next.settings.offerFollowUpDays = form.offerFollowUpDays.trim() || '0';
     next.settings.showCosts = form.showCosts;
     next.settings.emailBody = form.mBody;
@@ -260,6 +262,20 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
           <Plus className="icon" />
           Dodaj osobę
         </button>
+        <label className="field" style={{ marginTop: 14 }}>
+          <span>Ramka „do sprawdzenia” nad podpisem</span>
+          <textarea
+            className="input"
+            data-testid="offer-check-text"
+            rows={3}
+            value={form.offerCheckText}
+            onChange={(e) => set({ offerCheckText: e.target.value })}
+          />
+          <span className="muted field-hint">
+            Drukowana w ramce tuż nad podpisem. Prosi klienta o sprawdzenie danych przed
+            akceptacją. Puste pole wyłącza ramkę.
+          </span>
+        </label>
         <label className="field" style={{ marginTop: 14 }}>
           <span>Uwagi końcowe dopisywane do każdej oferty</span>
           <textarea

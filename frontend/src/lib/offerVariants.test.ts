@@ -158,6 +158,44 @@ test('klauzula o art. 66 § 1 nie pojawia się na dokumencie', () => {
   expect(html).not.toContain('nie stanowi oferty handlowej');
 });
 
+/* ---------------- Pagina, kwota u góry, ramka do sprawdzenia ---------------- */
+
+test('dokument deklaruje opis żywej paginy: numer i data', () => {
+  const html = buildOfferHtml(oferta({ number: 'OF-10-0147-2026' }), DEFAULT_STATE.settings);
+  expect(html).toContain('data-pagina="Oferta OF-10-0147-2026  ·  25.09.2026"');
+});
+
+test('bez numeru w paginie zostaje sama data', () => {
+  const html = buildOfferHtml(oferta(), DEFAULT_STATE.settings);
+  expect(html).toContain('data-pagina="25.09.2026"');
+});
+
+test('kwota pojawia się też w nagłówku, nad pozycjami', () => {
+  const html = buildOfferHtml(
+    oferta({ groups: [grupa('g1', [poz('Roleta', '2', '500')])] }),
+    DEFAULT_STATE.settings
+  );
+  expect(html).toContain('Wartość oferty');
+  // nagłówkowa kwota stoi przed tabelą pozycji, a duża — po niej
+  expect(html.indexOf('of-value-sum')).toBeLessThan(html.indexOf('of-items'));
+  expect(html.indexOf('of-grand-value')).toBeGreaterThan(html.indexOf('of-items'));
+});
+
+test('przy wariantach nagłówek mówi, że kwota dotyczy oferty podstawowej', () => {
+  const html = buildOfferHtml(zWariantem(), DEFAULT_STATE.settings);
+  expect(html).toContain('Oferta podstawowa');
+});
+
+test('ramka do sprawdzenia drukuje się z ustawień, puste pole ją wyłącza', () => {
+  const z = buildOfferHtml(oferta(), DEFAULT_STATE.settings);
+  const bez = buildOfferHtml(oferta(), { ...DEFAULT_STATE.settings, offerCheckText: '   ' });
+  expect(z).toContain('of-check');
+  expect(z).toContain('Akceptacja oferty oznacza potwierdzenie tych danych');
+  // ramka stoi nad podpisem, nie pod nim
+  expect(z.indexOf('of-check')).toBeLessThan(z.indexOf('of-sign'));
+  expect(bez).not.toContain('of-check');
+});
+
 /* ---------------- Telefon osoby wystawiającej ---------------- */
 
 const stanZOsobami = (patch: Record<string, unknown> = {}) => ({

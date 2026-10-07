@@ -190,7 +190,13 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
 
   const naglowekDanych = [
     wiersz('Dla', esc(offer.client || ''), 'of-value-lead'),
-    wiersz('Data', `${esc(offer.place || 'Łomianki')}, ${esc(formatDatePl(offer.date))}`)
+    wiersz('Data', `${esc(offer.place || 'Łomianki')}, ${esc(formatDatePl(offer.date))}`),
+    // ta sama kwota co na dole, ale cicho — żeby klient znał cenę bez szukania
+    wiersz(
+      warianty.length ? 'Oferta podstawowa' : 'Wartość oferty',
+      sumy.itemsSum > 0 || !warianty.length ? formatMoney(sumy.total) : '',
+      'of-value-sum'
+    )
   ].join('');
 
   const stopka = [s.name, s.address, s.nip ? `NIP ${s.nip}` : '', s.phone ? `tel. ${s.phone}` : '', s.www]
@@ -198,8 +204,14 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
     .map((c) => `<span>${esc(String(c))}</span>`)
     .join('');
 
+  // Opis dla żywej paginy. Sam nagłówek strony rysuje eksport PDF w marginesie —
+  // element przyklejony w treści nachodziłby na tekst na kolejnych stronach.
+  const pagina = [offer.number ? `Oferta ${offer.number}` : '', formatDatePl(offer.date)]
+    .filter(Boolean)
+    .join('  ·  ');
+
   return `
-  <div class="of-doc">
+  <div class="of-doc" data-pagina="${esc(pagina)}">
     <header class="of-top">
       <img class="of-mark" src="${LOGO_LECHROL}" alt="LECHROL">
       <div class="of-ident">
@@ -217,6 +229,12 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
     <div class="of-terms">${warunki}</div>
 
     ${uwagiKoncowe}
+
+    ${
+      String(settings.offerCheckText || '').trim()
+        ? `<div class="of-check">${esc(settings.offerCheckText).replace(/\n/g, '<br>')}</div>`
+        : ''
+    }
 
     <div class="of-sign">
       <div class="of-label">Ofertę przygotował</div>

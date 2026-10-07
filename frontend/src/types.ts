@@ -97,6 +97,8 @@ export interface Settings {
   };
   /** Uwagi końcowe dopisywane do każdej oferty (puste = nie drukujemy) */
   offerClosingText: string;
+  /** Treść ramki „do sprawdzenia” nad podpisem (puste = bez ramki) */
+  offerCheckText?: string;
   /** Po ilu dniach bez decyzji przypominać o wysłanej ofercie */
   offerFollowUpDays: string;
   /** Czy pokazywać koszt własny i marżę (tylko w programie, nigdy na dokumencie) */

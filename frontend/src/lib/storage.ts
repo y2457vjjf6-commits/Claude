@@ -33,6 +33,10 @@ export const DEFAULT_STATE: AppState = {
       'mechanicznych ani skutków niewłaściwego użytkowania.\n' +
       '• Podany termin realizacji może ulec wydłużeniu z przyczyn niezależnych od nas, ' +
       'np. z powodu dostępności materiału u producenta.',
+    offerCheckText:
+      'Przed przyjęciem zamówienia prosimy o sprawdzenie danych w ofercie: liczby sztuk ' +
+      'w każdym pomieszczeniu, kolorów materiału i osprzętu oraz strony sterowania. ' +
+      'Akceptacja oferty oznacza potwierdzenie tych danych.',
     offerFollowUpDays: '7',
     showCosts: true,
     emailBody:

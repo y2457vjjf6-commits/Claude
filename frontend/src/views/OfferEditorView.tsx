@@ -18,7 +18,8 @@ import {
   validUntil,
   variantLetter,
   VAT_RATE,
-  availableIssuers
+  availableIssuers,
+  issuerPhone
 } from '../lib/offers';
 import { itemNameSuggestions } from '../lib/suggestions';
 import { printOffer, savePdfOffer, emailOffer } from '../lib/offerActions';
@@ -96,6 +97,7 @@ export default function OfferEditorView({
           validityDays: d.validityDays,
           notes: '',
           issuedBy: availableIssuers(state)[0] || '',
+          issuedByPhone: issuerPhone(state, availableIssuers(state)[0] || ''),
           status: 'szkic',
           createdAt: '',
           updatedAt: ''
@@ -205,6 +207,7 @@ export default function OfferEditorView({
       client: offer.client.trim(),
       clientEmail: offer.clientEmail.trim(),
       issuedBy: offer.issuedBy.trim(),
+      issuedByPhone: String(offer.issuedByPhone || '').trim(),
       deliveryPrice: normalizeAmount(offer.deliveryPrice),
       groups: offer.groups.map((g) => ({
         ...g,
@@ -298,7 +301,15 @@ export default function OfferEditorView({
           </label>
           <label className="field">
             <span>Wystawił</span>
-            <select className="input" data-testid="offer-issuer" value={offer.issuedBy} onChange={(e) => set({ issuedBy: e.target.value })}>
+            <select
+              className="input"
+              data-testid="offer-issuer"
+              value={offer.issuedBy}
+              onChange={(e) =>
+                // zmiana osoby podstawia jej numer — wpisany ręcznie zostaje przy ofercie
+                set({ issuedBy: e.target.value, issuedByPhone: issuerPhone(state, e.target.value) })
+              }
+            >
               {!availableIssuers(state).includes(offer.issuedBy) && offer.issuedBy && (
                 <option value={offer.issuedBy}>{offer.issuedBy}</option>
               )}
@@ -308,6 +319,21 @@ export default function OfferEditorView({
                 </option>
               ))}
             </select>
+          </label>
+          <label className="field">
+            <span>Telefon wystawiającego</span>
+            <input
+              type="text"
+              className="input"
+              data-testid="offer-issuer-phone"
+              placeholder={issuerPhone(state, offer.issuedBy) || 'np. 511 697 697'}
+              value={offer.issuedByPhone || ''}
+              onChange={(e) => set({ issuedByPhone: e.target.value })}
+            />
+            <span className="muted field-hint">
+              Podstawia się z osoby wybranej powyżej; numery przypiszesz w Ustawieniach. Drukuje się
+              pod nazwiskiem na ofercie. Puste pole pomija ten wiersz.
+            </span>
           </label>
         </div>
         <div className="grid2">

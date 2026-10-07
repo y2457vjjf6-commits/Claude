@@ -20,7 +20,9 @@ export function buildOfferEmail(offer: Offer, settings: Settings): { subject: st
     `${offer.client ? ` dla: ${offer.client}` : ''}.\n` +
     `Wartość oferty: ${kwota}.\n\n` +
     `Pozdrawiamy,\n${offer.issuedBy || settings.seller.name}\n` +
-    `${settings.seller.name}\ntel. ${settings.seller.phone} · ${settings.seller.www}`;
+    // numer osoby wystawiającej, a gdy go nie ma — firmowy
+    `${settings.seller.name}\ntel. ${String(offer.issuedByPhone || '').trim() || settings.seller.phone}` +
+    ` · ${settings.seller.www}`;
   return { subject, text };
 }
 

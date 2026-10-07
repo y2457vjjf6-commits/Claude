@@ -238,6 +238,29 @@ export const OFFER_STATUS_LABELS: Record<Offer['status'], string> = {
 
 /** Osoby, które mogą wystawiać oferty: lista z Ustawień plus pracownicy
  *  kontrahenta „Lechrol”, jeśli taki jest w bazie. */
+/** Telefon osoby wystawiającej. Najpierw numer przypisany w Ustawieniach,
+ *  potem numer z kartoteki pracownika kontrahenta „Lechrol” — żeby nie
+ *  trzymać tej samej informacji w dwóch miejscach. */
+export function issuerPhone(
+  state: {
+    settings: { issuerPhones?: Record<string, string> };
+    contractors: { name: string; employees?: { name: string; phone?: string }[] }[];
+  },
+  name: string
+): string {
+  const imie = (name || '').trim();
+  if (!imie) return '';
+  const przypisany = (state.settings.issuerPhones || {})[imie];
+  if (przypisany && przypisany.trim()) return przypisany.trim();
+  for (const k of state.contractors || []) {
+    if (!/lechrol/i.test(k.name || '')) continue;
+    for (const p of k.employees || []) {
+      if ((p.name || '').trim() === imie && (p.phone || '').trim()) return String(p.phone).trim();
+    }
+  }
+  return '';
+}
+
 export function availableIssuers(state: {
   settings: { issuers: string[] };
   contractors: { name: string; employees?: { name: string }[] }[];

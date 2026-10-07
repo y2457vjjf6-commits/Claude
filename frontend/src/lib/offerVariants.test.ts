@@ -1,4 +1,5 @@
-import { groupLabel, groupLpNumbers, offerCosts, offersAwaitingReply, offerTotals } from './offers';
+import { groupLabel, groupLpNumbers, issuerPhone, offerCosts, offersAwaitingReply, offerTotals } from './offers';
+import { buildOfferEmail } from './offerActions';
 import { buildOfferHtml } from './printingOffer';
 import { DEFAULT_STATE } from './storage';
 import { Offer, OfferGroup, OfferItem } from '../types';
@@ -155,6 +156,58 @@ test('klauzula o art. 66 § 1 nie pojawia się na dokumencie', () => {
   const html = buildOfferHtml(oferta(), DEFAULT_STATE.settings);
   expect(html).not.toContain('art. 66');
   expect(html).not.toContain('nie stanowi oferty handlowej');
+});
+
+/* ---------------- Telefon osoby wystawiającej ---------------- */
+
+const stanZOsobami = (patch: Record<string, unknown> = {}) => ({
+  settings: { ...DEFAULT_STATE.settings, issuerPhones: { 'Sebastian Wajcht': '511 697 697' } },
+  contractors: [
+    { name: 'ZPHU Lechrol Jacek Wajcht', employees: [{ name: 'Jacek Wajcht', phone: '600 100 200' }] },
+    { name: 'Inna firma', employees: [{ name: 'Obcy Ktoś', phone: '700 700 700' }] }
+  ],
+  ...patch
+});
+
+test('numer bierze się najpierw z przypisania w Ustawieniach', () => {
+  expect(issuerPhone(stanZOsobami() as never, 'Sebastian Wajcht')).toBe('511 697 697');
+});
+
+test('gdy brak przypisania, numer bierze się z kartoteki pracownika Lechrola', () => {
+  expect(issuerPhone(stanZOsobami() as never, 'Jacek Wajcht')).toBe('600 100 200');
+});
+
+test('pracownik obcej firmy nie podstawia swojego numeru', () => {
+  expect(issuerPhone(stanZOsobami() as never, 'Obcy Ktoś')).toBe('');
+});
+
+test('przypisanie w Ustawieniach wygrywa z kartoteką pracownika', () => {
+  const stan = stanZOsobami({
+    settings: { ...DEFAULT_STATE.settings, issuerPhones: { 'Jacek Wajcht': '999 888 777' } }
+  });
+  expect(issuerPhone(stan as never, 'Jacek Wajcht')).toBe('999 888 777');
+});
+
+test('nieznana osoba i pusta nazwa nie dają numeru', () => {
+  expect(issuerPhone(stanZOsobami() as never, 'Nikt Taki')).toBe('');
+  expect(issuerPhone(stanZOsobami() as never, '  ')).toBe('');
+});
+
+test('numer drukuje się pod nazwiskiem, a bez numeru wiersz znika', () => {
+  const z = buildOfferHtml(oferta({ issuedByPhone: '511 697 697' }), DEFAULT_STATE.settings);
+  const bez = buildOfferHtml(oferta({ issuedByPhone: '  ' }), DEFAULT_STATE.settings);
+  expect(z).toContain('tel. 511 697 697');
+  expect(z).toContain('of-signer-phone');
+  // numer stoi pod nazwiskiem, nie nad nim
+  expect(z.indexOf('of-signer-phone')).toBeGreaterThan(z.indexOf('of-signer'));
+  expect(bez).not.toContain('of-signer-phone');
+});
+
+test('stopka maila bierze numer osoby, a bez niego numer firmowy', () => {
+  const z = buildOfferEmail(oferta({ issuedByPhone: '511 697 697' }), DEFAULT_STATE.settings).text;
+  const bez = buildOfferEmail(oferta(), DEFAULT_STATE.settings).text;
+  expect(z).toContain('tel. 511 697 697');
+  expect(bez).toContain('tel. ' + DEFAULT_STATE.settings.seller.phone);
 });
 
 /* ---------------- Numer, VAT i kolumny ---------------- */

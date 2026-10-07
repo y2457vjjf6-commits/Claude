@@ -221,6 +221,11 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
     <div class="of-sign">
       <div class="of-label">Ofertę przygotował</div>
       <div class="of-signer">${esc(offer.issuedBy)}</div>
+      ${
+        String(offer.issuedByPhone || '').trim()
+          ? `<div class="of-signer-phone">tel. ${esc(String(offer.issuedByPhone).trim())}</div>`
+          : ''
+      }
     </div>
 
     <footer class="of-foot">${stopka}</footer>

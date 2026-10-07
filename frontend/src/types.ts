@@ -85,6 +85,8 @@ export interface Settings {
   backupFolder: string;
   /** Osoby wystawiające oferty (imiona i nazwiska) */
   issuers: string[];
+  /** Telefon przypisany do osoby wystawiającej: imię i nazwisko → numer */
+  issuerPhones?: Record<string, string>;
   /** Domyślne ustawienia nowej oferty */
   offerDefaults: {
     deadlineDays: string;
@@ -225,6 +227,8 @@ export interface Offer {
   notes: string;
   /** Kto wystawił ofertę */
   issuedBy: string;
+  /** Telefon tej osoby, zapisany przy ofercie — żeby wysłany dokument się nie zmieniał */
+  issuedByPhone?: string;
   status: OfferStatus;
   /** Rozbicie ceny na netto i VAT — dla ofert dla firm */
   vatBreakdown?: boolean;

@@ -29,7 +29,10 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
     mSubject: st.emailSubject,
     mCopyTo: st.emailCopyTo || '',
     backupFolder: st.backupFolder || '',
-    issuers: (st.issuers || []).join('\n'),
+    issuerRows: (st.issuers || []).map((n) => ({
+      name: n,
+      phone: (st.issuerPhones || {})[n] || ''
+    })),
     offerDeadlineDays: st.offerDefaults?.deadlineDays || '21',
     offerValidityDays: st.offerDefaults?.validityDays || '30',
     offerValidityEnabled: st.offerDefaults?.validityEnabled ?? false,
@@ -67,10 +70,11 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
     next.settings.emailSubject = form.mSubject;
     next.settings.emailCopyTo = form.mCopyTo.trim();
     next.settings.backupFolder = form.backupFolder.trim();
-    next.settings.issuers = form.issuers
-      .split('\n')
-      .map((n) => n.trim())
-      .filter(Boolean);
+    const osoby = form.issuerRows
+      .map((o) => ({ name: o.name.trim(), phone: o.phone.trim() }))
+      .filter((o) => o.name);
+    next.settings.issuers = osoby.map((o) => o.name);
+    next.settings.issuerPhones = Object.fromEntries(osoby.filter((o) => o.phone).map((o) => [o.name, o.phone]));
     next.settings.offerDefaults = {
       deadlineDays: form.offerDeadlineDays.trim(),
       validityDays: form.offerValidityDays.trim(),
@@ -190,20 +194,72 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
       <div className="card">
         <h3 className="card-title">Oferty cenowe</h3>
         <p className="muted card-note">
-          Osoby wystawiające oferty — jedna w wierszu. Do listy dopisują się automatycznie także
-          pracownicy kontrahenta „Lechrol”, jeśli taki jest w bazie kontrahentów.
+          Osoby wystawiające oferty wraz z numerami telefonu — numer trafia na dokument pod
+          nazwiskiem i do stopki wiadomości e-mail. Do listy dopisują się automatycznie także
+          pracownicy kontrahenta „Lechrol”, a ich numery biorą się wtedy z kartoteki pracownika.
         </p>
-        <label className="field">
-          <span>Kto wystawia oferty</span>
-          <textarea
-            className="input"
-            data-testid="offer-issuers"
-            rows={3}
-            placeholder={'Sebastian Wajcht\nJacek Wajcht'}
-            value={form.issuers}
-            onChange={(e) => set({ issuers: e.target.value })}
-          />
-        </label>
+        {form.issuerRows.length > 0 && (
+          <table className="table items-table" data-testid="issuers-table">
+            <thead>
+              <tr>
+                <th>Imię i nazwisko</th>
+                <th style={{ width: 180 }}>Telefon</th>
+                <th style={{ width: 44 }}></th>
+              </tr>
+            </thead>
+            <tbody data-testid="issuers-body">
+              {form.issuerRows.map((o, i) => (
+                <tr key={i}>
+                  <td>
+                    <input
+                      type="text"
+                      className="input"
+                      data-testid={`issuer-name-${i}`}
+                      aria-label="Imię i nazwisko osoby wystawiającej"
+                      value={o.name}
+                      onChange={(e) =>
+                        set({ issuerRows: form.issuerRows.map((r, j) => (j === i ? { ...r, name: e.target.value } : r)) })
+                      }
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      className="input"
+                      data-testid={`issuer-phone-${i}`}
+                      aria-label="Telefon osoby wystawiającej"
+                      placeholder="np. 511 697 697"
+                      value={o.phone}
+                      onChange={(e) =>
+                        set({ issuerRows: form.issuerRows.map((r, j) => (j === i ? { ...r, phone: e.target.value } : r)) })
+                      }
+                    />
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn-small btn-danger item-remove"
+                      data-testid={`issuer-remove-${i}`}
+                      aria-label="Usuń osobę"
+                      title="Usuń osobę"
+                      onClick={() => set({ issuerRows: form.issuerRows.filter((_, j) => j !== i) })}
+                    >
+                      <X className="icon" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {!form.issuerRows.length && <p className="muted employees-empty">Nie dodano jeszcze żadnej osoby.</p>}
+        <button
+          className="btn btn-light"
+          data-testid="add-issuer-btn"
+          onClick={() => set({ issuerRows: [...form.issuerRows, { name: '', phone: '' }] })}
+        >
+          <Plus className="icon" />
+          Dodaj osobę
+        </button>
         <label className="field" style={{ marginTop: 14 }}>
           <span>Uwagi końcowe dopisywane do każdej oferty</span>
           <textarea

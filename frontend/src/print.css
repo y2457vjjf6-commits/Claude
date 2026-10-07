@@ -622,6 +622,14 @@
   page-break-inside: avoid;
 }
 
+/* Numer pod nazwiskiem: klient ma dzwonić do osoby, która liczyła ofertę,
+   a nie szukać telefonu w stopce firmowej. */
+.of-signer-phone {
+  margin-top: 1pt;
+  font-size: var(--of-s-1);
+  color: var(--of-mid);
+}
+
 .of-signer {
   font-size: var(--of-s1);
   font-weight: 500;

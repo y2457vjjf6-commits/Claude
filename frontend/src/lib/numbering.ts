@@ -58,12 +58,15 @@ export function computeNumberFor(
 }
 
 /* ------------------------------ Oferty ------------------------------ */
-// Numer oferty: OF-0014/2026 — numeracja ciągła w roku, z przedrostkiem,
-// żeby na pierwszy rzut oka odróżnić ofertę od dokumentu WZ.
+// Numer oferty: OF-10-0014-2026 — przedrostek, miesiąc, licznik, rok.
+// Miesiąc i licznik mają stałą długość, więc numery równają się do siebie
+// i pliki układają się w folderze same. Licznik biegnie przez cały rok —
+// inaczej niż w WZ, gdzie startuje od nowa co miesiąc.
 
 export function buildOfferNumber(dateStr: string, seq: number): string {
-  const { year } = parseDate(dateStr);
-  return 'OF-' + String(seq).padStart(4, '0') + '/' + year;
+  const { year, month } = parseDate(dateStr);
+  const mm = String(month).padStart(2, '0');
+  return `OF-${mm}-${String(seq).padStart(4, '0')}-${year}`;
 }
 
 /** Kolejny wolny numer oferty w roku daty wystawienia. */

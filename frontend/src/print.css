@@ -234,12 +234,23 @@
   --of-tint: #FAFAF9;        /* ledwie widoczne tło bloku wariantów */
   --of-rule: #111315;    /* linie niosące podział dokumentu */
   --of-money: 96mm;      /* oś kwot po prawej */
+
+  /* Skala modularna 1,125 na podstawie 10 pt — stopnie wynikają z siebie
+     nawzajem, zamiast być dobierane na oko. */
+  --of-s-2: 7.9pt;       /* wersaliki etykiet, stopka */
+  --of-s-1: 8.9pt;       /* opisy, uwagi, kwoty poboczne */
+  --of-s0: 10pt;         /* tekst zasadniczy i dane w tabeli */
+  --of-s1: 11.25pt;      /* nazwy pomieszczeń, numer, podpis */
+  --of-s2: 12.66pt;      /* odbiorca — pierwsza rzecz, którą czyta klient */
+  --of-s6: 20.3pt;       /* cena całkowita, jedyny duży stopień */
+
+  /* Wiersz tekstu ciągłego nie powinien przekraczać ~75 znaków */
+  --of-measure: 105mm;
   font-family: 'Geist Variable', Geist, 'Inter', Helvetica, Arial, sans-serif;
-  font-size: 9.5pt;
-  line-height: 1.45;
+  font-size: var(--of-s0);
+  line-height: 1.5;
   color: var(--of-ink);
   font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum' 1, 'cv05' 1;
 }
 
 /* ---------- Nagłówek ---------- */
@@ -264,7 +275,7 @@
 }
 
 .of-kind {
-  font-size: 7.5pt;
+  font-size: var(--of-s-2);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--of-mid);
@@ -273,7 +284,7 @@
 /* Numer w kolorze firmowym — przyciemnionym, bo surowy pomarańcz
    na bieli daje 3,4:1 i jest za słaby na drobny tekst. */
 .of-number {
-  font-size: 10.5pt;
+  font-size: var(--of-s1);
   font-weight: 500;
   color: var(--of-accent-text);
   letter-spacing: -0.01em;
@@ -290,7 +301,7 @@
 
 .of-label {
   flex: 0 0 var(--of-label);
-  font-size: 7.5pt;
+  font-size: var(--of-s-2);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--of-mid);
@@ -300,11 +311,12 @@
 .of-value {
   flex: 1;
   min-width: 0;
+  max-width: var(--of-measure);
 }
 
 /* Odbiorca to pierwsza rzecz, którą czyta klient — jedyne wyróżnienie w tym bloku */
 .of-value-lead {
-  font-size: 11.5pt;
+  font-size: var(--of-s2);
   font-weight: 500;
   letter-spacing: -0.01em;
 }
@@ -334,7 +346,7 @@
 .of-room-name {
   position: relative;
   padding-left: 15pt;
-  font-size: 10pt;
+  font-size: var(--of-s1);
   font-weight: 500;
   color: var(--of-ink);
 }
@@ -351,7 +363,7 @@
 }
 
 .of-room-sum {
-  font-size: 9pt;
+  font-size: var(--of-s-1);
   color: var(--of-mid);
   white-space: nowrap;
 }
@@ -363,7 +375,7 @@
 }
 
 .of-items th {
-  font-size: 7.5pt;
+  font-size: var(--of-s-2);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-weight: 400;
@@ -393,7 +405,7 @@
 .of-items .of-lp {
   width: var(--of-label);
   color: var(--of-mid);
-  font-size: 8pt;
+  font-size: var(--of-s-1);
 }
 
 .of-items th + th,
@@ -433,7 +445,7 @@
 .of-material {
   display: block;
   color: var(--of-mid);
-  font-size: 8.5pt;
+  font-size: var(--of-s-1);
   margin-top: 1pt;
 }
 
@@ -452,13 +464,13 @@
 
 .of-variants-title {
   display: block;
-  font-size: 9.5pt;
+  font-size: var(--of-s1);
   font-weight: 500;
 }
 
 .of-variants-note {
   display: block;
-  font-size: 8pt;
+  font-size: var(--of-s-1);
   color: var(--of-mid);
   margin-top: 1pt;
 }
@@ -507,7 +519,7 @@
   gap: 16pt;
   width: var(--of-money);
   padding: 2pt 0;
-  font-size: 9pt;
+  font-size: var(--of-s-1);
   color: var(--of-mid);
 }
 
@@ -526,19 +538,24 @@
 /* Etykieta dostaje własny wiersz — w jednej linii z liczbą musiałaby się łamać */
 .of-grand-label {
   display: block;
-  font-size: 7.5pt;
+  font-size: var(--of-s-2);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--of-mid);
 }
 
-/* Jedyna duża liczba w dokumencie */
+/* Jedyna duża liczba w dokumencie. Archivo w szerszym kroju daje kontrast
+   proporcji wobec Geista — kroje różnią się szerokością, nie rodziną, więc
+   ze sobą nie konkurują. Oba są już w programie, więc nic nie waży. */
 .of-grand-value {
   display: block;
   margin-top: 3pt;
-  font-size: 19pt;
+  font-family: 'Archivo Variable', Archivo, Geist, sans-serif;
+  font-stretch: 112%;
+  font-size: var(--of-s6);
   font-weight: 600;
-  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
   line-height: 1.15;
   white-space: nowrap;
 }
@@ -568,14 +585,16 @@
   margin-top: 14pt;
   padding-top: 9pt;
   border-top: 0.4pt solid var(--of-hair);
-  font-size: 8pt;
-  line-height: 1.5;
+  font-size: var(--of-s-1);
+  line-height: 1.55;
   color: var(--of-mid);
 }
 
-/* Punkt nie łamie się w pół na granicy stron */
+/* Punkt nie łamie się w pół na granicy stron. Miara wiąże sam tekst —
+   kreska nad uwagami ma biec przez całą szerokość, inaczej wisi w powietrzu. */
 .of-closing-para,
 .of-closing-bullet {
+  max-width: var(--of-measure);
   break-inside: avoid;
   page-break-inside: avoid;
 }
@@ -604,7 +623,7 @@
 }
 
 .of-signer {
-  font-size: 11.5pt;
+  font-size: var(--of-s1);
   font-weight: 500;
   letter-spacing: -0.01em;
   margin-top: 2pt;
@@ -618,7 +637,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0 14pt;
-  font-size: 7.5pt;
+  font-size: var(--of-s-2);
   color: var(--of-mid);
   break-inside: avoid;
   page-break-inside: avoid;

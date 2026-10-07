@@ -214,7 +214,7 @@ export function offerFileName(offer: Offer): string {
     .trim()
     .replace(/\s+/g, '_');
   // Numer na początku nazwy układa pliki w folderze tak samo, jak w programie
-  const numer = (offer.number || '').replace(/\//g, '-');
+  const numer = (offer.number || '').replace(/[\\/:*?"<>|]/g, '-');
   return `${numer ? numer + '_' : ''}Oferta_cenowa_${data}_${klient}.pdf`;
 }
 

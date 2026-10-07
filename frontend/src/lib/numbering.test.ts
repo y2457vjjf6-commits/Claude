@@ -53,10 +53,16 @@ const of = (id: string, date: string, seq?: number): Offer =>
      installationIncluded: true, deadlineDays: '', validityEnabled: false, validityDays: '',
      notes: '', issuedBy: '', status: 'szkic', createdAt: '', updatedAt: '' } as Offer);
 
-test('numer oferty ma przedrostek i czterocyfrowy licznik', () => {
-  expect(buildOfferNumber('2026-10-07', 14)).toBe('OF-0014/2026');
-  expect(buildOfferNumber('2026-01-02', 1)).toBe('OF-0001/2026');
-  expect(buildOfferNumber('2026-12-31', 1234)).toBe('OF-1234/2026');
+test('numer oferty: przedrostek, miesiąc, licznik, rok — wszystko równej długości', () => {
+  expect(buildOfferNumber('2026-10-07', 14)).toBe('OF-10-0014-2026');
+  expect(buildOfferNumber('2026-01-02', 1)).toBe('OF-01-0001-2026');
+  expect(buildOfferNumber('2026-12-31', 1234)).toBe('OF-12-1234-2026');
+});
+
+test('numery z różnych miesięcy mają tę samą długość', () => {
+  const a = buildOfferNumber('2026-01-02', 1);
+  const b = buildOfferNumber('2026-10-07', 147);
+  expect(a).toHaveLength(b.length);
 });
 
 test('numeracja biegnie przez cały rok, nie resetuje się co miesiąc', () => {
@@ -71,15 +77,15 @@ test('nowy rok zaczyna numerację od początku', () => {
 
 test('edytowana oferta zachowuje swój numer', () => {
   const oferty = [of('a', '2026-03-01', 1), of('b', '2026-04-01', 2)];
-  expect(computeOfferNumberFor(oferty, 'a', '2026-03-15').number).toBe('OF-0001/2026');
+  expect(computeOfferNumberFor(oferty, 'a', '2026-03-15').number).toBe('OF-03-0001-2026');
 });
 
 test('przeniesienie oferty na kolejny rok daje jej nowy numer', () => {
   const oferty = [of('a', '2026-12-20', 9), of('b', '2027-01-05', 1)];
-  expect(computeOfferNumberFor(oferty, 'a', '2027-02-01').number).toBe('OF-0002/2027');
+  expect(computeOfferNumberFor(oferty, 'a', '2027-02-01').number).toBe('OF-02-0002-2027');
 });
 
 test('oferta bez numeru dostaje kolejny wolny', () => {
   const oferty = [of('a', '2026-05-01', 3), of('nowa', '2026-05-02')];
-  expect(computeOfferNumberFor(oferty, 'nowa', '2026-05-02').number).toBe('OF-0004/2026');
+  expect(computeOfferNumberFor(oferty, 'nowa', '2026-05-02').number).toBe('OF-05-0004-2026');
 });

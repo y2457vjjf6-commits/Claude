@@ -72,6 +72,14 @@ export interface Seller {
   www: string;
 }
 
+/** Zdjęcie produktu pokazywane klientowi przy pozycji oferty. */
+export interface ProductPhoto {
+  /** Nazwa lub jej fragment, np. „roleta kasetowa uni” albo kod tkaniny „C102” */
+  name: string;
+  /** Miniatura jako dataurl — trzymana w danych, żeby program działał bez sieci */
+  dataUrl: string;
+}
+
 export interface Settings {
   theme: 'light' | 'dark';
   seller: Seller;
@@ -87,6 +95,8 @@ export interface Settings {
   issuers: string[];
   /** Telefon przypisany do osoby wystawiającej: imię i nazwisko → numer */
   issuerPhones?: Record<string, string>;
+  /** Biblioteka zdjęć produktów — dobierane do pozycji po nazwie */
+  productPhotos?: ProductPhoto[];
   /** Domyślne ustawienia nowej oferty */
   offerDefaults: {
     deadlineDays: string;
@@ -234,6 +244,8 @@ export interface Offer {
   status: OfferStatus;
   /** Rozbicie ceny na netto i VAT — dla ofert dla firm */
   vatBreakdown?: boolean;
+  /** Czy drukować zdjęcia produktów przy pozycjach */
+  showPhotos?: boolean;
   /** Dokumenty WZ wystawione na podstawie tej oferty */
   wzDocumentIds?: string[];
   printedAt?: string;

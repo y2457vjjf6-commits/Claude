@@ -24,6 +24,7 @@ import {
 import { itemNameSuggestions } from '../lib/suggestions';
 import { printOffer, savePdfOffer, emailOffer } from '../lib/offerActions';
 import { computeOfferNumberFor } from '../lib/numbering';
+import { photoFor } from '../lib/photos';
 import { useEditorShortcuts } from '../hooks/useEditorShortcuts';
 import { useActionState } from '../hooks/useActionState';
 import SuffixField from '../components/SuffixField';
@@ -98,6 +99,9 @@ export default function OfferEditorView({
           notes: '',
           issuedBy: availableIssuers(state)[0] || '',
           issuedByPhone: issuerPhone(state, availableIssuers(state)[0] || ''),
+          // Skoro firma wgrała zdjęcia, to po to, żeby trafiały na oferty —
+          // włączamy je z góry, zamiast kazać klikać przy każdej nowej.
+          showPhotos: (state.settings.productPhotos || []).length > 0,
           status: 'szkic',
           createdAt: '',
           updatedAt: ''
@@ -150,6 +154,13 @@ export default function OfferEditorView({
   const koszty = offerCosts(offer);
   // Koszt własny i marża są tylko do wyceny w programie — nie ma ich na dokumencie
   const pokazKoszty = state.settings.showCosts !== false;
+
+  // Ile pozycji dostanie zdjęcie — widać to jeszcze przed wydrukiem, żeby
+  // nikogo nie zaskoczyło puste miejsce przy połowie oferty.
+  const bibliotekaZdjec = state.settings.productPhotos || [];
+  const wypelnione = offer.groups.flatMap((g) => g.items.filter((it) => !isItemEmpty(it)));
+  const wszystkieP = wypelnione.length;
+  const zZdjeciem = wypelnione.filter((it) => photoFor(it, state.settings)).length;
 
   // --- grupy i pozycje ---
   const setGroup = (gi: number, patch: Partial<OfferGroup>) =>
@@ -681,6 +692,28 @@ export default function OfferEditorView({
             </label>
             <span className="muted field-hint">Dla ofert dla firm. Ceny są brutto, netto liczone wstecz po {VAT_RATE}%.</span>
           </div>
+        </div>
+
+        <div className="switch-row">
+          <div className="switch-col">
+            <label className="checkbox-field">
+              <input
+                type="checkbox"
+                data-testid="offer-show-photos"
+                checked={!!offer.showPhotos}
+                onChange={(e) => set({ showPhotos: e.target.checked })}
+              />
+              <span>Drukuj zdjęcia produktów</span>
+            </label>
+            <span className="muted field-hint" data-testid="offer-photos-hint">
+              {!bibliotekaZdjec.length
+                ? 'Biblioteka zdjęć jest pusta — dodaj je w Ustawieniach.'
+                : zZdjeciem === 0
+                  ? 'Żadna pozycja nie ma dopasowanego zdjęcia. Sprawdź nazwy wpisów w Ustawieniach.'
+                  : `Zdjęcie znajdzie ${zZdjeciem} z ${wszystkieP} pozycji.`}
+            </span>
+          </div>
+          <div className="switch-col" />
         </div>
         <label className="field" style={{ marginTop: 14 }}>
           <span>Uwagi na ofercie</span>

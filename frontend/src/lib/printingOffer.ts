@@ -1,4 +1,4 @@
-import { Offer, OfferGroup, Settings } from '../types';
+import { Offer, OfferGroup, ProductPhoto, Settings } from '../types';
 import { LOGO_LECHROL } from '../assets/logo';
 import {
   columnHeaderLabel,
@@ -13,6 +13,7 @@ import {
   validUntil
 } from './offers';
 import { esc, formatDatePl } from './printing';
+import { matchPhoto } from './photos';
 
 /** Wiersz „etykieta — wartość”: podstawowa jednostka układu dokumentu. */
 function wiersz(etykieta: string, wartosc: string, klasa = ''): string {
@@ -24,17 +25,29 @@ function wiersz(etykieta: string, wartosc: string, klasa = ''): string {
       </div>`;
 }
 
-/** Tabela pozycji jednej grupy: Lp., produkt, ilość, cena za sztukę, wartość. */
-function tabela(g: OfferGroup, numery: string[], zNaglowkiem: boolean): string {
+/** Tabela pozycji jednej grupy: Lp., produkt, ilość, cena za sztukę, wartość.
+ *  `zdjecia` puste albo `null` = oferta bez zdjęć produktów. */
+function tabela(
+  g: OfferGroup,
+  numery: string[],
+  zNaglowkiem: boolean,
+  zdjecia: ProductPhoto[] | null
+): string {
   const wiersze = g.items
     .map((it, ii) => {
       if (isItemEmpty(it)) return '';
       const material = String(it.material || '').trim();
       const sztuk = parseFloat(String(it.qty).replace(',', '.')) || 0;
       const zaSztuke = sztuk ? itemTotal(it) / sztuk : itemTotal(it);
+      // Zdjęcie stoi pod numerem pozycji, w kolumnie etykiet — dzięki temu
+      // tabela nie dostaje nowej kolumny i nic się w niej nie przesuwa.
+      const zdjecie = zdjecia ? matchPhoto(it, zdjecia) : null;
       return `
-          <tr>
-            <td class="of-lp">${esc(numery[ii])}</td>
+          <tr${zdjecie ? ' class="of-row-photo"' : ''}>
+            <td class="of-lp">
+              <span class="of-lp-nr">${esc(numery[ii])}</span>
+              ${zdjecie ? `<img class="of-photo" src="${zdjecie.dataUrl}" alt="">` : ''}
+            </td>
             <td class="of-name">
               <span class="of-name-main">${esc(it.name)}</span>
               ${material ? `<span class="of-material">${esc(material)}</span>` : ''}
@@ -68,6 +81,9 @@ function tabela(g: OfferGroup, numery: string[], zNaglowkiem: boolean): string {
  */
 export function buildOfferHtml(offer: Offer, settings: Settings): string {
   const s = settings.seller;
+  // Zdjęcia drukujemy tylko wtedy, gdy oferta ma je włączone i biblioteka
+  // cokolwiek zawiera — inaczej dokument zostaje taki jak dotąd.
+  const zdjecia = offer.showPhotos ? settings.productPhotos || null : null;
   const grupy = offer.groups || [];
   const numery = groupLpNumbers(grupy, offer.continuousNumbering);
   const sumy = offerTotals(offer);
@@ -92,7 +108,7 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
              ${zKwotaPokoju ? `<span class="of-room-sum">${formatMoney(groupSum(g))}</span>` : ''}
            </div>`
         : '';
-      return `<section class="of-group">${naglowek}${tabela(g, numery[i], zNaglowkiem)}</section>`;
+      return `<section class="of-group">${naglowek}${tabela(g, numery[i], zNaglowkiem, zdjecia)}</section>`;
     })
     .join('');
 
@@ -116,7 +132,7 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
                     <span class="of-room-name">${esc(podpis)}</span>
                     ${kwota ? `<span class="of-room-sum">${formatMoney(kwota.total)}</span>` : ''}
                   </div>
-                  ${tabela(g, numery[i], zNaglowkiem)}
+                  ${tabela(g, numery[i], zNaglowkiem, zdjecia)}
                 </div>`;
            })
            .join('')}

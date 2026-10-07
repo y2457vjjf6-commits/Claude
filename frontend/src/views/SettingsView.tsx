@@ -3,6 +3,7 @@ import { Save, PlugZap, Loader2, FolderOpen, HardDriveDownload, HardDriveUpload,
 import { AppState } from '../types';
 import { dataLocation, hasApi } from '../lib/storage';
 import { backupNow, chooseBackupFolder, restoreBackup } from '../lib/backup';
+import { MAX_BOK, resizePhoto } from '../lib/photos';
 import { AskConfirm } from '../types';
 
 interface Props {
@@ -33,6 +34,7 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
       name: n,
       phone: (st.issuerPhones || {})[n] || ''
     })),
+    photoRows: (st.productPhotos || []).map((z) => ({ ...z })),
     offerDeadlineDays: st.offerDefaults?.deadlineDays || '21',
     offerValidityDays: st.offerDefaults?.validityDays || '30',
     offerValidityEnabled: st.offerDefaults?.validityEnabled ?? false,
@@ -82,12 +84,42 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
       validityEnabled: form.offerValidityEnabled,
       installationIncluded: form.offerInstallation
     };
+    next.settings.productPhotos = form.photoRows
+      .map((z) => ({ name: z.name.trim(), dataUrl: z.dataUrl }))
+      .filter((z) => z.name && z.dataUrl);
     next.settings.offerClosingText = form.offerClosingText;
     next.settings.offerCheckText = form.offerCheckText;
     next.settings.offerFollowUpDays = form.offerFollowUpDays.trim() || '0';
     next.settings.showCosts = form.showCosts;
     next.settings.emailBody = form.mBody;
     return next;
+  };
+
+  // Wgrywanie zdjęć produktów. Zdjęcie z telefonu waży kilka megabajtów,
+  // więc każde zmniejszamy, zanim trafi do pliku z danymi.
+  const wgrajZdjecia = async (pliki: FileList | null, podmienId: number | null) => {
+    if (!pliki || !pliki.length) return;
+    const obrazy = Array.from(pliki).filter((f) => f.type.startsWith('image/'));
+    if (!obrazy.length) {
+      toast('To nie są pliki graficzne.', true);
+      return;
+    }
+    try {
+      const male = await Promise.all(obrazy.map(resizePhoto));
+      if (podmienId !== null) {
+        set({ photoRows: form.photoRows.map((r, j) => (j === podmienId ? { ...r, dataUrl: male[0] } : r)) });
+        return;
+      }
+      // Nazwa pliku to zwykle nazwa produktu — podpowiadamy ją, bo to po niej
+      // zdjęcie trafia później na pozycję oferty.
+      const nowe = male.map((dataUrl, i) => ({
+        name: obrazy[i].name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim(),
+        dataUrl
+      }));
+      set({ photoRows: [...form.photoRows, ...nowe] });
+    } catch (e) {
+      toast(`Nie udało się wczytać zdjęcia: ${(e as Error).message}`, true);
+    }
   };
 
   const save = async () => {
@@ -341,6 +373,99 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
             </select>
           </label>
         </div>
+      </div>
+
+      <div className="card">
+        <h3 className="card-title">Zdjęcia produktów</h3>
+        <p className="muted card-note">
+          Zdjęcie trafia na ofertę obok pozycji, żeby klient widział, co kupuje. Program dobiera je
+          po nazwie: wystarczy, że wszystkie słowa wpisu stoją w nazwie produktu albo w wierszu
+          materiału — kolejność i odmiana nie mają znaczenia. Wpis „roleta kasetowa uni” złapie
+          pozycję „Rolety kasetowe System UNI, kaseta antracyt”, a wpis „C102” — pozycję z tą
+          tkaniną (ale już nie z tkaniną C1020). Gdy pasuje kilka wpisów, wygrywa ten o większej
+          liczbie słów. Zdjęcia są zmniejszane do {MAX_BOK} px, więc nie obciążają programu.
+        </p>
+        {form.photoRows.length > 0 && (
+          <table className="table items-table" data-testid="photos-table">
+            <thead>
+              <tr>
+                <th style={{ width: 90 }}>Zdjęcie</th>
+                <th>Nazwa produktu lub kod materiału</th>
+                <th style={{ width: 44 }}></th>
+              </tr>
+            </thead>
+            <tbody data-testid="photos-body">
+              {form.photoRows.map((z, i) => (
+                <tr key={i}>
+                  <td>
+                    <label className="photo-slot" title="Kliknij, żeby podmienić zdjęcie">
+                      <img src={z.dataUrl} alt="" className="photo-thumb" data-testid={`photo-thumb-${i}`} />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="photo-file"
+                        data-testid={`photo-replace-${i}`}
+                        aria-label="Podmień zdjęcie"
+                        onChange={(e) => {
+                          wgrajZdjecia(e.target.files, i);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      className="input"
+                      data-testid={`photo-name-${i}`}
+                      aria-label="Nazwa produktu lub kod materiału"
+                      placeholder="np. roleta kasetowa uni"
+                      value={z.name}
+                      onChange={(e) =>
+                        set({ photoRows: form.photoRows.map((r, j) => (j === i ? { ...r, name: e.target.value } : r)) })
+                      }
+                    />
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn-small btn-danger item-remove"
+                      data-testid={`photo-remove-${i}`}
+                      aria-label="Usuń zdjęcie"
+                      title="Usuń zdjęcie"
+                      onClick={() => set({ photoRows: form.photoRows.filter((_, j) => j !== i) })}
+                    >
+                      <X className="icon" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {!form.photoRows.length && <p className="muted employees-empty">Nie dodano jeszcze żadnego zdjęcia.</p>}
+        <label className="btn btn-light photo-add" data-testid="add-photo-label">
+          <Plus className="icon" />
+          Dodaj zdjęcia
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            className="photo-file"
+            data-testid="add-photo-input"
+            aria-label="Dodaj zdjęcia produktów"
+            onChange={(e) => {
+              wgrajZdjecia(e.target.files, null);
+              e.target.value = '';
+            }}
+          />
+        </label>
+        <p className="muted field-hint" data-testid="photos-weight" style={{ marginTop: 10 }}>
+          {form.photoRows.length
+            ? `W bibliotece ${form.photoRows.length} zdjęć, razem około ${Math.round(
+                form.photoRows.reduce((s, z) => s + z.dataUrl.length, 0) / 1024
+              )} kB.`
+            : 'Bez zdjęć oferta wygląda tak jak dotąd — to dodatek, nie wymóg.'}
+        </p>
       </div>
 
       <div className="card">

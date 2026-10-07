@@ -441,6 +441,29 @@
   font-weight: 500;
 }
 
+/* Zdjęcie produktu wisi pod numerem pozycji, w kolumnie etykiet. Numer
+   zostaje w pierwszym wierszu, więc dalej równa się z nazwą produktu, a
+   zdjęcie schodzi pod spód i nie rusza żadnej kolumny. */
+/* Numer blokiem, zdjęcie pod nim. Zdjęcie musi zostać `inline-block`:
+   jako `block` w komórce wyrównanej do linii bazowej Chromium łamie wiersz
+   na dwie strony i każda pozycja zabiera osobną kartkę. Sprawdzone na
+   wyeksportowanym PDF-ie — `block` dawał 4 strony zamiast 2. */
+.of-lp-nr {
+  display: block;
+}
+
+.of-photo {
+  display: inline-block;
+  width: 22mm;
+  max-height: 24mm;
+  object-fit: contain;
+  object-position: left top;
+  margin-top: 5pt;
+  /* Zdjęcia produktów bywają na białym tle i rozpływałyby się po kartce.
+     Jasny podkład daje im krawędź bez dokładania dokumentowi kresek. */
+  background: var(--of-tint);
+}
+
 /* Materiał i wymiar to opis pozycji, nie druga pozycja — stąd szarość i mniejszy stopień */
 .of-material {
   display: block;

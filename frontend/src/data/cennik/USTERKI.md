@@ -67,6 +67,27 @@ Roleta 80 × 60 cm kosztuje więcej niż ta sama o 10 cm szersza (410 zł) i wi�
 niż o 10 cm wyższa (416 zł). Wiersz rośnie co 21 zł, kolumna co 26 zł — obie
 metody dają 390-391 zł.
 
+## Rolety kasetowe Dzień-Noc UNI — antracyt, czarny, str. 50
+
+| Grupa | Wysokość | Szerokość | W cenniku | Powinno być | Skutek |
+|---|---|---|---|---|---|
+| II | 220 | 160 | 835 zł | ~825 zł | zawyżone o 10 zł |
+
+Wiersz rośnie co ~42 zł, kolumna co ~19 zł. Obie metody dają 825-826 zł.
+
+## Rolety kasetowe Dzień-Noc UNI — drewnopodobne, anoda, str. 51
+
+| Grupa | Wysokość | Szerokość | W cenniku | Powinno być | Skutek |
+|---|---|---|---|---|---|
+| I | 220 | 170 | 735 zł | ~769 zł | zaniżone o 34 zł |
+| I | 220 | 180 | 769 zł | ~804 zł | zaniżone o 35 zł |
+| II | 190 | 70 | 455 zł | ~445 zł | zawyżone o 10 zł |
+
+W grupie I wiersz 220 kończy się „700 735 735 769" — wartość 735 stoi dwa razy,
+a ostatnia kratka wypadła. Wygląda na przesunięcie przy wypełnianiu arkusza:
+roleta 170 × 220 cm kosztuje tyle samo co o 10 cm węższa i mniej niż ta sama
+o 10 cm niższa (745 zł).
+
 ## Co z tym robi program
 
 Na razie nic — trzyma ceny takie, jakie są w cenniku, żeby oferta zgadzała się

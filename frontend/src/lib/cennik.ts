@@ -23,6 +23,9 @@ import decoluxDrewno from '../data/cennik/decolux-drewno.json';
 import grupyDzienNoc from '../data/cennik/grupy-dzien-noc.json';
 import dnMini19 from '../data/cennik/dn-mini-19.json';
 import dnMidi32 from '../data/cennik/dn-midi-32.json';
+import dnUniBialy from '../data/cennik/dn-uni-bialy.json';
+import dnUniAntracyt from '../data/cennik/dn-uni-antracyt.json';
+import dnUniDrewno from '../data/cennik/dn-uni-drewno.json';
 
 /** Jak nazwać produkt, żeby trafił na swoją tabelę. Człony muszą stać
  *  w nazwie pozycji — wszystkie naraz. Trzymamy je tutaj, a nie w plikach
@@ -38,7 +41,10 @@ const CZLONY: Record<string, string[]> = {
   'decolux-bialy': ['DECOLUX'],
   'decolux-drewno': ['DECOLUX', 'sosna'],
   'dn-mini-19': ['dzień-noc', 'Mini 19'],
-  'dn-midi-32': ['dzień-noc', 'Midi 32']
+  'dn-midi-32': ['dzień-noc', 'Midi 32'],
+  'dn-uni-bialy': ['dzień-noc', 'UNI'],
+  'dn-uni-antracyt': ['dzień-noc', 'UNI', 'antracyt'],
+  'dn-uni-drewno': ['dzień-noc', 'UNI', 'drewnopodobne']
 };
 
 interface PlikGrup {
@@ -65,7 +71,8 @@ interface PlikCen {
 
 const PLIKI = [
   mini19, midi25, rt32, rt4045, uni, uniAntracyt, uniDrewno,
-  decoluxBialy, decoluxDrewno, dnMini19, dnMidi32
+  decoluxBialy, decoluxDrewno, dnMini19, dnMidi32,
+  dnUniBialy, dnUniAntracyt, dnUniDrewno
 ] as unknown as PlikCen[];
 
 // Każda rodzina produktów ma własny podział materiałów na grupy cenowe:

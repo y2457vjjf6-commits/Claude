@@ -141,3 +141,17 @@ describe('nowe rodziny produktów', () => {
     expect(surchargeAmount(kaseta, { width: 55, height: 100 })).toBe(112);
   });
 });
+
+test('kasetowe dzień-noc nie mieszają się z wolnowiszącymi ani z rolet kasetowych', () => {
+  const kaseta = matchTable({ name: 'Roleta kasetowa dzień-noc UNI', material: 'Jazz' }, CENNIK);
+  expect(kaseta?.id).toBe('dn-uni-bialy-1');
+  // ta sama tkanina w zwykłej rolecie kasetowej nie istnieje — grupy są inne
+  expect(matchTable({ name: 'Roleta kasetowa UNI', material: 'Jazz' }, CENNIK)).toBeNull();
+});
+
+test('kolor kasetowej dzień-nocy wybiera właściwy cennik', () => {
+  const warianty = ['', 'antracyt', 'drewnopodobne'].map(
+    (k) => matchTable({ name: `Roleta kasetowa dzień-noc UNI ${k}`, material: 'DN 600' }, CENNIK)?.id
+  );
+  expect(warianty).toEqual(['dn-uni-bialy-3', 'dn-uni-antracyt-3', 'dn-uni-drewno-3']);
+});

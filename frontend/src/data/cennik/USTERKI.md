@@ -102,6 +102,19 @@ Dwa pierwsze są najpoważniejsze w całym cenniku. Żaluzja 190 × 200 cm o lam
 50 × 120 cm o lameli 50 mm kosztuje niemal o połowę mniej, niż powinna —
 i mniej niż ta sama o 10 cm niższa (550 zł).
 
+## Żaluzje aluminiowe 25 mm, str. 10-11
+
+| Grupa | Wysokość | Szerokość | W cenniku | Powinno być | Skutek |
+|---|---|---|---|---|---|
+| C | 110 | 130-250 | o jeden krok za dużo | — | **zawyżone o ~23 zł na kratkę** |
+| D | 30 | 250 | 315 zł | ~326 zł | zaniżone o 11 zł |
+
+W grupie C cały wiersz 110 jest przesunięty: od szerokości 130 do 250 stoją
+w nim kwoty należące do kolumny o jedną szerszej, a na końcu wartość 708
+powtarza się dwa razy. Brakuje kwoty 408 przy szerokości 130. Trzynaście
+kratek jest przez to droższych, niż wynika z siatki — przy 130 cm o 23 zł,
+przy 250 cm o 22 zł.
+
 ## Co z tym robi program
 
 Na razie nic — trzyma ceny takie, jakie są w cenniku, żeby oferta zgadzała się

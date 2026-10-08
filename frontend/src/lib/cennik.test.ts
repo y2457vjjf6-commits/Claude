@@ -179,3 +179,28 @@ describe('produkty bez grup materiałowych', () => {
     expect(surchargeAmount(drabinka, { width: 100, height: 100 })).toBeNull();
   });
 });
+
+describe('żaluzje aluminiowe obok drewnianych', () => {
+  it('materiał rozstrzyga, który cennik obowiązuje', () => {
+    expect(matchTable({ name: 'Żaluzja aluminiowa 25mm', material: 'Grupa A' }, CENNIK)?.id)
+      .toBe('zaluzje-alu-25-A');
+    expect(matchTable({ name: 'Żaluzja drewniana 25mm', material: '' }, CENNIK)?.id)
+      .toBe('zaluzje-drewno-25');
+  });
+
+  it('ta sama siatka obsługuje drewno i bambus', () => {
+    expect(matchTable({ name: 'Żaluzja bambusowa 50mm', material: '' }, CENNIK)?.id)
+      .toBe('zaluzje-drewno-50');
+  });
+
+  it('żaluzja bez podanego materiału nie dostaje ceny z sufitu', () => {
+    // drewniana kosztuje prawie dwa razy tyle co aluminiowa, więc zgadywanie
+    // kończyłoby się zawyżoną albo zaniżoną ofertą
+    expect(matchTable({ name: 'Żaluzja 25mm', material: '' }, CENNIK)).toBeNull();
+  });
+
+  it('szerokość lameli rozdziela cenniki aluminiowe', () => {
+    expect(matchTable({ name: 'Żaluzja aluminiowa 16mm', material: '' }, CENNIK)?.id)
+      .toBe('zaluzje-alu-16');
+  });
+});

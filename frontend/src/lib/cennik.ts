@@ -28,6 +28,8 @@ import dnUniAntracyt from '../data/cennik/dn-uni-antracyt.json';
 import dnUniDrewno from '../data/cennik/dn-uni-drewno.json';
 import zaluzjeDrewno25 from '../data/cennik/zaluzje-drewno-25.json';
 import zaluzjeDrewno50 from '../data/cennik/zaluzje-drewno-50.json';
+import zaluzjeAlu16 from '../data/cennik/zaluzje-alu16.json';
+import zaluzjeAlu25 from '../data/cennik/zaluzje-alu25.json';
 
 /** Jak nazwać produkt, żeby trafił na swoją tabelę. Człony muszą stać
  *  w nazwie pozycji — wszystkie naraz. Trzymamy je tutaj, a nie w plikach
@@ -47,8 +49,10 @@ const CZLONY: Record<string, string[]> = {
   'dn-uni-bialy': ['dzień-noc', 'UNI'],
   'dn-uni-antracyt': ['dzień-noc', 'UNI', 'antracyt'],
   'dn-uni-drewno': ['dzień-noc', 'UNI', 'drewnopodobne'],
-  'zaluzje-drewno-25': ['żaluzje', '25'],
-  'zaluzje-drewno-50': ['żaluzje', '50']
+  'zaluzje-drewno-25': ['żaluzje', 'drewniane|bambusowe', '25'],
+  'zaluzje-drewno-50': ['żaluzje', 'drewniane|bambusowe', '50'],
+  'zaluzje-alu-16': ['żaluzje', 'aluminiowe', '16'],
+  'zaluzje-alu-25': ['żaluzje', 'aluminiowe', '25']
 };
 
 interface PlikGrup {
@@ -77,7 +81,7 @@ const PLIKI = [
   mini19, midi25, rt32, rt4045, uni, uniAntracyt, uniDrewno,
   decoluxBialy, decoluxDrewno, dnMini19, dnMidi32,
   dnUniBialy, dnUniAntracyt, dnUniDrewno,
-  zaluzjeDrewno25, zaluzjeDrewno50
+  zaluzjeDrewno25, zaluzjeDrewno50, zaluzjeAlu16, zaluzjeAlu25
 ] as unknown as PlikCen[];
 
 // Każda rodzina produktów ma własny podział materiałów na grupy cenowe:

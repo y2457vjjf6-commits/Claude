@@ -110,9 +110,19 @@ function odmiana(tekst: string, fraza: string): boolean {
   });
 }
 
-/** Fraza pasuje, gdy stoi w tekście dosłownie albo w innej odmianie. */
+/** Fraza pasuje, gdy stoi w tekście dosłownie albo w innej odmianie.
+ *
+ *  Kreska pionowa rozdziela warianty tego samego członu: „drewniane|bambusowe"
+ *  pasuje na jedno i na drugie. Jedna siatka cennika bywa wspólna dla dwóch
+ *  materiałów i bez tego nie dałoby się jej opisać, nie łapiąc przy okazji
+ *  cudzych produktów.
+ */
 function zawieraFraze(tekst: string, fraza: string): boolean {
-  return doslownie(tekst, fraza) || odmiana(tekst, fraza);
+  return fraza
+    .split('|')
+    .map((f) => f.trim())
+    .filter(Boolean)
+    .some((f) => doslownie(tekst, f) || odmiana(tekst, f));
 }
 
 /** Dobiera tabelę do pozycji.

@@ -109,6 +109,8 @@ export interface Settings {
   offerClosingText: string;
   /** Treść ramki „do sprawdzenia” nad podpisem (puste = bez ramki) */
   offerCheckText?: string;
+  /** Zaliczka w procentach drukowana w warunkach oferty (0 albo brak = bez wiersza) */
+  offerDepositPercent?: string;
   /** Po ilu dniach bez decyzji przypominać o wysłanej ofercie */
   offerFollowUpDays: string;
   /** Czy pokazywać koszt własny i marżę (tylko w programie, nigdy na dokumencie) */
@@ -247,6 +249,10 @@ export interface Offer {
   /** Dla kogo oferta — trafia na dokument i do nazwy pliku */
   client: string;
   clientEmail: string;
+  /** Adres odbiorcy — drukowany pod nazwą, gdy wypełniony */
+  clientAddress?: string;
+  /** NIP odbiorcy — drukowany tylko dla firm */
+  clientNip?: string;
   groups: OfferGroup[];
   /** true = Lp. biegnie przez wszystkie tabele; false = każda tabela od 1 */
   continuousNumbering: boolean;
@@ -268,6 +274,9 @@ export interface Offer {
   status: OfferStatus;
   /** Rozbicie ceny na netto i VAT — dla ofert dla firm */
   vatBreakdown?: boolean;
+  /** Stawka VAT w procentach. 8% przy montażu w budownictwie mieszkaniowym,
+   *  23% poza nim. Brak wartości = stawka podstawowa. */
+  vatRate?: number;
   /** Czy drukować zdjęcia produktów przy pozycjach */
   showPhotos?: boolean;
   /** Dokumenty WZ wystawione na podstawie tej oferty */

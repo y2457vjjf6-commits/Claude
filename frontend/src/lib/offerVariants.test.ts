@@ -232,9 +232,10 @@ test('nieznana osoba i pusta nazwa nie dają numeru', () => {
 });
 
 test('numer drukuje się pod nazwiskiem, a bez numeru wiersz znika', () => {
-  const z = buildOfferHtml(oferta({ issuedByPhone: '511 697 697' }), DEFAULT_STATE.settings);
+  // własny numer wystawiającego, inny niż firmowy ze stopki
+  const z = buildOfferHtml(oferta({ issuedByPhone: '600 100 200' }), DEFAULT_STATE.settings);
   const bez = buildOfferHtml(oferta({ issuedByPhone: '  ' }), DEFAULT_STATE.settings);
-  expect(z).toContain('tel. 511 697 697');
+  expect(z).toContain('tel. 600 100 200');
   expect(z).toContain('of-signer-phone');
   // numer stoi pod nazwiskiem, nie nad nim
   expect(z.indexOf('of-signer-phone')).toBeGreaterThan(z.indexOf('of-signer'));

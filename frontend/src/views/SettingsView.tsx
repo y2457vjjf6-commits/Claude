@@ -41,6 +41,7 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
     offerInstallation: st.offerDefaults?.installationIncluded ?? true,
     offerClosingText: st.offerClosingText || '',
     offerCheckText: st.offerCheckText || '',
+    offerDepositPercent: st.offerDepositPercent || '',
     offerFollowUpDays: st.offerFollowUpDays || '7',
     showCosts: st.showCosts !== false,
     mBody: st.emailBody
@@ -89,6 +90,7 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
       .filter((z) => z.name && z.dataUrl);
     next.settings.offerClosingText = form.offerClosingText;
     next.settings.offerCheckText = form.offerCheckText;
+    next.settings.offerDepositPercent = form.offerDepositPercent.trim();
     next.settings.offerFollowUpDays = form.offerFollowUpDays.trim() || '0';
     next.settings.showCosts = form.showCosts;
     next.settings.emailBody = form.mBody;
@@ -294,6 +296,22 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
           <Plus className="icon" />
           Dodaj osobę
         </button>
+        <label className="field" style={{ marginTop: 14 }}>
+          <span>Zaliczka (% wartości oferty)</span>
+          <input
+            type="text"
+            className="input num"
+            data-testid="offer-deposit-percent"
+            inputMode="numeric"
+            placeholder="np. 30"
+            value={form.offerDepositPercent}
+            onChange={(e) => set({ offerDepositPercent: e.target.value })}
+          />
+          <span className="muted field-hint">
+            Drukuje w warunkach oferty wiersz „Płatność: zaliczka X% przy złożeniu zamówienia, reszta przy
+            odbiorze”. Puste pole albo 0 wyłącza ten wiersz; 100 drukuje płatność z góry.
+          </span>
+        </label>
         <label className="field" style={{ marginTop: 14 }}>
           <span>Ramka „do sprawdzenia” nad podpisem</span>
           <textarea

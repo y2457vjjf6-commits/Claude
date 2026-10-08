@@ -17,7 +17,8 @@ import {
   OFFER_STATUS_LABELS,
   validUntil,
   variantLetter,
-  VAT_RATE,
+  VAT_RATES,
+  offerVatRate,
   availableIssuers,
   issuerPhone
 } from '../lib/offers';
@@ -410,6 +411,54 @@ export default function OfferEditorView({
             <input type="email" className="input" data-testid="offer-client-email" value={offer.clientEmail} onChange={(e) => set({ clientEmail: e.target.value })} />
           </label>
           <label className="field">
+            <span>Adres odbiorcy</span>
+            <input
+              type="text"
+              className="input"
+              data-testid="offer-client-address"
+              placeholder="np. ul. Długa 118/4, 18-300 Zambrów"
+              value={offer.clientAddress || ''}
+              onChange={(e) => set({ clientAddress: e.target.value })}
+            />
+            <span className="muted field-hint">Drukuje się pod nazwą. Puste pole pomija ten wiersz.</span>
+          </label>
+          <label className="field">
+            <span>NIP odbiorcy</span>
+            <input
+              type="text"
+              className="input"
+              data-testid="offer-client-nip"
+              placeholder="tylko dla firm"
+              value={offer.clientNip || ''}
+              onChange={(e) => set({ clientNip: e.target.value })}
+            />
+            <label className="field" style={{ marginTop: 8 }}>
+              <span>Weź dane z kartoteki</span>
+              <select
+                className="input"
+                data-testid="offer-client-from-book"
+                value=""
+                onChange={(e) => {
+                  const k = state.contractors.find((c) => c.id === e.target.value);
+                  if (!k) return;
+                  set({
+                    client: k.name,
+                    clientAddress: k.address || '',
+                    clientNip: k.nip || '',
+                    clientEmail: k.email || offer.clientEmail
+                  });
+                }}
+              >
+                <option value="">— wybierz kontrahenta —</option>
+                {state.contractors.map((k) => (
+                  <option key={k.id} value={k.id}>
+                    {k.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </label>
+          <label className="field">
             <span>Status oferty</span>
             <select className="input" data-testid="offer-status" value={offer.status} onChange={(e) => set({ status: e.target.value as Offer['status'] })}>
               {(Object.keys(OFFER_STATUS_LABELS) as Offer['status'][]).map((st) => (
@@ -793,7 +842,25 @@ export default function OfferEditorView({
               />
               <span>Pokaż rozbicie na netto i VAT</span>
             </label>
-            <span className="muted field-hint">Dla ofert dla firm. Ceny są brutto, netto liczone wstecz po {VAT_RATE}%.</span>
+            <label className="field">
+              <span>Stawka VAT</span>
+              <select
+                className="input"
+                data-testid="offer-vat-rate"
+                value={offerVatRate(offer)}
+                onChange={(e) => set({ vatRate: Number(e.target.value) })}
+              >
+                {VAT_RATES.map((r) => (
+                  <option key={r} value={r}>
+                    {r}%{r === 8 ? ' — montaż w budownictwie mieszkaniowym' : ''}
+                  </option>
+                ))}
+              </select>
+              <span className="muted field-hint">
+                Ceny są brutto, netto liczone wstecz. 8% przy dostawie z montażem w mieszkaniu lub domu,
+                23% poza budownictwem mieszkaniowym i bez montażu.
+              </span>
+            </label>
           </div>
         </div>
 

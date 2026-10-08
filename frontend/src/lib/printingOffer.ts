@@ -10,6 +10,7 @@ import {
   itemTotal,
   offerTotals,
   offerVat,
+  offerVatRate,
   validUntil
 } from './offers';
 import { esc, formatDatePl } from './printing';
@@ -79,6 +80,23 @@ function tabela(
  * po prawej treść i kwoty na wspólnej osi. Linie rozdzielają dane, nie zdobią;
  * pomarańcz firmowy pojawia się wyłącznie jako akcent, nigdy jako tło treści.
  */
+/** Telefon pod podpisem — pomijany, gdy to ten sam numer co firmowy. */
+function telefonPodpisu(offer: Offer, s: Settings['seller']): string {
+  const cyfry = (x: string) => String(x || '').replace(/\D/g, '');
+  const wlasny = String(offer.issuedByPhone || '').trim();
+  if (!wlasny) return '';
+  return cyfry(wlasny) === cyfry(s.phone) ? '' : wlasny;
+}
+
+/** Wiersz o płatności. Zaliczka bierze się z ustawień, więc da się ją zmienić
+ *  bez ruszania kodu; zero albo puste pole wyłącza ten wiersz. */
+function platnosc(settings: Settings): string {
+  const procent = parseFloat(String(settings.offerDepositPercent ?? '').replace(',', '.'));
+  if (!isFinite(procent) || procent <= 0) return '';
+  if (procent >= 100) return 'Pełna kwota przy złożeniu zamówienia';
+  return `Zaliczka ${esc(String(settings.offerDepositPercent).trim())}% przy złożeniu zamówienia, reszta przy odbiorze`;
+}
+
 export function buildOfferHtml(offer: Offer, settings: Settings): string {
   const s = settings.seller;
   // Zdjęcia drukujemy tylko wtedy, gdy oferta ma je włączone i biblioteka
@@ -148,7 +166,7 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
       : '';
 
   // Ceny w cenniku są brutto, więc netto wyliczamy wstecz — tylko dla firm
-  const vat = offerVat(sumy.total);
+  const vat = offerVat(sumy.total, offerVatRate(offer));
   const rozbicieVat = offer.vatBreakdown
     ? `<div class="of-vat">
          <div class="of-sum-line"><span>W tym netto</span><span>${formatMoney(vat.netto)}</span></div>
@@ -186,6 +204,7 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
         : ''
     ),
     wiersz('Oferta ważna do', offer.validityEnabled && validUntil(offer) ? esc(validUntil(offer)) : ''),
+    wiersz('Płatność', platnosc(settings)),
     wiersz('Uwagi', String(offer.notes || '').trim() ? esc(offer.notes).replace(/\n/g, '<br>') : '')
   ].join('');
 
@@ -205,7 +224,25 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
     : '';
 
   const naglowekDanych = [
-    wiersz('Dla', esc(offer.client || ''), 'of-value-lead'),
+    // Nazwa, adres i NIP w jednym wierszu etykiety — adres i NIP tylko wtedy,
+    // gdy ktoś je podał; przy ofercie na adres budowy zwykle ich nie ma.
+    wiersz(
+      'Dla',
+      (() => {
+        const nazwa = esc(offer.client || '');
+        // Adres i NIP to dopowiedzenie do nazwy, nie druga nazwa — stąd ciszej
+        const dalsze = [
+          esc(String(offer.clientAddress || '').trim()),
+          String(offer.clientNip || '').trim() ? `NIP ${esc(offer.clientNip)}` : ''
+        ].filter(Boolean);
+        if (!nazwa && !dalsze.length) return '';
+        return (
+          `<span class="of-client-name">${nazwa}</span>` +
+          (dalsze.length ? `<span class="of-client-sub">${dalsze.join('<br>')}</span>` : '')
+        );
+      })(),
+      'of-value-lead'
+    ),
     wiersz('Data', `${esc(offer.place || 'Łomianki')}, ${esc(formatDatePl(offer.date))}`),
     // ta sama kwota co na dole, ale cicho — żeby klient znał cenę bez szukania
     wiersz(
@@ -253,11 +290,13 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
     }
 
     <div class="of-sign">
-      <div class="of-label">Ofertę przygotował</div>
+      <div class="of-regards">Z poważaniem</div>
       <div class="of-signer">${esc(offer.issuedBy)}</div>
       ${
-        String(offer.issuedByPhone || '').trim()
-          ? `<div class="of-signer-phone">tel. ${esc(String(offer.issuedByPhone).trim())}</div>`
+        // Numer wystawiającego ma sens tylko wtedy, gdy różni się od firmowego
+        // ze stopki — inaczej ten sam numer stałby dwa razy na jednym ekranie.
+        telefonPodpisu(offer, s)
+          ? `<div class="of-signer-phone">tel. ${esc(telefonPodpisu(offer, s))}</div>`
           : ''
       }
     </div>

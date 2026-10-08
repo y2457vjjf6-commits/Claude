@@ -368,6 +368,24 @@
   white-space: nowrap;
 }
 
+/* Zwrot grzecznościowy nad podpisem — dzięki niemu dokument kończy się
+   jak pismo, a nie urywa jak wydruk z systemu. */
+.of-regards {
+  margin-bottom: 6pt;
+}
+
+/* Nazwa odbiorcy prowadzi, adres i NIP są jej dopowiedzeniem */
+.of-client-name {
+  display: block;
+}
+
+.of-client-sub {
+  display: block;
+  margin-top: 2pt;
+  font-size: var(--of-s-1);
+  color: var(--of-mid);
+}
+
 .of-items {
   width: 100%;
   border-collapse: collapse;

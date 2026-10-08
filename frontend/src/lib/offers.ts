@@ -132,6 +132,17 @@ export function offerTotals(offer: Offer): OfferTotals {
 /** Stawka podstawowa. Ceny w cenniku są brutto, więc netto liczymy wstecz. */
 export const VAT_RATE = 23;
 
+/** Stawki do wyboru przy ofercie. 8% obowiązuje przy dostawie z montażem
+ *  w budownictwie objętym społecznym programem mieszkaniowym — czyli przy
+ *  większości montaży w mieszkaniach i domach. Poza nim obowiązuje 23%. */
+export const VAT_RATES = [23, 8] as const;
+
+/** Stawka tej oferty — z zapisanej wartości albo podstawowa. */
+export function offerVatRate(offer: Pick<Offer, 'vatRate'>): number {
+  const r = Number(offer?.vatRate);
+  return isFinite(r) && r > 0 ? r : VAT_RATE;
+}
+
 export interface OfferVat {
   rate: number;
   netto: number;

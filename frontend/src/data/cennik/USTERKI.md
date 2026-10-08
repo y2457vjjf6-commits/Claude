@@ -167,6 +167,32 @@ Taka pozycja na ofercie oznacza stratę rzędu tysiąca złotych na sztuce.
 W grupie B wiersze 250 i 260 mają dwie ostatnie kolumny przepisane o dwa
 wiersze wyżej — stąd równe 122 zł różnicy w czterech kratkach.
 
+## Plisy, str. 54-56
+
+| Grupa | Wysokość | Szerokość | W cenniku | Powinno być | Skutek |
+|---|---|---|---|---|---|
+| 2 | 130 | 210 | 333 zł | ~576 zł | **zaniżone o 243 zł** |
+| 3 | 120 | 100 | 463 zł | ~333 zł | **zawyżone o 130 zł** |
+| 3 | 170 | 90 | 255 zł | ~385 zł | **zaniżone o 130 zł** |
+| 2 | 170 | 50 | 407 zł | ~272 zł | **zawyżone o 135 zł** |
+| 1 | 70 | 160 | 286 zł | ~290 zł | zaniżone o 4 zł |
+| 5 | 110 | 60 | 273 zł | ~280 zł | zaniżone o 7 zł |
+| 2 | wiersz 190 | wszystkie | kopia wiersza 180 | — | zaniżone w całym wierszu |
+
+W grupie 2 wiersz 190 jest co do grosza kopią wiersza 180, więc plisa o 10 cm
+wyższa kosztuje dokładnie tyle samo. To jedyny taki przypadek w całym cenniku.
+
+Uwaga do kontroli: ceny plis **nie rosną równymi krokami** — inaczej niż
+w roletach i żaluzjach. Sprawdzanie regularności skoków zgłaszało tu 705 kratek
+na 2052, co było cechą produktu, nie błędem. Plisy sprawdzamy więc tylko regułą,
+że cena nie może maleć, gdy plisa rośnie.
+
+## Verticale, str. 58
+
+Verticali nie da się sprawdzić tą metodą — producent nie podaje siatki, tylko
+cenę tkaniny za metr kwadratowy i szyny za metr bieżący. Dane przepisane
+wiernie, bez zastrzeżeń.
+
 ## Co z tym robi program
 
 Na razie nic — trzyma ceny takie, jakie są w cenniku, żeby oferta zgadzała się

@@ -222,3 +222,26 @@ describe('VENUS obok zwykłych aluminiowych', () => {
       .toBe('venus-16-B');
   });
 });
+
+describe('plisy', () => {
+  it('grupy cenowe mają własne szerokości siatek', () => {
+    const waska = CENNIK.find((t) => t.id === 'plisy-0')!;
+    const szeroka = CENNIK.find((t) => t.id === 'plisy-2')!;
+    // grupy 2-4 sięgają 220 cm, pozostałe kończą się na 200
+    expect(waska.widths[waska.widths.length - 1]).toBe(200);
+    expect(szeroka.widths[szeroka.widths.length - 1]).toBe(220);
+    expect(waska.prices[0]).toHaveLength(waska.widths.length);
+    expect(szeroka.prices[0]).toHaveLength(szeroka.widths.length);
+  });
+
+  it('plisa dobiera się po nazwie i grupie cenowej', () => {
+    const w = priceItem({ name: 'Plisa okienna', material: 'Grupa 3 · 100 x 150 cm' }, CENNIK);
+    expect(w.status).toBe('ok');
+    expect(w.table?.id).toBe('plisy-3');
+  });
+
+  it('plisa szersza niż siatka wąskiej grupy zgłasza się zamiast milczeć', () => {
+    expect(priceItem({ name: 'Plisa', material: 'Grupa 0 · 215 x 150 cm' }, CENNIK).status)
+      .toBe('poza-tabela');
+  });
+});

@@ -1,0 +1,26 @@
+{
+ "zrodlo": "Cennik Lechrol 2026, str. 58",
+ "nazwa": "Verticale",
+ "szyna": 85,
+ "minSzyna": 1,
+ "minTkanina": 1,
+ "tkaniny": [
+  { "nazwa": "Berlin", "89": 53, "127": 54 },
+  { "nazwa": "Berlin BO", "89": 111, "127": 112 },
+  { "nazwa": "Carina", "89": 74, "127": 70 },
+  { "nazwa": "Ex-lite BO FR", "89": 237, "127": 167 },
+  { "nazwa": "Line N", "89": 71, "127": 52 },
+  { "nazwa": "Miami", "89": 112, "127": 81 },
+  { "nazwa": "Patagonia", "89": 88, "127": 64 },
+  { "nazwa": "Patagonia FR", "89": 100, "127": 95 },
+  { "nazwa": "Screen FR", "89": 149, "127": 149 },
+  { "nazwa": "Starflex FR", "89": 193, "127": 143 },
+  { "nazwa": "Starlet FR", "89": 90, "127": 79 },
+  { "nazwa": "Starlet BO FR", "89": 164, "127": 162 },
+  { "nazwa": "Eden", "89": 97, "127": 90 }
+ ],
+ "doplaty": [
+  { "nazwa": "Verticale skośne", "procent": 30 },
+  { "nazwa": "Wieszaki do montażu do ściany", "kwota": 6 }
+ ]
+}

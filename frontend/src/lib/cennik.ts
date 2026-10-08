@@ -33,6 +33,7 @@ import zaluzjeAlu25 from '../data/cennik/zaluzje-alu25.json';
 import venus16 from '../data/cennik/venus-16.json';
 import venus25 from '../data/cennik/venus-25.json';
 import zaluzjeAlu50 from '../data/cennik/zaluzje-alu50.json';
+import plisy from '../data/cennik/plisy.json';
 
 /** Jak nazwać produkt, żeby trafił na swoją tabelę. Człony muszą stać
  *  w nazwie pozycji — wszystkie naraz. Trzymamy je tutaj, a nie w plikach
@@ -66,7 +67,8 @@ const CZLONY: Record<string, string[]> = {
   'zaluzje-alu-25': ['żaluzje', 'aluminiowe', '25'],
   'venus-16': ['VENUS', '16'],
   'venus-25': ['VENUS', '25'],
-  'zaluzje-alu-50': ['żaluzje', 'aluminiowe', '50']
+  'zaluzje-alu-50': ['żaluzje', 'aluminiowe', '50'],
+  plisy: ['plisa']
 };
 
 interface PlikGrup {
@@ -83,6 +85,9 @@ interface PlikCen {
   maks?: string;
   szerokosci: number[];
   wysokosci: number[];
+  /** Szerokości osobne dla wybranych grup — w plisach grupy 2-4 mają szerszą
+   *  siatkę niż pozostałe, więc jedna rozpiska nie opisze całego produktu. */
+  szerokosciGrup?: Record<string, number[]>;
   siatki: Record<string, (number | null)[][]>;
   doplaty?: { nazwa: string; kwota?: number; procent?: number }[];
   doplatySilnik?: { nazwa: string; kwota: number }[];
@@ -96,7 +101,7 @@ const PLIKI = [
   decoluxBialy, decoluxDrewno, dnMini19, dnMidi32,
   dnUniBialy, dnUniAntracyt, dnUniDrewno,
   zaluzjeDrewno25, zaluzjeDrewno50, zaluzjeAlu16, zaluzjeAlu25, zaluzjeAlu50,
-  venus16, venus25
+  venus16, venus25, plisy
 ] as unknown as PlikCen[];
 
 // Każda rodzina produktów ma własny podział materiałów na grupy cenowe:
@@ -164,7 +169,7 @@ function zbuduj(): PriceTable[] {
         product: czlony,
         excludes: WYKLUCZENIA[p.id] || [],
         materials: materialyGrupy(p.kategoria, litera),
-        widths: p.szerokosci,
+        widths: p.szerokosciGrup?.[litera] || p.szerokosci,
         heights: p.wysokosci,
         prices: ceny,
         surcharges: doplaty,

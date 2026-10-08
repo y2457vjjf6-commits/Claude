@@ -4,6 +4,7 @@ import { AppState } from '../types';
 import { CENNIK, cennikProdukty } from '../lib/cennik';
 import { lookupPrice, surchargeAmount, toCm } from '../lib/pricing';
 import { formatMoney } from '../lib/offers';
+import { priceVertical, SzerokoscPasa, VERTICALE } from '../lib/verticale';
 
 interface Props {
   state: AppState;
@@ -17,6 +18,8 @@ export default function PricesView({ state }: Props) {
   const [produktId, setProduktId] = useState(produkty[0]?.id || '');
   const [grupa, setGrupa] = useState('A');
   const [szer, setSzer] = useState('');
+  const [tkanina, setTkanina] = useState(VERTICALE.tkaniny[0].nazwa);
+  const [pas, setPas] = useState<SzerokoscPasa>('127');
   const [wys, setWys] = useState('');
 
   const produkt = produkty.find((p) => p.id === produktId) || produkty[0];
@@ -152,6 +155,70 @@ export default function PricesView({ state }: Props) {
           </div>
         </div>
       )}
+
+      {/* Verticale wyceniamy inaczej — tkanina za m² plus szyna za metr
+          bieżący — więc nie mają siatki i dostają własny kalkulator. */}
+      <div className="card">
+        <h3 className="card-title">Verticale</h3>
+        <p className="muted card-note">
+          Cena składa się z dwóch części: tkaniny liczonej za metr kwadratowy i szyny za metr
+          bieżący ({VERTICALE.szyna} zł/mb). Producent liczy minimum {VERTICALE.minTkanina} m²
+          tkaniny i {VERTICALE.minSzyna} mb szyny.
+        </p>
+        <div className="grid2">
+          <label className="field">
+            <span>Tkanina</span>
+            <select
+              className="input"
+              data-testid="vert-fabric"
+              value={tkanina}
+              onChange={(e) => setTkanina(e.target.value)}
+            >
+              {VERTICALE.tkaniny.map((t) => (
+                <option key={t.nazwa} value={t.nazwa}>
+                  {t.nazwa} — {t['89']} zł/m² (89 mm), {t['127']} zł/m² (127 mm)
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span>Szerokość pasa</span>
+            <div className="group-switch" data-testid="vert-strip">
+              {(['89', '127'] as SzerokoscPasa[]).map((s) => (
+                <button
+                  key={s}
+                  className={`btn btn-small ${s === pas ? 'btn-primary' : 'btn-light'}`}
+                  data-testid={`vert-strip-${s}`}
+                  onClick={() => setPas(s)}
+                >
+                  {s} mm
+                </button>
+              ))}
+            </div>
+          </label>
+        </div>
+        <p className="prices-answer" data-testid="vert-answer">
+          {(() => {
+            if (!pytanie) return 'Podaj wymiar wyżej, żeby wycenić verticale.';
+            const w = priceVertical(tkanina, pas, pytanie.width, pytanie.height);
+            if (!w) return 'Podaj poprawny wymiar.';
+            // przecinek dziesiętny, tak jak w kwotach — kropka wyglądałaby obco
+            const miara = (x: number) => x.toFixed(2).replace('.', ',');
+            return `${formatMoney(w.razem)} — tkanina ${formatMoney(w.tkanina)} za ${miara(w.metry)} m²` +
+              ` + szyna ${formatMoney(w.szyna)} za ${miara(w.mb)} mb`;
+          })()}
+        </p>
+        <table className="table" data-testid="vert-surcharges">
+          <tbody>
+            {VERTICALE.doplaty.map((d) => (
+              <tr key={d.nazwa}>
+                <td>{d.nazwa}</td>
+                <td className="num">{d.procent ? `+${d.procent}%` : formatMoney(d.kwota as number)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {!!tabela?.surcharges?.length && (
         <div className="card">

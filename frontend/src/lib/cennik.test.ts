@@ -204,3 +204,21 @@ describe('żaluzje aluminiowe obok drewnianych', () => {
       .toBe('zaluzje-alu-16');
   });
 });
+
+describe('VENUS obok zwykłych aluminiowych', () => {
+  it('VENUS nie trafia na tańszy cennik aluminiowy', () => {
+    // obie rodziny są aluminiowe i obie mają lamelę 25 mm
+    expect(matchTable({ name: 'Żaluzja aluminiowa VENUS 25mm', material: 'Grupa B' }, CENNIK)?.id)
+      .toBe('venus-25-B');
+  });
+
+  it('zwykła aluminiowa nadal dostaje swój cennik', () => {
+    expect(matchTable({ name: 'Żaluzja aluminiowa 25mm', material: 'Grupa A' }, CENNIK)?.id)
+      .toBe('zaluzje-alu-25-A');
+  });
+
+  it('VENUS 16 i 25 mm to osobne cenniki', () => {
+    expect(matchTable({ name: 'Żaluzja VENUS 16mm', material: 'Grupa B' }, CENNIK)?.id)
+      .toBe('venus-16-B');
+  });
+});

@@ -127,7 +127,8 @@ function zawieraFraze(tekst: string, fraza: string): boolean {
 
 /** Dobiera tabelę do pozycji.
  *
- *  Tabela odpada, gdy choć jeden człon jej nazwy produktu nie stoi w pozycji —
+ *  Tabela odpada, gdy stoi w pozycji któryś z jej członów wykluczających,
+ *  albo gdy choć jeden człon jej nazwy produktu w pozycji nie stoi —
  *  cennik rolet RT 32 nie może wycenić rolety UNI, choćby materiał się zgadzał.
  *  Tak samo odpada, gdy tabela wymienia materiały, a żaden z nich nie pada:
  *  bez materiału nie wiadomo, która grupa cenowa obowiązuje.
@@ -147,6 +148,7 @@ export function matchTable(item: Pick<OfferItem, 'name' | 'material'>, tables: P
     const kody = (t.materials || []).filter((k) => k.trim());
 
     if (czlony.length && !czlony.every((f) => zawieraFraze(caly, f))) continue;
+    if ((t.excludes || []).some((f) => zawieraFraze(caly, f))) continue;
     const pasujeKod = kody.some((k) => zawieraFraze(caly, k));
     if (kody.length && !pasujeKod) continue;
 

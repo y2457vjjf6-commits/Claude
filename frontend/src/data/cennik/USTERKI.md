@@ -115,6 +115,28 @@ powtarza się dwa razy. Brakuje kwoty 408 przy szerokości 130. Trzynaście
 kratek jest przez to droższych, niż wynika z siatki — przy 130 cm o 23 zł,
 przy 250 cm o 22 zł.
 
+## Żaluzje aluminiowe VENUS, str. 12-15
+
+| Lamela | Grupa | Wysokość | Szerokość | W cenniku | Powinno być | Skutek |
+|---|---|---|---|---|---|---|
+| 16 mm | B | 40 | 160 | 752 zł | ~314 zł | **zawyżone o 438 zł** |
+| 16 mm | B | 70 | 190 | 359 zł | ~459 zł | zaniżone o 100 zł |
+| 16 mm | B | 210 | 150 | 850 zł | ~764 zł | zawyżone o 86 zł |
+| 25 mm | A | 30 | 140 | 415 zł | ~215 zł | **zawyżone o 200 zł** |
+| 25 mm | A | 60 | 130 | 227 zł | ~238 zł | zaniżone o 11 zł |
+| 25 mm | A | 70 | 180 | 209 zł | ~309 zł | zaniżone o 100 zł |
+| 25 mm | A | 100 | 40 | 134 zł | ~154 zł | zaniżone o 20 zł |
+| 25 mm | A | 120 | 100 | 272 zł | ~256 zł | zawyżone o 16 zł |
+
+VENUS ma najwięcej usterek ze wszystkich rodzin w cenniku — osiem na 2070 cen,
+wszystkie w grupach B-16 mm i A-25 mm. Grupy B, C i D w 25 mm są czyste.
+
+Dwie są rażące: żaluzja 160 × 40 cm o lameli 16 mm kosztuje 752 zł zamiast
+około 314, a 140 × 30 cm o lameli 25 mm — 415 zł zamiast około 215. W obu
+wypadkach cena jest ponad dwa razy wyższa, niż wynika z sąsiednich kratek.
+Dwa inne przypadki to przestawiona cyfra (359 zamiast 459, 209 zamiast 309),
+a dwa kolejne to kwota powtórzona z sąsiedniej kratki.
+
 ## Co z tym robi program
 
 Na razie nic — trzyma ceny takie, jakie są w cenniku, żeby oferta zgadzała się

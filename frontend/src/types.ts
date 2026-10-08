@@ -156,6 +156,10 @@ export interface PriceTable {
   product?: string[];
   /** Kody materiałów należące do tej grupy, np. C101, C102 */
   materials?: string[];
+  /** Człony, których obecność wyklucza tę tabelę. Cennik „żaluzje aluminiowe"
+   *  nie obejmuje systemu VENUS, choć ten też jest aluminiowy i też ma lamelę
+   *  25 mm — bez tego pozycja VENUS trafiłaby na tańszy cennik. */
+  excludes?: string[];
   /** Szerokości w cm, rosnąco — nagłówki kolumn */
   widths: number[];
   /** Wysokości w cm, rosnąco — nagłówki wierszy */

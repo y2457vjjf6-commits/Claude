@@ -32,6 +32,7 @@ import zaluzjeAlu16 from '../data/cennik/zaluzje-alu16.json';
 import zaluzjeAlu25 from '../data/cennik/zaluzje-alu25.json';
 import venus16 from '../data/cennik/venus-16.json';
 import venus25 from '../data/cennik/venus-25.json';
+import zaluzjeAlu50 from '../data/cennik/zaluzje-alu50.json';
 
 /** Jak nazwać produkt, żeby trafił na swoją tabelę. Człony muszą stać
  *  w nazwie pozycji — wszystkie naraz. Trzymamy je tutaj, a nie w plikach
@@ -40,7 +41,8 @@ import venus25 from '../data/cennik/venus-25.json';
 const WYKLUCZENIA: Record<string, string[]> = {
   // VENUS to osobny system z własnym, droższym cennikiem
   'zaluzje-alu-16': ['VENUS'],
-  'zaluzje-alu-25': ['VENUS']
+  'zaluzje-alu-25': ['VENUS'],
+  'zaluzje-alu-50': ['VENUS']
 };
 
 const CZLONY: Record<string, string[]> = {
@@ -63,7 +65,8 @@ const CZLONY: Record<string, string[]> = {
   'zaluzje-alu-16': ['żaluzje', 'aluminiowe', '16'],
   'zaluzje-alu-25': ['żaluzje', 'aluminiowe', '25'],
   'venus-16': ['VENUS', '16'],
-  'venus-25': ['VENUS', '25']
+  'venus-25': ['VENUS', '25'],
+  'zaluzje-alu-50': ['żaluzje', 'aluminiowe', '50']
 };
 
 interface PlikGrup {
@@ -92,7 +95,8 @@ const PLIKI = [
   mini19, midi25, rt32, rt4045, uni, uniAntracyt, uniDrewno,
   decoluxBialy, decoluxDrewno, dnMini19, dnMidi32,
   dnUniBialy, dnUniAntracyt, dnUniDrewno,
-  zaluzjeDrewno25, zaluzjeDrewno50, zaluzjeAlu16, zaluzjeAlu25, venus16, venus25
+  zaluzjeDrewno25, zaluzjeDrewno50, zaluzjeAlu16, zaluzjeAlu25, zaluzjeAlu50,
+  venus16, venus25
 ] as unknown as PlikCen[];
 
 // Każda rodzina produktów ma własny podział materiałów na grupy cenowe:

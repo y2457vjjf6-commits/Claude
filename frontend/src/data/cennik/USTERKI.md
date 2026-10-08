@@ -137,6 +137,36 @@ wypadkach cena jest ponad dwa razy wyższa, niż wynika z sąsiednich kratek.
 Dwa inne przypadki to przestawiona cyfra (359 zamiast 459, 209 zamiast 309),
 a dwa kolejne to kwota powtórzona z sąsiedniej kratki.
 
+## Żaluzje aluminiowe 50 mm, str. 16-18
+
+| Grupa | Wysokość | Szerokość | W cenniku | Powinno być | Skutek |
+|---|---|---|---|---|---|
+| BE | 330 | 350 | 6410 zł | ~3088 zł | **zawyżone o 3322 zł** |
+| BE | 290 | 320 | 1344 zł | ~2574 zł | **zaniżone o 1230 zł** |
+| AE | 390 | 290 | 1276 zł | ~2499 zł | **zaniżone o 1223 zł** |
+| D | 120 | 320 | 686 zł | ~1088 zł | **zaniżone o 402 zł** |
+| BE | 330 | 180 | 1541 zł | ~1664 zł | zaniżone o 123 zł |
+| BE | 180 | 290 | 1568 zł | ~1690 zł | zaniżone o 122 zł |
+| B | 250 | 340 i 350 | 1490, 1533 zł | ~1612, ~1655 zł | zaniżone o 122 zł |
+| B | 260 | 340 i 350 | 1528, 1572 zł | ~1650, ~1694 zł | zaniżone o 122 zł |
+| D | 250 | 140 | 692 zł | ~782 zł | zaniżone o 90 zł |
+| D | 240 | 210 | 1017 zł | ~1072 zł | zaniżone o 55 zł |
+| B | 350 | 320 | 1935 zł | ~1890 zł | zawyżone o 45 zł |
+| C | 180 | 240 | 1183 zł | ~1216 zł | zaniżone o 33 zł |
+| A | 270 | 350 | 1651 zł | ~1630 zł | zawyżone o 21 zł |
+| AE | 370 | 50 | 529 zł | ~540 zł | zaniżone o 11 zł |
+
+Największa usterka w całym cenniku: żaluzja 350 × 330 cm w grupie BE wyceniona
+na 6410 zł, podczas gdy z wiersza i z kolumny wychodzi około 3088. To ponad
+dwukrotność — i o 3300 zł więcej, niż powinna kosztować.
+
+Trzy kolejne są odwrotne i równie poważne: kratki wyceniono na mniej więcej
+połowę należnej kwoty (1344 zamiast 2574, 1276 zamiast 2499, 686 zamiast 1088).
+Taka pozycja na ofercie oznacza stratę rzędu tysiąca złotych na sztuce.
+
+W grupie B wiersze 250 i 260 mają dwie ostatnie kolumny przepisane o dwa
+wiersze wyżej — stąd równe 122 zł różnicy w czterech kratkach.
+
 ## Co z tym robi program
 
 Na razie nic — trzyma ceny takie, jakie są w cenniku, żeby oferta zgadzała się

@@ -1540,6 +1540,14 @@ kbd {
   font-weight: 700;
 }
 
+/* Kratka poprawiona względem wydruku producenta — podkreślenie zamiast koloru,
+   żeby nie gryzło się z podświetleniem trafionej kratki. */
+.prices-grid .prices-fixed {
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: help;
+}
+
 .prices-answer {
   margin-top: 12px;
   font-size: var(--text-lg, 16px);

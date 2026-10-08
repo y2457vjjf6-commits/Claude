@@ -166,6 +166,10 @@ export interface PriceTable {
   heights: number[];
   /** prices[wiersz][kolumna] w złotych; null = producent nie podaje ceny */
   prices: (number | null)[][];
+  /** Kratki, w których cena producenta łamie regułę siatki i została poprawiona.
+   *  Klucz to „wiersz:kolumna", wartość to kwota wydrukowana w cenniku —
+   *  dzięki temu widać, co zmieniliśmy, i da się to cofnąć. */
+  corrected?: Record<string, number>;
   /** Dopłaty, które wolno doliczyć do pozycji wycenionej z tej tabeli */
   surcharges?: PriceSurcharge[];
   /** Skąd pochodzi, np. „Cennik 01.2026, s. 4” — do porównania z oryginałem */

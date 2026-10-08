@@ -34,6 +34,7 @@ import venus16 from '../data/cennik/venus-16.json';
 import venus25 from '../data/cennik/venus-25.json';
 import zaluzjeAlu50 from '../data/cennik/zaluzje-alu50.json';
 import plisy from '../data/cennik/plisy.json';
+import poprawkiCennika from '../data/cennik/poprawki.json';
 
 /** Jak nazwać produkt, żeby trafił na swoją tabelę. Człony muszą stać
  *  w nazwie pozycji — wszystkie naraz. Trzymamy je tutaj, a nie w plikach
@@ -70,6 +71,50 @@ const CZLONY: Record<string, string[]> = {
   'zaluzje-alu-50': ['żaluzje', 'aluminiowe', '50'],
   plisy: ['plisa']
 };
+
+/** Poprawka jednej kratki: co wydrukował producent i co z niej wychodzi. */
+interface Poprawka {
+  /** Identyfikator produktu z pliku cennika, nie nazwa pliku — te bywają różne */
+  produkt: string;
+  grupa: string;
+  wysokosc: number;
+  szerokosc: number;
+  cennik: number;
+  poprawiona: number;
+  powod: string;
+}
+
+const POPRAWKI = (poprawkiCennika as { poprawki: Poprawka[] }).poprawki;
+
+/** Nakłada poprawki na siatkę. Ceny w plikach zostają takie, jakie wydrukował
+ *  producent — poprawiamy je dopiero tutaj, przy wczytaniu, i zapamiętujemy
+ *  kwotę pierwotną. Dzięki temu widać, co zmieniliśmy, i da się to cofnąć,
+ *  gdy producent poprawi swój cennik. */
+function zPoprawkami(
+  plikId: string,
+  litera: string,
+  szerokosci: number[],
+  wysokosci: number[],
+  ceny: (number | null)[][]
+): { prices: (number | null)[][]; corrected?: Record<string, number> } {
+  const moje = POPRAWKI.filter((p) => p.produkt === plikId && p.grupa === litera);
+  if (!moje.length) return { prices: ceny };
+
+  const kopia = ceny.map((w) => w.slice());
+  const zmienione: Record<string, number> = {};
+  for (const p of moje) {
+    const i = wysokosci.indexOf(p.wysokosc);
+    const j = szerokosci.indexOf(p.szerokosc);
+    // Poprawka pasuje tylko wtedy, gdy kratka istnieje i nadal ma kwotę
+    // z cennika — inaczej dane się zmieniły i poprawka jest nieaktualna.
+    if (i < 0 || j < 0 || kopia[i][j] !== p.cennik) continue;
+    kopia[i][j] = p.poprawiona;
+    zmienione[`${i}:${j}`] = p.cennik;
+  }
+  return Object.keys(zmienione).length
+    ? { prices: kopia, corrected: zmienione }
+    : { prices: ceny };
+}
 
 interface PlikGrup {
   zrodlo: string;
@@ -162,6 +207,8 @@ function zbuduj(): PriceTable[] {
     const czlony = CZLONY[p.id] || [];
     const doplaty = doplatyPliku(p);
     for (const [litera, ceny] of Object.entries(p.siatki)) {
+      const szerokosci = p.szerokosciGrup?.[litera] || p.szerokosci;
+      const { prices, corrected } = zPoprawkami(p.id, litera, szerokosci, p.wysokosci, ceny);
       tabele.push({
         id: litera === '-' ? p.id : `${p.id}-${litera}`,
         name: litera === '-' ? p.nazwa : `${p.nazwa} — grupa ${litera}`,
@@ -169,9 +216,10 @@ function zbuduj(): PriceTable[] {
         product: czlony,
         excludes: WYKLUCZENIA[p.id] || [],
         materials: materialyGrupy(p.kategoria, litera),
-        widths: p.szerokosciGrup?.[litera] || p.szerokosci,
+        widths: szerokosci,
         heights: p.wysokosci,
-        prices: ceny,
+        prices,
+        ...(corrected ? { corrected } : {}),
         surcharges: doplaty,
         source: `Cennik Lechrol 2026, ${p.strona}`,
         updatedAt: '2026-01-01T00:00:00.000Z'
@@ -179,6 +227,11 @@ function zbuduj(): PriceTable[] {
     }
   }
   return tabele;
+}
+
+/** Ile kratek poprawiliśmy względem wydruku producenta. */
+export function ilePoprawek(): number {
+  return POPRAWKI.length;
 }
 
 /** Wszystkie tabele producenta wbudowane w program. */

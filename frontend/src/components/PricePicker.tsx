@@ -166,7 +166,8 @@ export default function PricePicker({ item, onPick, onClose }: Props) {
             ? 'Podaj wymiar, żeby odczytać cenę.'
             : odczyt
               ? `${formatMoney(razem as number)} — kratka ${odczyt.cellWidth} × ${odczyt.cellHeight} cm` +
-                (sumaDoplat ? ` + dopłaty ${formatMoney(sumaDoplat)}` : '')
+                (sumaDoplat ? ` + dopłaty ${formatMoney(sumaDoplat)}` : '') +
+                (odczyt.printed ? ` · poprawione, w cenniku ${formatMoney(odczyt.printed)}` : '')
               : 'Ten wymiar jest poza tabelą producenta.'}
         </p>
 

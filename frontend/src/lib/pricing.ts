@@ -174,6 +174,8 @@ export interface OdczytCeny {
   /** Szerokość i wysokość komórki, z której wzięto cenę (po zaokrągleniu w górę) */
   cellWidth: number;
   cellHeight: number;
+  /** Kwota wydrukowana w cenniku, gdy kratka była błędna i ją poprawiliśmy */
+  printed?: number;
 }
 
 /** Cena z tabeli dla podanego wymiaru — z zaokrągleniem w górę do siatki. */
@@ -183,7 +185,13 @@ export function lookupPrice(table: PriceTable, wymiar: Wymiar): OdczytCeny | nul
   if (kol < 0 || wier < 0) return null;
   const cena = table.prices?.[wier]?.[kol];
   if (cena === null || cena === undefined || !isFinite(cena)) return null;
-  return { cost: cena, cellWidth: table.widths[kol], cellHeight: table.heights[wier] };
+  const wydrukowana = table.corrected?.[`${wier}:${kol}`];
+  return {
+    cost: cena,
+    cellWidth: table.widths[kol],
+    cellHeight: table.heights[wier],
+    ...(typeof wydrukowana === 'number' ? { printed: wydrukowana } : {})
+  };
 }
 
 /* ----------------------------- Dopłaty ----------------------------- */
@@ -230,6 +238,8 @@ export type StatusWyceny =
 export interface WycenaPozycji {
   status: StatusWyceny;
   cost?: number;
+  /** Kwota z wydruku producenta, gdy kratka była błędna i ją poprawiliśmy */
+  printed?: number;
   wymiar?: Wymiar;
   table?: PriceTable;
   cellWidth?: number;
@@ -249,14 +259,25 @@ export function priceItem(item: Pick<OfferItem, 'name' | 'material'>, tables: Pr
       wymiar.width > Math.max(...(table.widths || [0])) || wymiar.height > Math.max(...(table.heights || [0]));
     return { status: zaDuzy ? 'poza-tabela' : 'brak-ceny', wymiar, table };
   }
-  return { status: 'ok', cost: odczyt.cost, wymiar, table, cellWidth: odczyt.cellWidth, cellHeight: odczyt.cellHeight };
+  return {
+    status: 'ok',
+    cost: odczyt.cost,
+    wymiar,
+    table,
+    cellWidth: odczyt.cellWidth,
+    cellHeight: odczyt.cellHeight,
+    ...(odczyt.printed ? { printed: odczyt.printed } : {})
+  };
 }
 
 /** Krótkie wyjaśnienie dla człowieka — skąd ta kwota albo czemu jej nie ma. */
 export function opiszWycene(w: WycenaPozycji): string {
   switch (w.status) {
     case 'ok':
-      return `${w.table?.name || 'Cennik'} · ${formatCm(w.cellWidth)} × ${formatCm(w.cellHeight)} cm`;
+      return (
+        `${w.table?.name || 'Cennik'} · ${formatCm(w.cellWidth)} × ${formatCm(w.cellHeight)} cm` +
+        (w.printed ? ` · poprawione (w cenniku ${w.printed} zł)` : '')
+      );
     case 'brak-cennika':
       return 'Cennik jest pusty — wczytaj tabele w zakładce Cennik.';
     case 'brak-tabeli':

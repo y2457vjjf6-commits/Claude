@@ -195,6 +195,27 @@ wiernie, bez zastrzeżeń.
 
 ## Co z tym robi program
 
-Na razie nic — trzyma ceny takie, jakie są w cenniku, żeby oferta zgadzała się
-z wydanym dokumentem. Decyzja, czy podstawiać kwoty poprawione, należy do
-wystawiającego oferty.
+Program **podstawia kwoty poprawione**, a nie te z wydruku producenta.
+
+Ceny w plikach z cennikiem zostają takie, jakie wydrukował Lechrol — poprawki
+leżą osobno, w `poprawki.json`, i nakładają się na siatki dopiero przy
+wczytaniu. Dzięki temu widać, co zmieniliśmy, da się to cofnąć jednym plikiem,
+a gdy producent wyda poprawiony cennik, wystarczy przepisać dane na nowo i
+usunąć te poprawki, które przestały być potrzebne.
+
+Poprawiona kwota liczy się z sąsiednich kratek tej samej siatki — osobno wzdłuż
+wiersza i wzdłuż kolumny, a potem uśredniona. Sąsiadki same błędne są pomijane,
+więc pasmo kilku kratek obok siebie poprawia się jako całość, a nie jedna po
+drugiej. Tam, gdzie obie metody dawały wynik, zgadzały się co do złotówki.
+
+W programie widać to wprost: w zakładce Cennik poprawione kratki są podkreślone
+kropkowaną linią i po najechaniu pokazują kwotę z wydruku, a odczyt ceny —
+w zakładce, w oknie wyboru i przy pozycji oferty — dopisuje „poprawione,
+w cenniku X zł".
+
+Po nałożeniu poprawek w całym cenniku nie ma już ani jednej kratki, w której
+cena malałaby mimo większego produktu. Pilnuje tego test.
+
+Czego poprawki **nie** zmieniają: dostawca nadal zafakturuje kwoty ze swojego
+wydruku. Jeśli różnica jest duża — a przy żaluzji 350 × 330 cm w grupie BE to
+3322 zł — warto ją z nim wyjaśnić przed złożeniem zamówienia.

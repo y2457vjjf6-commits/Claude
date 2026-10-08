@@ -1,0 +1,798 @@
+{
+ "zrodlo": "Cennik Lechrol 2026",
+ "zasada": "Kwota wyliczona z sąsiednich kratek tej samej siatki — osobno wzdłuż wiersza i wzdłuż kolumny, a potem uśredniona. Sąsiadki same błędne są pomijane, więc pasmo kilku kratek obok siebie poprawia się jako całość. Ceny w plikach z cennikiem zostają takie, jakie wydrukował producent; te poprawki nakładają się na nie przy wczytaniu.",
+ "poprawki": [
+  {
+   "produkt": "decolux-drewno",
+   "grupa": "D",
+   "wysokosc": 60,
+   "szerokosc": 80,
+   "cennik": 422,
+   "poprawiona": 390,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "dn-uni-antracyt",
+   "grupa": "2",
+   "wysokosc": 220,
+   "szerokosc": 160,
+   "cennik": 835,
+   "poprawiona": 826,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "dn-uni-drewno",
+   "grupa": "1",
+   "wysokosc": 220,
+   "szerokosc": 170,
+   "cennik": 735,
+   "poprawiona": 770,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "dn-uni-drewno",
+   "grupa": "1",
+   "wysokosc": 220,
+   "szerokosc": 180,
+   "cennik": 769,
+   "poprawiona": 804,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "dn-uni-drewno",
+   "grupa": "2",
+   "wysokosc": 190,
+   "szerokosc": 70,
+   "cennik": 455,
+   "poprawiona": 445,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "1",
+   "wysokosc": 70,
+   "szerokosc": 160,
+   "cennik": 286,
+   "poprawiona": 289,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 130,
+   "szerokosc": 210,
+   "cennik": 333,
+   "poprawiona": 585,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 170,
+   "szerokosc": 50,
+   "cennik": 407,
+   "poprawiona": 276,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 190,
+   "szerokosc": 40,
+   "cennik": 280,
+   "poprawiona": 288,
+   "powod": "wiersz jest co do grosza kopią wiersza 180"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 190,
+   "szerokosc": 50,
+   "cennik": 299,
+   "poprawiona": 305,
+   "powod": "wiersz jest co do grosza kopią wiersza 180"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 190,
+   "szerokosc": 60,
+   "cennik": 311,
+   "poprawiona": 316,
+   "powod": "wiersz jest co do grosza kopią wiersza 180"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 190,
+   "szerokosc": 70,
+   "cennik": 347,
+   "poprawiona": 351,
+   "powod": "wiersz jest co do grosza kopią wiersza 180"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 190,
+   "szerokosc": 80,
+   "cennik": 361,
+   "poprawiona": 362,
+   "powod": "wiersz jest co do grosza kopią wiersza 180"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 190,
+   "szerokosc": 90,
+   "cennik": 373,
+   "poprawiona": 378,
+   "powod": "wiersz jest co do grosza kopią wiersza 180"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 190,
+   "szerokosc": 100,
+   "cennik": 395,
+   "poprawiona": 402,
+   "powod": "wiersz jest co do grosza kopią wiersza 180"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 190,
+   "szerokosc": 110,
+   "cennik": 412,
+   "poprawiona": 416,
+   "powod": "wiersz jest co do grosza kopią wiersza 180"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 190,
+   "szerokosc": 120,
+   "cennik": 443,
+   "poprawiona": 450,
+   "powod": "wiersz jest co do grosza kopią wiersza 180"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 190,
+   "szerokosc": 130,
+   "cennik": 458,
+   "poprawiona": 462,
+   "powod": "wiersz jest co do grosza kopią wiersza 180"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 190,
+   "szerokosc": 140,
+   "cennik": 465,
+   "poprawiona": 470,
+   "powod": "wiersz jest co do grosza kopią wiersza 180"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 190,
+   "szerokosc": 150,
+   "cennik": 475,
+   "poprawiona": 483,
+   "powod": "wiersz jest co do grosza kopią wiersza 180"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 190,
+   "szerokosc": 160,
+   "cennik": 506,
+   "poprawiona": 512,
+   "powod": "wiersz jest co do grosza kopią wiersza 180"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 190,
+   "szerokosc": 170,
+   "cennik": 524,
+   "poprawiona": 532,
+   "powod": "wiersz jest co do grosza kopią wiersza 180"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 190,
+   "szerokosc": 180,
+   "cennik": 571,
+   "poprawiona": 578,
+   "powod": "wiersz jest co do grosza kopią wiersza 180"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 190,
+   "szerokosc": 190,
+   "cennik": 606,
+   "poprawiona": 614,
+   "powod": "wiersz jest co do grosza kopią wiersza 180"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 190,
+   "szerokosc": 200,
+   "cennik": 651,
+   "poprawiona": 660,
+   "powod": "wiersz jest co do grosza kopią wiersza 180"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 190,
+   "szerokosc": 210,
+   "cennik": 719,
+   "poprawiona": 723,
+   "powod": "wiersz jest co do grosza kopią wiersza 180"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "2",
+   "wysokosc": 190,
+   "szerokosc": 220,
+   "cennik": 723,
+   "poprawiona": 730,
+   "powod": "wiersz jest co do grosza kopią wiersza 180"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "3",
+   "wysokosc": 120,
+   "szerokosc": 100,
+   "cennik": 463,
+   "poprawiona": 336,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "3",
+   "wysokosc": 170,
+   "szerokosc": 90,
+   "cennik": 255,
+   "poprawiona": 384,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "plisy",
+   "grupa": "5",
+   "wysokosc": 110,
+   "szerokosc": 60,
+   "cennik": 273,
+   "poprawiona": 288,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "rolety-kasetowe-uni",
+   "grupa": "A",
+   "wysokosc": 220,
+   "szerokosc": 110,
+   "cennik": 267,
+   "poprawiona": 285,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "rolety-kasetowe-uni-antracyt",
+   "grupa": "C",
+   "wysokosc": 170,
+   "szerokosc": 80,
+   "cennik": 408,
+   "poprawiona": 318,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "rolety-midi-25",
+   "grupa": "E",
+   "wysokosc": 160,
+   "szerokosc": 90,
+   "cennik": 302,
+   "poprawiona": 422,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "rolety-mini-19",
+   "grupa": "B",
+   "wysokosc": 250,
+   "szerokosc": 120,
+   "cennik": 278,
+   "poprawiona": 388,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "rolety-mini-19",
+   "grupa": "B",
+   "wysokosc": 250,
+   "szerokosc": 130,
+   "cennik": 295,
+   "poprawiona": 416,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "rolety-mini-19",
+   "grupa": "C",
+   "wysokosc": 240,
+   "szerokosc": 120,
+   "cennik": 356,
+   "poprawiona": 476,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "rolety-mini-19",
+   "grupa": "E",
+   "wysokosc": 240,
+   "szerokosc": 40,
+   "cennik": 294,
+   "poprawiona": 305,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "rolety-mini-19",
+   "grupa": "E",
+   "wysokosc": 250,
+   "szerokosc": 30,
+   "cennik": 300,
+   "poprawiona": 253,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "rolety-rt-32",
+   "grupa": "B",
+   "wysokosc": 180,
+   "szerokosc": 250,
+   "cennik": 643,
+   "poprawiona": 763,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "rolety-rt-32",
+   "grupa": "B",
+   "wysokosc": 270,
+   "szerokosc": 180,
+   "cennik": 634,
+   "poprawiona": 754,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "rolety-rt-40-45",
+   "grupa": "B",
+   "wysokosc": 380,
+   "szerokosc": 180,
+   "cennik": 1046,
+   "poprawiona": 992,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "rolety-rt-40-45",
+   "grupa": "D",
+   "wysokosc": 170,
+   "szerokosc": 200,
+   "cennik": 894,
+   "poprawiona": 905,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "rolety-rt-40-45",
+   "grupa": "E",
+   "wysokosc": 280,
+   "szerokosc": 50,
+   "cennik": 566,
+   "poprawiona": 512,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "venus-16",
+   "grupa": "B",
+   "wysokosc": 40,
+   "szerokosc": 160,
+   "cennik": 752,
+   "poprawiona": 314,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "venus-16",
+   "grupa": "B",
+   "wysokosc": 70,
+   "szerokosc": 190,
+   "cennik": 359,
+   "poprawiona": 458,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "venus-16",
+   "grupa": "B",
+   "wysokosc": 210,
+   "szerokosc": 150,
+   "cennik": 850,
+   "poprawiona": 764,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "venus-25",
+   "grupa": "A",
+   "wysokosc": 30,
+   "szerokosc": 140,
+   "cennik": 415,
+   "poprawiona": 214,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "venus-25",
+   "grupa": "A",
+   "wysokosc": 60,
+   "szerokosc": 130,
+   "cennik": 227,
+   "poprawiona": 238,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "venus-25",
+   "grupa": "A",
+   "wysokosc": 70,
+   "szerokosc": 180,
+   "cennik": 209,
+   "poprawiona": 309,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "venus-25",
+   "grupa": "A",
+   "wysokosc": 100,
+   "szerokosc": 40,
+   "cennik": 134,
+   "poprawiona": 154,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "venus-25",
+   "grupa": "A",
+   "wysokosc": 120,
+   "szerokosc": 100,
+   "cennik": 272,
+   "poprawiona": 256,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "zaluzje-alu-25",
+   "grupa": "C",
+   "wysokosc": 110,
+   "szerokosc": 130,
+   "cennik": 431,
+   "poprawiona": 408,
+   "powod": "wiersz przesunięty o kolumnę: brakuje kwoty przy 130 cm, a 708 zł stoi dwa razy"
+  },
+  {
+   "produkt": "zaluzje-alu-25",
+   "grupa": "C",
+   "wysokosc": 110,
+   "szerokosc": 140,
+   "cennik": 454,
+   "poprawiona": 431,
+   "powod": "wiersz przesunięty o kolumnę: brakuje kwoty przy 130 cm, a 708 zł stoi dwa razy"
+  },
+  {
+   "produkt": "zaluzje-alu-25",
+   "grupa": "C",
+   "wysokosc": 110,
+   "szerokosc": 150,
+   "cennik": 477,
+   "poprawiona": 454,
+   "powod": "wiersz przesunięty o kolumnę: brakuje kwoty przy 130 cm, a 708 zł stoi dwa razy"
+  },
+  {
+   "produkt": "zaluzje-alu-25",
+   "grupa": "C",
+   "wysokosc": 110,
+   "szerokosc": 160,
+   "cennik": 501,
+   "poprawiona": 477,
+   "powod": "wiersz przesunięty o kolumnę: brakuje kwoty przy 130 cm, a 708 zł stoi dwa razy"
+  },
+  {
+   "produkt": "zaluzje-alu-25",
+   "grupa": "C",
+   "wysokosc": 110,
+   "szerokosc": 170,
+   "cennik": 523,
+   "poprawiona": 500,
+   "powod": "wiersz przesunięty o kolumnę: brakuje kwoty przy 130 cm, a 708 zł stoi dwa razy"
+  },
+  {
+   "produkt": "zaluzje-alu-25",
+   "grupa": "C",
+   "wysokosc": 110,
+   "szerokosc": 180,
+   "cennik": 546,
+   "poprawiona": 523,
+   "powod": "wiersz przesunięty o kolumnę: brakuje kwoty przy 130 cm, a 708 zł stoi dwa razy"
+  },
+  {
+   "produkt": "zaluzje-alu-25",
+   "grupa": "C",
+   "wysokosc": 110,
+   "szerokosc": 190,
+   "cennik": 571,
+   "poprawiona": 546,
+   "powod": "wiersz przesunięty o kolumnę: brakuje kwoty przy 130 cm, a 708 zł stoi dwa razy"
+  },
+  {
+   "produkt": "zaluzje-alu-25",
+   "grupa": "C",
+   "wysokosc": 110,
+   "szerokosc": 200,
+   "cennik": 593,
+   "poprawiona": 570,
+   "powod": "wiersz przesunięty o kolumnę: brakuje kwoty przy 130 cm, a 708 zł stoi dwa razy"
+  },
+  {
+   "produkt": "zaluzje-alu-25",
+   "grupa": "C",
+   "wysokosc": 110,
+   "szerokosc": 210,
+   "cennik": 616,
+   "poprawiona": 593,
+   "powod": "wiersz przesunięty o kolumnę: brakuje kwoty przy 130 cm, a 708 zł stoi dwa razy"
+  },
+  {
+   "produkt": "zaluzje-alu-25",
+   "grupa": "C",
+   "wysokosc": 110,
+   "szerokosc": 220,
+   "cennik": 640,
+   "poprawiona": 616,
+   "powod": "wiersz przesunięty o kolumnę: brakuje kwoty przy 130 cm, a 708 zł stoi dwa razy"
+  },
+  {
+   "produkt": "zaluzje-alu-25",
+   "grupa": "C",
+   "wysokosc": 110,
+   "szerokosc": 230,
+   "cennik": 663,
+   "poprawiona": 639,
+   "powod": "wiersz przesunięty o kolumnę: brakuje kwoty przy 130 cm, a 708 zł stoi dwa razy"
+  },
+  {
+   "produkt": "zaluzje-alu-25",
+   "grupa": "C",
+   "wysokosc": 110,
+   "szerokosc": 240,
+   "cennik": 686,
+   "poprawiona": 662,
+   "powod": "wiersz przesunięty o kolumnę: brakuje kwoty przy 130 cm, a 708 zł stoi dwa razy"
+  },
+  {
+   "produkt": "zaluzje-alu-25",
+   "grupa": "C",
+   "wysokosc": 110,
+   "szerokosc": 250,
+   "cennik": 708,
+   "poprawiona": 686,
+   "powod": "wiersz przesunięty o kolumnę: brakuje kwoty przy 130 cm, a 708 zł stoi dwa razy"
+  },
+  {
+   "produkt": "zaluzje-alu-25",
+   "grupa": "D",
+   "wysokosc": 30,
+   "szerokosc": 250,
+   "cennik": 315,
+   "poprawiona": 326,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "zaluzje-alu-50",
+   "grupa": "A",
+   "wysokosc": 270,
+   "szerokosc": 350,
+   "cennik": 1651,
+   "poprawiona": 1629,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "zaluzje-alu-50",
+   "grupa": "AE",
+   "wysokosc": 370,
+   "szerokosc": 50,
+   "cennik": 529,
+   "poprawiona": 539,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "zaluzje-alu-50",
+   "grupa": "AE",
+   "wysokosc": 390,
+   "szerokosc": 290,
+   "cennik": 1276,
+   "poprawiona": 2499,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "zaluzje-alu-50",
+   "grupa": "B",
+   "wysokosc": 250,
+   "szerokosc": 340,
+   "cennik": 1490,
+   "poprawiona": 1612,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "zaluzje-alu-50",
+   "grupa": "B",
+   "wysokosc": 250,
+   "szerokosc": 350,
+   "cennik": 1533,
+   "poprawiona": 1655,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "zaluzje-alu-50",
+   "grupa": "B",
+   "wysokosc": 260,
+   "szerokosc": 340,
+   "cennik": 1528,
+   "poprawiona": 1650,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "zaluzje-alu-50",
+   "grupa": "B",
+   "wysokosc": 260,
+   "szerokosc": 350,
+   "cennik": 1572,
+   "poprawiona": 1694,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "zaluzje-alu-50",
+   "grupa": "B",
+   "wysokosc": 350,
+   "szerokosc": 320,
+   "cennik": 1935,
+   "poprawiona": 1890,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "zaluzje-alu-50",
+   "grupa": "BE",
+   "wysokosc": 180,
+   "szerokosc": 290,
+   "cennik": 1568,
+   "poprawiona": 1690,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "zaluzje-alu-50",
+   "grupa": "BE",
+   "wysokosc": 290,
+   "szerokosc": 320,
+   "cennik": 1344,
+   "poprawiona": 2574,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "zaluzje-alu-50",
+   "grupa": "BE",
+   "wysokosc": 330,
+   "szerokosc": 180,
+   "cennik": 1541,
+   "poprawiona": 1664,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "zaluzje-alu-50",
+   "grupa": "BE",
+   "wysokosc": 330,
+   "szerokosc": 350,
+   "cennik": 6410,
+   "poprawiona": 3089,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "zaluzje-alu-50",
+   "grupa": "C",
+   "wysokosc": 180,
+   "szerokosc": 240,
+   "cennik": 1183,
+   "poprawiona": 1228,
+   "powod": "wiersz przesunięty o kolumnę: 1183 zł stoi dwa razy, a przy 280 cm skok jest podwójny"
+  },
+  {
+   "produkt": "zaluzje-alu-50",
+   "grupa": "C",
+   "wysokosc": 180,
+   "szerokosc": 250,
+   "cennik": 1228,
+   "poprawiona": 1273,
+   "powod": "wiersz przesunięty o kolumnę: 1183 zł stoi dwa razy, a przy 280 cm skok jest podwójny"
+  },
+  {
+   "produkt": "zaluzje-alu-50",
+   "grupa": "C",
+   "wysokosc": 180,
+   "szerokosc": 260,
+   "cennik": 1273,
+   "poprawiona": 1317,
+   "powod": "wiersz przesunięty o kolumnę: 1183 zł stoi dwa razy, a przy 280 cm skok jest podwójny"
+  },
+  {
+   "produkt": "zaluzje-alu-50",
+   "grupa": "C",
+   "wysokosc": 180,
+   "szerokosc": 270,
+   "cennik": 1317,
+   "poprawiona": 1362,
+   "powod": "wiersz przesunięty o kolumnę: 1183 zł stoi dwa razy, a przy 280 cm skok jest podwójny"
+  },
+  {
+   "produkt": "zaluzje-alu-50",
+   "grupa": "D",
+   "wysokosc": 120,
+   "szerokosc": 320,
+   "cennik": 686,
+   "poprawiona": 1088,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "zaluzje-alu-50",
+   "grupa": "D",
+   "wysokosc": 240,
+   "szerokosc": 210,
+   "cennik": 1017,
+   "poprawiona": 1072,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "zaluzje-alu-50",
+   "grupa": "D",
+   "wysokosc": 250,
+   "szerokosc": 140,
+   "cennik": 692,
+   "poprawiona": 782,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "zaluzje-drewno-25",
+   "grupa": "-",
+   "wysokosc": 200,
+   "szerokosc": 190,
+   "cennik": 2032,
+   "poprawiona": 1663,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "zaluzje-drewno-50",
+   "grupa": "-",
+   "wysokosc": 120,
+   "szerokosc": 50,
+   "cennik": 295,
+   "poprawiona": 567,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "zaluzje-drewno-50",
+   "grupa": "-",
+   "wysokosc": 170,
+   "szerokosc": 140,
+   "cennik": 1263,
+   "poprawiona": 1319,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  },
+  {
+   "produkt": "zaluzje-drewno-50",
+   "grupa": "-",
+   "wysokosc": 170,
+   "szerokosc": 210,
+   "cennik": 1807,
+   "poprawiona": 1840,
+   "powod": "odstaje od sąsiednich kratek w wierszu i w kolumnie"
+  }
+ ]
+}

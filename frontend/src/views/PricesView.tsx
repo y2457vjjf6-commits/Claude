@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Table2 } from 'lucide-react';
 import { AppState } from '../types';
-import { CENNIK, cennikProdukty } from '../lib/cennik';
+import { CENNIK, cennikProdukty, ilePoprawek } from '../lib/cennik';
 import { lookupPrice, surchargeAmount, toCm } from '../lib/pricing';
 import { formatMoney } from '../lib/offers';
 import { priceVertical, SzerokoscPasa, VERTICALE } from '../lib/verticale';
@@ -40,7 +40,8 @@ export default function PricesView({ state }: Props) {
         <div>
           <h1 className="view-title">Cennik</h1>
           <p className="view-meta" data-testid="prices-meta">
-            {CENNIK.length} tabel · ceny sprzedaży brutto wprost z cennika producenta
+            {CENNIK.length} tabel · ceny sprzedaży brutto. {ilePoprawek()} kratek poprawionych
+            względem wydruku producenta — oznaczone w siatce, najedź, żeby zobaczyć pierwotną kwotę.
           </p>
         </div>
       </header>
@@ -113,7 +114,8 @@ export default function PricesView({ state }: Props) {
           {!pytanie
             ? 'Podaj wymiar, żeby odczytać cenę.'
             : odczyt
-              ? `${formatMoney(odczyt.cost)} — kratka ${odczyt.cellWidth} × ${odczyt.cellHeight} cm`
+              ? `${formatMoney(odczyt.cost)} — kratka ${odczyt.cellWidth} × ${odczyt.cellHeight} cm` +
+                (odczyt.printed ? ` · poprawione, w cenniku ${formatMoney(odczyt.printed)}` : '')
               : 'Ten wymiar jest poza tabelą producenta.'}
         </p>
       </div>
@@ -142,8 +144,13 @@ export default function PricesView({ state }: Props) {
                     {tabela.widths.map((w, ki) => {
                       const cena = tabela.prices[wi]?.[ki];
                       const trafiona = odczyt?.cellWidth === w && odczyt?.cellHeight === h;
+                      const wCenniku = tabela.corrected?.[`${wi}:${ki}`];
                       return (
-                        <td key={w} className={trafiona ? 'prices-hit' : ''}>
+                        <td
+                          key={w}
+                          className={`${trafiona ? 'prices-hit' : ''}${wCenniku ? ' prices-fixed' : ''}`}
+                          title={wCenniku ? `W cenniku producenta: ${wCenniku} zł — kwota błędna` : undefined}
+                        >
                           {cena === null || cena === undefined ? '—' : cena}
                         </td>
                       );

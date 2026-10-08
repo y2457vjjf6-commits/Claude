@@ -76,8 +76,18 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          # Licznik biegów w GitHub Actions rośnie przez całe życie workflow i nie
+          # da się go wyzerować. Przy zmianie wersji odejmujemy więc numer
+          # ostatniego biegu poprzedniej wersji, żeby numeracja zaczęła się od 1.
+          # Ostatni bieg wersji 1.1.0 miał numer 44.
+          BIEG_ZEROWY: 44
         run: |
-          TAG="v$(node -p "require('./package.json').version")-build${GITHUB_RUN_NUMBER}"
+          WERSJA="$(node -p "require('./package.json').version")"
+          NUMER=$(( GITHUB_RUN_NUMBER - BIEG_ZEROWY ))
+          # zabezpieczenie: gdyby ktoś podbił wersję bez poprawienia przesunięcia,
+          # wolimy surowy numer biegu niż zero albo liczbę ujemną w nazwie wydania
+          if [ "$NUMER" -lt 1 ]; then NUMER="$GITHUB_RUN_NUMBER"; fi
+          TAG="v${WERSJA}-build${NUMER}"
           gh release create "$TAG" dist/*.exe \
             --title "Lechrol WZ ${TAG}" \
             --notes "Przenośny program dla Windows — pobierz plik .exe poniżej, skopiuj na komputer i uruchom (bez instalacji)." \

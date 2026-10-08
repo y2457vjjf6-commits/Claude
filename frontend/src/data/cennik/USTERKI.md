@@ -57,6 +57,16 @@ Ten w antracycie jest najgroźniejszy z dotychczasowych: roleta 80 × 170 cm
 kosztuje więcej niż ta sama roleta o 10 cm szersza (346 zł) i o 10 cm wyższa
 (330 zł). Klient, który porówna trzy wymiary, zobaczy to od razu.
 
+## Rolety dachowe DECOLUX — jasna sosna, ciemna sosna, str. 41
+
+| Grupa | Wysokość | Szerokość | W cenniku | Powinno być | Skutek |
+|---|---|---|---|---|---|
+| D | 60 | 80 | 422 zł | ~391 zł | **zawyżone o 31 zł** |
+
+Roleta 80 × 60 cm kosztuje więcej niż ta sama o 10 cm szersza (410 zł) i więcej
+niż o 10 cm wyższa (416 zł). Wiersz rośnie co 21 zł, kolumna co 26 zł — obie
+metody dają 390-391 zł.
+
 ## Co z tym robi program
 
 Na razie nic — trzyma ceny takie, jakie są w cenniku, żeby oferta zgadzała się

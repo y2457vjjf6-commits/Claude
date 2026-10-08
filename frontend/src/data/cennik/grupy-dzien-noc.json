@@ -1,0 +1,82 @@
+{
+ "zrodlo": "Cennik Lechrol 2026, str. 43 — GRUPY MATERIAŁÓW DO ROLET DZIEŃ NOC",
+ "dotyczy": "Rolety dzień-noc",
+ "materialy": [
+  {
+   "nazwa": "DN 1",
+   "grupa": "1"
+  },
+  {
+   "nazwa": "DN 100",
+   "grupa": "1"
+  },
+  {
+   "nazwa": "DN 200",
+   "grupa": "1"
+  },
+  {
+   "nazwa": "DN 300",
+   "grupa": "2"
+  },
+  {
+   "nazwa": "DN 400",
+   "grupa": "2"
+  },
+  {
+   "nazwa": "DN 500",
+   "grupa": "2"
+  },
+  {
+   "nazwa": "DN 600",
+   "grupa": "3"
+  },
+  {
+   "nazwa": "DN 700",
+   "grupa": "3"
+  },
+  {
+   "nazwa": "DN 800",
+   "grupa": "2"
+  },
+  {
+   "nazwa": "DN 900",
+   "grupa": "2"
+  },
+  {
+   "nazwa": "DN 1000",
+   "grupa": "2"
+  },
+  {
+   "nazwa": "DNMP 600",
+   "grupa": "2"
+  },
+  {
+   "nazwa": "Jazz",
+   "grupa": "1"
+  },
+  {
+   "nazwa": "Poem",
+   "grupa": "2"
+  },
+  {
+   "nazwa": "Classic",
+   "grupa": "2"
+  },
+  {
+   "nazwa": "Antique",
+   "grupa": "2"
+  },
+  {
+   "nazwa": "Baroque",
+   "grupa": "2"
+  },
+  {
+   "nazwa": "Chic",
+   "grupa": "2"
+  },
+  {
+   "nazwa": "Vintage",
+   "grupa": "2"
+  }
+ ]
+}

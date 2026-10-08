@@ -17,6 +17,12 @@ import rt32 from '../data/cennik/rolety-rt-32.json';
 import rt4045 from '../data/cennik/rolety-rt-40-45.json';
 import uni from '../data/cennik/rolety-kasetowe-uni.json';
 import uniAntracyt from '../data/cennik/rolety-kasetowe-uni-antracyt.json';
+import uniDrewno from '../data/cennik/rolety-kasetowe-uni-drewno.json';
+import decoluxBialy from '../data/cennik/decolux-bialy.json';
+import decoluxDrewno from '../data/cennik/decolux-drewno.json';
+import grupyDzienNoc from '../data/cennik/grupy-dzien-noc.json';
+import dnMini19 from '../data/cennik/dn-mini-19.json';
+import dnMidi32 from '../data/cennik/dn-midi-32.json';
 
 /** Jak nazwać produkt, żeby trafił na swoją tabelę. Człony muszą stać
  *  w nazwie pozycji — wszystkie naraz. Trzymamy je tutaj, a nie w plikach
@@ -27,7 +33,12 @@ const CZLONY: Record<string, string[]> = {
   'rolety-rt-32': ['RT 32'],
   'rolety-rt-40-45': ['RT 40/45'],
   'rolety-kasetowe-uni': ['UNI'],
-  'rolety-kasetowe-uni-antracyt': ['UNI', 'antracyt']
+  'rolety-kasetowe-uni-antracyt': ['UNI', 'antracyt'],
+  'rolety-kasetowe-uni-drewno': ['UNI', 'drewnopodobne'],
+  'decolux-bialy': ['DECOLUX'],
+  'decolux-drewno': ['DECOLUX', 'sosna'],
+  'dn-mini-19': ['dzień-noc', 'Mini 19'],
+  'dn-midi-32': ['dzień-noc', 'Midi 32']
 };
 
 interface PlikGrup {
@@ -52,15 +63,20 @@ interface PlikCen {
   prowadnice?: { opis: string; wysokosci: number[]; typy: Record<string, number[]> };
 }
 
-const PLIKI = [mini19, midi25, rt32, rt4045, uni, uniAntracyt] as unknown as PlikCen[];
-const GRUPY = grupyRolety as PlikGrup;
+const PLIKI = [
+  mini19, midi25, rt32, rt4045, uni, uniAntracyt, uniDrewno,
+  decoluxBialy, decoluxDrewno, dnMini19, dnMidi32
+] as unknown as PlikCen[];
+
+// Każda rodzina produktów ma własny podział materiałów na grupy cenowe:
+// tkanina „Madagaskar" jest grupą C w roletach, a „DN 600" grupą 3 w dzień-nocach.
+const GRUPY: PlikGrup[] = [grupyRolety as PlikGrup, grupyDzienNoc as PlikGrup];
 
 /** Materiały należące do grupy, plus sama nazwa grupy — bo na ofertach pisze
  *  się i „Madagaskar”, i wprost „Grupa C”. */
 function materialyGrupy(kategoria: string, litera: string): string[] {
-  const nazwy = GRUPY.dotyczy === kategoria
-    ? GRUPY.materialy.filter((m) => m.grupa === litera).map((m) => m.nazwa)
-    : [];
+  const tabela = GRUPY.find((g) => g.dotyczy === kategoria);
+  const nazwy = (tabela?.materialy || []).filter((m) => m.grupa === litera).map((m) => m.nazwa);
   return [...nazwy, `Grupa ${litera}`];
 }
 

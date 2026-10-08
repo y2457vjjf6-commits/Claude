@@ -1,10 +1,15 @@
 import { CENNIK, cennikProdukty, priceTablesFor } from './cennik';
 import { matchTable, priceItem, surchargeAmount } from './pricing';
 
-test('cennik rozwija się na pięć grup od każdego produktu', () => {
-  expect(cennikProdukty()).toHaveLength(6);
-  expect(CENNIK).toHaveLength(30);
+test('każdy produkt rozwija się na tyle tabel, ile ma grup materiału', () => {
+  const produkty = cennikProdukty();
+  expect(produkty.length).toBeGreaterThan(0);
+  // liczymy z danych, a nie z palca — dołożenie produktu nie ma psuć testu
+  const oczekiwane = produkty.reduce((s, p) => s + p.grupy.length, 0);
+  expect(CENNIK).toHaveLength(oczekiwane);
   expect(CENNIK.every((t) => t.widths.length && t.heights.length)).toBe(true);
+  // każda tabela musi dać się odróżnić od pozostałych
+  expect(new Set(CENNIK.map((t) => t.id)).size).toBe(CENNIK.length);
 });
 
 test('siatka ma tyle wierszy i kolumn, ile nagłówków', () => {
@@ -95,4 +100,44 @@ test('własne tabele mają pierwszeństwo przed wbudowanymi', () => {
   const wlasna = { ...CENNIK[0], id: 'moja', name: 'Moja tabela' };
   expect(priceTablesFor([wlasna])[0].id).toBe('moja');
   expect(priceTablesFor(undefined)).toHaveLength(CENNIK.length);
+});
+
+describe('nowe rodziny produktów', () => {
+  it('dzień-noc ma własny podział materiałów, inny niż rolety', () => {
+    // „DN 600" to grupa 3 w dzień-nocach; w roletach taka tkanina nie istnieje
+    const dn = matchTable({ name: 'Roleta dzień-noc Mini 19', material: 'DN 600' }, CENNIK);
+    expect(dn?.id).toBe('dn-mini-19-3');
+    const rolety = matchTable({ name: 'Roleta wolnowisząca Mini 19', material: 'DN 600' }, CENNIK);
+    expect(rolety).toBeNull();
+  });
+
+  it('dzień-noc Midi nie dostaje ceny Mini', () => {
+    const mini = matchTable({ name: 'Roleta dzień-noc Mini 19', material: 'Jazz' }, CENNIK);
+    const midi = matchTable({ name: 'Roleta dzień-noc Midi 32', material: 'Jazz' }, CENNIK);
+    expect(mini?.id).toBe('dn-mini-19-1');
+    expect(midi?.id).toBe('dn-midi-32-1');
+  });
+
+  it('DECOLUX w sośnie nie dostaje ceny białego', () => {
+    const bialy = matchTable({ name: 'Roleta dachowa DECOLUX biała', material: 'Grupa B' }, CENNIK);
+    const sosna = matchTable({ name: 'Roleta dachowa DECOLUX, jasna sosna', material: 'Grupa B' }, CENNIK);
+    expect(bialy?.id).toBe('decolux-bialy-B');
+    expect(sosna?.id).toBe('decolux-drewno-B');
+  });
+
+  it('kasetowa UNI drewnopodobna ma swój cennik', () => {
+    const t = matchTable(
+      { name: 'Roleta kasetowa UNI drewnopodobne', material: 'Grupa C' },
+      CENNIK
+    );
+    expect(t?.id).toBe('rolety-kasetowe-uni-drewno-C');
+  });
+
+  it('dopłata za kasetę w dzień-nocy Midi liczy się od szerokości', () => {
+    const t = CENNIK.find((x) => x.id === 'dn-midi-32-1')!;
+    const kaseta = (t.surcharges || []).find((d) => d.name === 'Dopłata za kasetę')!;
+    expect(kaseta.by).toBe('width');
+    expect(surchargeAmount(kaseta, { width: 50, height: 100 })).toBe(93);
+    expect(surchargeAmount(kaseta, { width: 55, height: 100 })).toBe(112);
+  });
 });

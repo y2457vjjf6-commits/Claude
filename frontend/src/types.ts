@@ -138,6 +138,8 @@ export interface PriceSurcharge {
   /** Progi wymiaru rosnąco; kwota to `amounts` o tym samym numerze */
   steps?: number[];
   amounts?: number[];
+  /** Dopłata liczona od ceny pozycji, np. 20% za drabinkę taśmową */
+  percent?: number;
 }
 
 /** Tabela cennika producenta: koszt zależny od szerokości i wysokości.

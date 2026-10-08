@@ -63,14 +63,14 @@ export function parseDimensions(...teksty: (string | undefined)[]): Wymiar | nul
 
 /* --------------------------- Dobór tabeli --------------------------- */
 
-/** Czy `fraza` stoi w tekście jako całe wyrażenie.
+/** Czy `fraza` stoi w tekście dosłownie, jako całe wyrażenie.
  *
- *  Z prawej strony dopuszczamy jednostkę: fraza „Mini 19” ma trafić na
- *  „Rolety wolnowiszące Mini 19mm”, bo tak te produkty bywają nazywane.
- *  Poza jednostką granica jest szczelna — inaczej kod „C102” złapałby
- *  tkaninę „C1020”, czyli zupełnie inną cenę.
+ *  Z prawej strony dopuszczamy jednostkę: fraza „Mini 19" ma trafić na
+ *  „Rolety wolnowiszące Mini 19mm", bo tak te produkty bywają nazywane.
+ *  Poza jednostką granica jest szczelna — inaczej kod „C102" złapałby
+ *  tkaninę „C1020", czyli zupełnie inną cenę.
  */
-function zawieraFraze(tekst: string, fraza: string): boolean {
+function doslownie(tekst: string, fraza: string): boolean {
   const f = fraza.trim().replace(/\s+/g, ' ');
   if (!f) return false;
   const wzor = new RegExp(
@@ -80,6 +80,39 @@ function zawieraFraze(tekst: string, fraza: string): boolean {
     'iu'
   );
   return wzor.test(tekst);
+}
+
+function naSlowa(tekst: string): string[] {
+  return tekst
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\u0142/g, 'l')
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean);
+}
+
+/** Czy wszystkie słowa frazy stoją w tekście, mimo polskiej odmiany.
+ *
+ *  Cennik nazywa produkt „Żaluzje drewniane", a pozycję pisze się „Żaluzja
+ *  drewniana 25mm" — dosłowne porównanie tego nie złapie. Słowa dłuższe niż
+ *  trzy znaki porównujemy więc od rdzenia, czyli bez ostatniej litery. Słowa
+ *  z cyfrą muszą zgadzać się co do znaku, żeby kod „C102" nie złapał „C1020".
+ */
+function odmiana(tekst: string, fraza: string): boolean {
+  const slowaTekstu = naSlowa(tekst);
+  const slowaFrazy = naSlowa(fraza);
+  if (!slowaFrazy.length) return false;
+  return slowaFrazy.every((s) => {
+    if (/\d/.test(s) || s.length < 4) return slowaTekstu.includes(s);
+    const rdzen = s.slice(0, -1);
+    return slowaTekstu.some((w) => w.startsWith(rdzen));
+  });
+}
+
+/** Fraza pasuje, gdy stoi w tekście dosłownie albo w innej odmianie. */
+function zawieraFraze(tekst: string, fraza: string): boolean {
+  return doslownie(tekst, fraza) || odmiana(tekst, fraza);
 }
 
 /** Dobiera tabelę do pozycji.
@@ -145,14 +178,25 @@ export function lookupPrice(table: PriceTable, wymiar: Wymiar): OdczytCeny | nul
 
 /** Kwota dopłaty dla konkretnego wymiaru.
  *
- *  Dopłata stała ma kwotę wprost. Dopłata zależna od wymiaru — jak profil
- *  montażowy, który rośnie z szerokością — czytana jest z progów tą samą
- *  regułą co siatka cen: bierzemy pierwszy próg nie mniejszy od zamówionego
- *  wymiaru. Wymiar większy od ostatniego progu daje `null`, bo zgadywanie
- *  kwoty poza tabelą producenta kończyłoby się zaniżoną ofertą.
+ *  Dopłata stała ma kwotę wprost. Dopłata procentowa — jak drabinka taśmowa
+ *  w żaluzjach drewnianych — liczy się od ceny pozycji, więc bez tej ceny nie
+ *  da się jej podać. Dopłata zależna od wymiaru — jak profil montażowy, który
+ *  rośnie z szerokością — czytana jest z progów tą samą regułą co siatka cen:
+ *  bierzemy pierwszy próg nie mniejszy od zamówionego wymiaru. Wymiar większy
+ *  od ostatniego progu daje `null`, bo zgadywanie kwoty poza tabelą producenta
+ *  kończyłoby się zaniżoną ofertą.
  */
-export function surchargeAmount(doplata: PriceSurcharge, wymiar?: Wymiar | null): number | null {
+export function surchargeAmount(
+  doplata: PriceSurcharge,
+  wymiar?: Wymiar | null,
+  podstawa?: number
+): number | null {
   if (typeof doplata.amount === 'number' && isFinite(doplata.amount)) return doplata.amount;
+  // Dopłata procentowa liczy się od ceny pozycji, więc bez niej nie ma kwoty
+  if (typeof doplata.percent === 'number' && isFinite(doplata.percent)) {
+    if (typeof podstawa !== 'number' || !isFinite(podstawa)) return null;
+    return Math.round(podstawa * doplata.percent) / 100;
+  }
   const progi = doplata.steps || [];
   const kwoty = doplata.amounts || [];
   if (!progi.length || progi.length !== kwoty.length || !doplata.by || !wymiar) return null;

@@ -164,8 +164,8 @@ export default function PricesView({ state }: Props) {
                   <td className="num">
                     {typeof d.amount === 'number'
                       ? formatMoney(d.amount)
-                      : pytanie && surchargeAmount(d, pytanie) !== null
-                        ? `${formatMoney(surchargeAmount(d, pytanie) as number)} (dla podanego wymiaru)`
+                      : pytanie && surchargeAmount(d, pytanie, odczyt?.cost) !== null
+                        ? `${formatMoney(surchargeAmount(d, pytanie, odczyt?.cost) as number)} (dla podanego wymiaru)`
                         : d.by === 'width'
                           ? 'zależy od szerokości'
                           : 'zależy od wysokości'}

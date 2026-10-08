@@ -155,3 +155,27 @@ test('kolor kasetowej dzień-nocy wybiera właściwy cennik', () => {
   );
   expect(warianty).toEqual(['dn-uni-bialy-3', 'dn-uni-antracyt-3', 'dn-uni-drewno-3']);
 });
+
+describe('produkty bez grup materiałowych', () => {
+  it('żaluzje drewniane mają jedną tabelę, dobieraną po samej nazwie', () => {
+    const t = matchTable({ name: 'Żaluzja drewniana 25mm', material: 'Turner Oak' }, CENNIK);
+    expect(t?.id).toBe('zaluzje-drewno-25');
+    // nazwa tabeli nie udaje grupy, której nie ma
+    expect(t?.name).not.toContain('grupa');
+    expect(t?.materials).toEqual([]);
+  });
+
+  it('szerokość lameli rozdziela dwa cenniki żaluzji', () => {
+    expect(matchTable({ name: 'Żaluzja drewniana 50mm', material: '' }, CENNIK)?.id)
+      .toBe('zaluzje-drewno-50');
+  });
+
+  it('dopłata procentowa liczy się od ceny pozycji', () => {
+    const t = CENNIK.find((x) => x.id === 'zaluzje-drewno-25')!;
+    const drabinka = (t.surcharges || []).find((d) => d.name.startsWith('Drabinka'))!;
+    expect(drabinka.percent).toBe(20);
+    expect(surchargeAmount(drabinka, { width: 100, height: 100 }, 500)).toBe(100);
+    // bez ceny pozycji nie ma z czego liczyć procentu
+    expect(surchargeAmount(drabinka, { width: 100, height: 100 })).toBeNull();
+  });
+});

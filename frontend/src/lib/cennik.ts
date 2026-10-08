@@ -26,6 +26,8 @@ import dnMidi32 from '../data/cennik/dn-midi-32.json';
 import dnUniBialy from '../data/cennik/dn-uni-bialy.json';
 import dnUniAntracyt from '../data/cennik/dn-uni-antracyt.json';
 import dnUniDrewno from '../data/cennik/dn-uni-drewno.json';
+import zaluzjeDrewno25 from '../data/cennik/zaluzje-drewno-25.json';
+import zaluzjeDrewno50 from '../data/cennik/zaluzje-drewno-50.json';
 
 /** Jak nazwać produkt, żeby trafił na swoją tabelę. Człony muszą stać
  *  w nazwie pozycji — wszystkie naraz. Trzymamy je tutaj, a nie w plikach
@@ -44,7 +46,9 @@ const CZLONY: Record<string, string[]> = {
   'dn-midi-32': ['dzień-noc', 'Midi 32'],
   'dn-uni-bialy': ['dzień-noc', 'UNI'],
   'dn-uni-antracyt': ['dzień-noc', 'UNI', 'antracyt'],
-  'dn-uni-drewno': ['dzień-noc', 'UNI', 'drewnopodobne']
+  'dn-uni-drewno': ['dzień-noc', 'UNI', 'drewnopodobne'],
+  'zaluzje-drewno-25': ['żaluzje', '25'],
+  'zaluzje-drewno-50': ['żaluzje', '50']
 };
 
 interface PlikGrup {
@@ -62,7 +66,7 @@ interface PlikCen {
   szerokosci: number[];
   wysokosci: number[];
   siatki: Record<string, (number | null)[][]>;
-  doplaty?: { nazwa: string; kwota: number }[];
+  doplaty?: { nazwa: string; kwota?: number; procent?: number }[];
   doplatySilnik?: { nazwa: string; kwota: number }[];
   doplatySzerokosc?: { nazwa: string; szerokosci: number[]; kwoty: number[] };
   opcja23?: { opis: string; szerokosci: number[]; kwoty: number[] };
@@ -72,7 +76,8 @@ interface PlikCen {
 const PLIKI = [
   mini19, midi25, rt32, rt4045, uni, uniAntracyt, uniDrewno,
   decoluxBialy, decoluxDrewno, dnMini19, dnMidi32,
-  dnUniBialy, dnUniAntracyt, dnUniDrewno
+  dnUniBialy, dnUniAntracyt, dnUniDrewno,
+  zaluzjeDrewno25, zaluzjeDrewno50
 ] as unknown as PlikCen[];
 
 // Każda rodzina produktów ma własny podział materiałów na grupy cenowe:
@@ -82,6 +87,10 @@ const GRUPY: PlikGrup[] = [grupyRolety as PlikGrup, grupyDzienNoc as PlikGrup];
 /** Materiały należące do grupy, plus sama nazwa grupy — bo na ofertach pisze
  *  się i „Madagaskar”, i wprost „Grupa C”. */
 function materialyGrupy(kategoria: string, litera: string): string[] {
+  // Produkt o jednej siatce nie dzieli się na grupy — oznaczamy go kluczem „-".
+  // Taka tabela nie może wymagać materiału, bo żadnego nie ma: zdecyduje sama
+  // nazwa produktu.
+  if (litera === '-') return [];
   const tabela = GRUPY.find((g) => g.dotyczy === kategoria);
   const nazwy = (tabela?.materialy || []).filter((m) => m.grupa === litera).map((m) => m.nazwa);
   return [...nazwy, `Grupa ${litera}`];
@@ -90,7 +99,13 @@ function materialyGrupy(kategoria: string, litera: string): string[] {
 /** Dopłaty dostępne przy pozycji wycenionej z tego pliku. */
 function doplatyPliku(p: PlikCen): PriceSurcharge[] {
   const lista: PriceSurcharge[] = [];
-  for (const d of p.doplaty || []) lista.push({ name: d.nazwa, amount: d.kwota });
+  for (const d of p.doplaty || []) {
+    lista.push(
+      typeof d.procent === 'number'
+        ? { name: d.nazwa, percent: d.procent }
+        : { name: d.nazwa, amount: d.kwota }
+    );
+  }
   for (const d of p.doplatySilnik || []) lista.push({ name: d.nazwa, amount: d.kwota });
   if (p.doplatySzerokosc) {
     lista.push({
@@ -124,8 +139,8 @@ function zbuduj(): PriceTable[] {
     const doplaty = doplatyPliku(p);
     for (const [litera, ceny] of Object.entries(p.siatki)) {
       tabele.push({
-        id: `${p.id}-${litera}`,
-        name: `${p.nazwa} — grupa ${litera}`,
+        id: litera === '-' ? p.id : `${p.id}-${litera}`,
+        name: litera === '-' ? p.nazwa : `${p.nazwa} — grupa ${litera}`,
         supplier: 'Lechrol',
         product: czlony,
         materials: materialyGrupy(p.kategoria, litera),

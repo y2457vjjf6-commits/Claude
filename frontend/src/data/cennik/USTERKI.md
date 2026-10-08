@@ -88,6 +88,20 @@ a ostatnia kratka wypadła. Wygląda na przesunięcie przy wypełnianiu arkusza:
 roleta 170 × 220 cm kosztuje tyle samo co o 10 cm węższa i mniej niż ta sama
 o 10 cm niższa (745 zł).
 
+## Żaluzje drewniane / bambusowe, str. 7-8
+
+| Lamela | Wysokość | Szerokość | W cenniku | Powinno być | Skutek |
+|---|---|---|---|---|---|
+| 25 mm | 200 | 190 | 2032 zł | ~1663 zł | **zawyżone o 369 zł** |
+| 50 mm | 120 | 50 | 295 zł | ~566 zł | **zaniżone o 271 zł** |
+| 50 mm | 170 | 140 | 1263 zł | ~1319 zł | zaniżone o 56 zł |
+| 50 mm | 170 | 210 | 1807 zł | ~1841 zł | zaniżone o 34 zł |
+
+Dwa pierwsze są najpoważniejsze w całym cenniku. Żaluzja 190 × 200 cm o lameli
+25 mm wyceniona jest o 22% drożej, niż wynika z sąsiednich kratek. Żaluzja
+50 × 120 cm o lameli 50 mm kosztuje niemal o połowę mniej, niż powinna —
+i mniej niż ta sama o 10 cm niższa (550 zł).
+
 ## Co z tym robi program
 
 Na razie nic — trzyma ceny takie, jakie są w cenniku, żeby oferta zgadzała się

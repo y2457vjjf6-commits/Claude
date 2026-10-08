@@ -20,7 +20,8 @@ import {
   VAT_RATES,
   offerVatRate,
   availableIssuers,
-  issuerPhone
+  issuerPhone,
+  parseNumber
 } from '../lib/offers';
 import { itemNameSuggestions } from '../lib/suggestions';
 import { printOffer, savePdfOffer, emailOffer } from '../lib/offerActions';
@@ -188,7 +189,8 @@ export default function OfferEditorView({
     const doplaty = (it.surcharges || []).map((d) => {
       const wzorzec = dostepne.find((x) => x.name === d.name);
       if (!wzorzec) return d;
-      const kwota = surchargeAmount(wzorzec, wymiar);
+      // dopłata procentowa liczy się od ceny pozycji, więc podajemy ją obok wymiaru
+      const kwota = surchargeAmount(wzorzec, wymiar, parseNumber(it.unitPrice));
       return kwota === null ? d : { ...wzorzec, amount: kwota };
     });
 
@@ -600,7 +602,7 @@ export default function OfferEditorView({
                                 Dopłaty{wybrane.length ? ` (${wybrane.length})` : ''}
                               </summary>
                               {doplaty.map((d, di) => {
-                                const kwota = surchargeAmount(d, wymiar);
+                                const kwota = surchargeAmount(d, wymiar, parseNumber(it.unitPrice));
                                 const zaznaczona = wybrane.some((x) => x.name === d.name);
                                 return (
                                   <label className="checkbox-field cennik-doplata" key={d.name}>

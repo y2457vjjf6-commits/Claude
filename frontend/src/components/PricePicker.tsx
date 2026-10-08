@@ -51,8 +51,10 @@ export default function PricePicker({ item, onPick, onClose }: Props) {
   const maWymiar = isFinite(wymiar.width) && isFinite(wymiar.height);
   const odczyt = tabela && maWymiar ? lookupPrice(tabela, wymiar) : null;
 
+  // dopłata procentowa liczy się od ceny z siatki, więc podajemy ją jako podstawę
+  const podstawa = odczyt?.cost;
   const wybraneDoplaty = (tabela?.surcharges || []).filter((d) => doplaty.includes(d.name));
-  const sumaDoplat = wybraneDoplaty.reduce((s, d) => s + (surchargeAmount(d, wymiar) ?? 0), 0);
+  const sumaDoplat = wybraneDoplaty.reduce((s, d) => s + (surchargeAmount(d, wymiar, podstawa) ?? 0), 0);
   const razem = odczyt ? odczyt.cost + sumaDoplat : null;
 
   return (
@@ -136,7 +138,7 @@ export default function PricePicker({ item, onPick, onClose }: Props) {
           <details className="picker-doplaty">
             <summary data-testid="picker-doplaty">Dopłaty{doplaty.length ? ` (${doplaty.length})` : ''}</summary>
             {tabela.surcharges.map((d, di) => {
-              const kwota = surchargeAmount(d, wymiar);
+              const kwota = surchargeAmount(d, wymiar, podstawa);
               return (
                 <label className="checkbox-field cennik-doplata" key={d.name}>
                   <input

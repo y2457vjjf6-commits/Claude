@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft, Layers, GitCompareArrows, Wallet, FileOutput,
-  Check, Loader2
+  Check, Loader2, Table2
 } from 'lucide-react';
 import { AppState, AskConfirm, Offer, OfferColumnHeader, OfferGroup, OfferItem } from '../types';
 import { uid } from '../lib/storage';
@@ -30,6 +30,7 @@ import { opiszWycene, parseDimensions, priceItem, surchargeAmount } from '../lib
 import { useEditorShortcuts } from '../hooks/useEditorShortcuts';
 import { useActionState } from '../hooks/useActionState';
 import SuffixField from '../components/SuffixField';
+import PricePicker from '../components/PricePicker';
 
 interface Props {
   state: AppState;
@@ -167,6 +168,9 @@ export default function OfferEditorView({
   // --- grupy i pozycje ---
   const setGroup = (gi: number, patch: Partial<OfferGroup>) =>
     setOffer((o) => ({ ...o, groups: o.groups.map((g, i) => (i === gi ? { ...g, ...patch } : g)) }));
+
+  // Która pozycja ma otwarte okno wyboru ceny z cennika
+  const [wybieraczka, setWybieraczka] = useState<{ gi: number; ii: number } | null>(null);
 
   // --- cennik producenta ---
   const tabeleCennika = priceTablesFor(state.priceTables);
@@ -593,15 +597,26 @@ export default function OfferEditorView({
                   </td>
                   {pokazKoszty && (
                     <td>
-                      <SuffixField
-                        suffix="zł"
-                        normalizuj
-                        className="internal"
-                        testId={`offer-cost-${gi}-${ii}`}
-                        ariaLabel="Koszt własny za sztukę"
-                        value={it.cost || ''}
-                        onChange={(v) => setItem(gi, ii, { cost: v })}
-                      />
+                      <div className="cost-cell">
+                        <SuffixField
+                          suffix="zł"
+                          normalizuj
+                          className="internal"
+                          testId={`offer-cost-${gi}-${ii}`}
+                          ariaLabel="Koszt własny za sztukę"
+                          value={it.cost || ''}
+                          onChange={(v) => setItem(gi, ii, { cost: v })}
+                        />
+                        <button
+                          className="btn btn-small btn-light cost-pick"
+                          data-testid={`offer-cost-pick-${gi}-${ii}`}
+                          title="Weź cenę z cennika producenta"
+                          aria-label="Weź cenę z cennika producenta"
+                          onClick={() => setWybieraczka({ gi, ii })}
+                        >
+                          <Table2 className="icon" />
+                        </button>
+                      </div>
                     </td>
                   )}
                   <td>
@@ -850,6 +865,20 @@ export default function OfferEditorView({
           Wróć
         </button>
       </div>
+      {wybieraczka && (() => {
+        const poz = offer.groups[wybieraczka.gi]?.items[wybieraczka.ii];
+        if (!poz) return null;
+        return (
+          <PricePicker
+            item={poz}
+            onClose={() => setWybieraczka(null)}
+            onPick={(kwota) => {
+              setItem(wybieraczka.gi, wybieraczka.ii, { cost: String(kwota) });
+              setWybieraczka(null);
+            }}
+          />
+        );
+      })()}
     </section>
   );
 }

@@ -1460,6 +1460,39 @@ kbd {
   align-self: flex-start;
 }
 
+/* ------------------------------------------- wybór ceny z cennika przy pozycji */
+
+.cost-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cost-cell > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.cost-pick {
+  flex: none;
+  padding: 4px 6px;
+}
+
+.price-picker {
+  width: min(560px, 92vw);
+  text-align: left;
+}
+
+.price-picker .field {
+  margin-top: 10px;
+}
+
+.picker-doplaty summary {
+  cursor: pointer;
+  color: var(--accent, #f15a28);
+  margin-top: 10px;
+}
+
 /* ------------------------------------------------------ przeglądarka cennika */
 
 .group-switch {

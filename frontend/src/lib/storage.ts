@@ -4,7 +4,7 @@ export const DEFAULT_STATE: AppState = {
   settings: {
     theme: 'dark',
     seller: {
-      name: 'ZPHU Lechrol Jacek Wajcht',
+      name: 'ZPHU Lechrol',
       address: 'ul. Leśna 6, 05-092 Łomianki',
       nip: '118-135-62-66',
       phone: '511 697 697',
@@ -40,7 +40,7 @@ export const DEFAULT_STATE: AppState = {
     offerFollowUpDays: '7',
     showCosts: true,
     emailBody:
-      'Dzień dobry,\n\nw załączniku przesyłamy dokument WZ {numer} (wydanie zewnętrzne).\nTowar odebrał: {odebral}\n\nPozdrawiamy,\nZPHU Lechrol Jacek Wajcht\ntel. 511 697 697 · lechrol.pl'
+      'Dzień dobry,\n\nw załączniku przesyłamy dokument WZ {numer} (wydanie zewnętrzne).\nTowar odebrał: {odebral}\n\nPozdrawiamy,\nZPHU Lechrol\ntel. 511 697 697 · lechrol.pl'
   },
   contractors: [],
   documents: [],
@@ -64,6 +64,23 @@ function deepMerge(base: any, extra: any): any {
   return out;
 }
 
+/** Firma skróciła nazwę z „ZPHU Lechrol Jacek Wajcht" na „ZPHU Lechrol".
+ *  Sama zmiana domyślnych ustawień nie wystarczy — u kogoś, kto program już
+ *  uruchamiał, stara nazwa siedzi w zapisanych danych i dalej drukowałaby się
+ *  na dokumentach. Podmieniamy ją przy wczytaniu, ale tylko dokładnie tę jedną
+ *  wartość: nazwę wpisaną ręcznie zostawiamy w spokoju. */
+const STARA_NAZWA = 'ZPHU Lechrol Jacek Wajcht';
+const NOWA_NAZWA = 'ZPHU Lechrol';
+
+function skrocNazweFirmy(stan: AppState): AppState {
+  const s = stan.settings;
+  if (s?.seller?.name === STARA_NAZWA) s.seller.name = NOWA_NAZWA;
+  if (typeof s?.emailBody === 'string' && s.emailBody.includes(STARA_NAZWA)) {
+    s.emailBody = s.emailBody.split(STARA_NAZWA).join(NOWA_NAZWA);
+  }
+  return stan;
+}
+
 export async function loadState(): Promise<AppState> {
   let saved: unknown = null;
   if (hasApi && window.wzApi) {
@@ -75,7 +92,7 @@ export async function loadState(): Promise<AppState> {
       saved = null;
     }
   }
-  return deepMerge(DEFAULT_STATE, saved) as AppState;
+  return skrocNazweFirmy(deepMerge(DEFAULT_STATE, saved) as AppState);
 }
 
 export async function persistState(state: AppState): Promise<void> {

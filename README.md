@@ -1,7 +1,7 @@
 # Lechrol WZ
 
 Aplikacja desktopowa do wystawiania dokumentów **WZ (wydanie zewnętrzne)** dla
-ZPHU Lechrol Jacek Wajcht. Działa w pełni **offline, na jednym stanowisku, bez logowania** —
+ZPHU Lechrol. Działa w pełni **offline, na jednym stanowisku, bez logowania** —
 wszystkie dane zapisywane są lokalnie na komputerze.
 
 ## Funkcje

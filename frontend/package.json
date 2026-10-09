@@ -156,8 +156,8 @@
   "main": "electron/main.js",
   "homepage": "./",
   "productName": "Lechrol WZ",
-  "description": "Aplikacja do wystawiania dokumentów WZ (wydanie zewnętrzne) — ZPHU Lechrol Jacek Wajcht",
-  "author": "ZPHU Lechrol Jacek Wajcht",
+  "description": "Aplikacja do wystawiania dokumentów WZ (wydanie zewnętrzne) — ZPHU Lechrol",
+  "author": "ZPHU Lechrol",
   "build": {
     "appId": "pl.lechrol.wz",
     "productName": "Lechrol WZ",

@@ -176,9 +176,9 @@ test('kwota pojawia się też w nagłówku, nad pozycjami', () => {
     DEFAULT_STATE.settings
   );
   expect(html).toContain('Wartość oferty');
-  // nagłówkowa kwota stoi przed tabelą pozycji, a duża — po niej
-  expect(html.indexOf('of-value-sum')).toBeLessThan(html.indexOf('of-items'));
-  expect(html.indexOf('of-grand-value')).toBeGreaterThan(html.indexOf('of-items'));
+  // kwota z nagłówka stoi przed tabelą pozycji, a podsumowanie — po niej
+  expect(html.indexOf('of-ident-sum')).toBeLessThan(html.indexOf('of-items'));
+  expect(html.indexOf('of-grand')).toBeGreaterThan(html.indexOf('of-items'));
 });
 
 test('przy wariantach nagłówek mówi, że kwota dotyczy oferty podstawowej', () => {
@@ -305,13 +305,15 @@ test('kwota pomieszczenia pokazuje się dopiero przy kilku pomieszczeniach', () 
 
 /* ---------------- Dane firmy i nagłówek ---------------- */
 
-test('dokument nazywa się ofertą, a dane firmy są w stopce', () => {
+test('dokument nazywa się ofertą, a dane firmy stoją w nagłówku', () => {
   const html = buildOfferHtml(oferta(), DEFAULT_STATE.settings);
   expect(html).toContain('Oferta cenowa');
-  expect(html).toContain('of-foot');
-  const stopka = html.slice(html.indexOf('of-foot'));
-  expect(stopka).toContain('ZPHU Lechrol Jacek Wajcht');
-  expect(stopka).toContain('NIP 118-135-62-66');
+  // Na dokumencie handlowym wystawca przedstawia się na górze, a nie drobnym
+  // drukiem na dole — tam nikt go nie szuka.
+  const naglowek = html.slice(0, html.indexOf('of-buyer'));
+  expect(naglowek).toContain('ZPHU Lechrol');
+  expect(naglowek).toContain('NIP 118-135-62-66');
+  expect(naglowek).toContain('lechrol.pl');
 });
 
 /* ---------------- Koszt własny i marża ---------------- */

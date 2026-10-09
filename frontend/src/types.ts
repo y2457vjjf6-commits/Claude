@@ -233,6 +233,9 @@ export interface OfferItem {
   /** Dopłaty doliczone do tej pozycji. Zapisujemy je z kwotą, nie samą nazwą —
    *  dzięki temu wystawiona oferta nie zmieni się, gdy producent podniesie cennik. */
   surcharges?: PriceSurcharge[];
+  /** Specyfikacja pozycji: pary „co — jakie", np. „Kolor kasety — RAL 9005".
+   *  Drukowana pod nazwą, gdy oferta ma włączoną specyfikację. */
+  spec?: { label: string; value: string }[];
 }
 
 export interface OfferGroup {
@@ -289,6 +292,8 @@ export interface Offer {
   vatRate?: number;
   /** Czy drukować zdjęcia produktów przy pozycjach */
   showPhotos?: boolean;
+  /** Czy drukować specyfikację pod pozycjami */
+  showSpecs?: boolean;
   /** Dokumenty WZ wystawione na podstawie tej oferty */
   wzDocumentIds?: string[];
   printedAt?: string;

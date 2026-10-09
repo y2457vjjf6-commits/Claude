@@ -219,9 +219,9 @@ export function offersAwaitingReply(offers: Offer[], afterDays: number, now: Dat
 }
 
 const NAGLOWKI: Record<OfferColumnHeader, string> = {
-  material: 'Produkt (+ Materiał)',
-  size: 'Produkt (+ Wymiar)',
-  materialSize: 'Produkt (+ Materiał + Wymiar)',
+  material: 'Produkt i materiał',
+  size: 'Produkt i wymiar',
+  materialSize: 'Produkt, materiał i wymiar',
   plain: 'Produkt'
 };
 

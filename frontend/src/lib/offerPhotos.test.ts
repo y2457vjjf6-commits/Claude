@@ -55,13 +55,15 @@ const BIBLIOTEKA = zBiblioteka([{ name: 'roleta kasetowa uni', dataUrl: ZDJECIE 
 test('zdjęcie trafia na dokument przy pozycji, gdy oferta ma je włączone', () => {
   const html = buildOfferHtml(oferta({ showPhotos: true }), BIBLIOTEKA);
   expect(html).toContain(`<img class="of-photo" src="${ZDJECIE}"`);
-  expect(html).toContain('of-row-photo');
+  // zdjęcie stoi we własnej kolumnie tabeli, obok numeru pozycji
+  expect(html).toContain('of-pic');
 });
 
 test('wyłączony przełącznik zostawia dokument bez zdjęć', () => {
   const html = buildOfferHtml(oferta({ showPhotos: false }), BIBLIOTEKA);
   expect(html).not.toContain('of-photo');
-  expect(html).not.toContain('of-row-photo');
+  // bez zdjęć tabela nie dostaje też pustej kolumny na nie
+  expect(html).not.toContain('of-pic');
 });
 
 test('brak przełącznika na starej ofercie to dokument bez zdjęć', () => {
@@ -78,7 +80,7 @@ test('pusta biblioteka nie psuje dokumentu mimo włączonego przełącznika', ()
 
 test('numer pozycji zostaje na miejscu także ze zdjęciem', () => {
   const html = buildOfferHtml(oferta({ showPhotos: true }), BIBLIOTEKA);
-  expect(html).toContain('<span class="of-lp-nr">1</span>');
+  expect(html).toContain('<td class="of-lp">1</td>');
 });
 
 test('pozycja bez dopasowania nie dostaje cudzego zdjęcia', () => {

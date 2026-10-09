@@ -1554,6 +1554,31 @@ kbd {
   font-weight: 600;
 }
 
+/* ------------------------------------------- specyfikacja przy pozycji oferty */
+
+.item-spec {
+  margin-top: 4px;
+  font-size: var(--text-xs, 11px);
+}
+
+.item-spec summary {
+  cursor: pointer;
+  color: var(--accent, #f15a28);
+}
+
+/* Dwa pola obok siebie plus kosz — „co" węższe, bo nazwy parametrów
+   są krótsze od wartości. */
+.spec-row {
+  display: grid;
+  grid-template-columns: 2fr 3fr auto;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.item-spec .btn-light {
+  margin-top: 6px;
+}
+
 /* --------------------------------------------- cennik przy pozycji oferty */
 
 .item-cennik {

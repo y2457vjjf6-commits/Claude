@@ -166,6 +166,7 @@ export default function OfferEditorView({
   const wypelnione = offer.groups.flatMap((g) => g.items.filter((it) => !isItemEmpty(it)));
   const wszystkieP = wypelnione.length;
   const zZdjeciem = wypelnione.filter((it) => photoFor(it, state.settings)).length;
+  const zeSpecyfikacja = wypelnione.filter((it) => (it.spec || []).length > 0).length;
 
   // --- grupy i pozycje ---
   const setGroup = (gi: number, patch: Partial<OfferGroup>) =>
@@ -481,6 +482,28 @@ export default function OfferEditorView({
         ))}
       </datalist>
 
+      {/* Nazwy parametrów, które wracają na większości ofert — podpowiedź
+          oszczędza wpisywania i pilnuje, żeby na dokumencie brzmiały tak samo. */}
+      <datalist id="podpowiedzi-specyfikacji">
+        {[
+          'Kolor kasety',
+          'Kolor prowadnic',
+          'Kolor materiału',
+          'Kolor listwy końcowej',
+          'Typ prowadnic',
+          'Typ montażu',
+          'Strona sterowania',
+          'Napęd',
+          'Typ napędu',
+          'Sterowanie',
+          'Wysokość kasety',
+          'Moskitiera',
+          'Wariant wykonania'
+        ].map((n) => (
+          <option key={n} value={n} />
+        ))}
+      </datalist>
+
       {offer.groups.map((g, gi) => (
         <div className="card" key={g.id} data-testid={`offer-group-${gi}`}>
           <div className="group-head">
@@ -586,6 +609,61 @@ export default function OfferEditorView({
                       value={it.material}
                       onChange={(e) => setItem(gi, ii, { material: e.target.value })}
                     />
+                    {(() => {
+                      const spec = it.spec || [];
+                      const zmien = (lista: { label: string; value: string }[]) =>
+                        setItem(gi, ii, { spec: lista });
+                      return (
+                        <details className="item-spec" open={spec.length > 0}>
+                          <summary data-testid={`offer-spec-${gi}-${ii}`}>
+                            Specyfikacja{spec.length ? ` (${spec.length})` : ''}
+                          </summary>
+                          {spec.map((w, si) => (
+                            <div className="spec-row" key={si}>
+                              <input
+                                type="text"
+                                className="input"
+                                data-testid={`offer-spec-label-${gi}-${ii}-${si}`}
+                                aria-label="Co"
+                                list="podpowiedzi-specyfikacji"
+                                placeholder="np. Kolor kasety"
+                                value={w.label}
+                                onChange={(e) =>
+                                  zmien(spec.map((x, k) => (k === si ? { ...x, label: e.target.value } : x)))
+                                }
+                              />
+                              <input
+                                type="text"
+                                className="input"
+                                data-testid={`offer-spec-value-${gi}-${ii}-${si}`}
+                                aria-label="Jakie"
+                                placeholder="np. RAL 9005"
+                                value={w.value}
+                                onChange={(e) =>
+                                  zmien(spec.map((x, k) => (k === si ? { ...x, value: e.target.value } : x)))
+                                }
+                              />
+                              <button
+                                className="btn btn-small btn-danger item-remove"
+                                data-testid={`offer-spec-remove-${gi}-${ii}-${si}`}
+                                aria-label="Usuń wiersz specyfikacji"
+                                onClick={() => zmien(spec.filter((_, k) => k !== si))}
+                              >
+                                <X className="icon" />
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            className="btn btn-small btn-light"
+                            data-testid={`offer-spec-add-${gi}-${ii}`}
+                            onClick={() => zmien([...spec, { label: '', value: '' }])}
+                          >
+                            <Plus className="icon" />
+                            Dodaj wiersz
+                          </button>
+                        </details>
+                      );
+                    })()}
                     {!isItemEmpty(it) && (() => {
                       const wycena = priceItem(it, tabeleCennika);
                       const doplaty = wycena.table?.surcharges || [];
@@ -885,7 +963,22 @@ export default function OfferEditorView({
                   : `Zdjęcie znajdzie ${zZdjeciem} z ${wszystkieP} pozycji.`}
             </span>
           </div>
-          <div className="switch-col" />
+          <div className="switch-col">
+            <label className="checkbox-field">
+              <input
+                type="checkbox"
+                data-testid="offer-show-specs"
+                checked={!!offer.showSpecs}
+                onChange={(e) => set({ showSpecs: e.target.checked })}
+              />
+              <span>Drukuj specyfikację pozycji</span>
+            </label>
+            <span className="muted field-hint" data-testid="offer-specs-hint">
+              {zeSpecyfikacja === 0
+                ? 'Żadna pozycja nie ma jeszcze wypełnionej specyfikacji — rozwiń ją pod pozycją.'
+                : `Specyfikację ma ${zeSpecyfikacja} z ${wszystkieP} pozycji.`}
+            </span>
+          </div>
         </div>
         <label className="field" style={{ marginTop: 14 }}>
           <span>Uwagi na ofercie</span>

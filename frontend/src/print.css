@@ -212,502 +212,389 @@
 }
 
 /* ============================ Oferta cenowa ============================ */
-/* Układ arkusza pomiarowego: po lewej wąska kolumna etykiet, po prawej treść
-   i kwoty na wspólnej osi. Linie rozdzielają dane, nie zdobią — żadnych ramek
-   dookoła komórek. Na stronie jest dokładnie jedna duża liczba: cena. */
+/* Dokument handlowy, nie plakat: sprzedawca i identyfikacja w nagłówku,
+   odbiorca w ramce, pozycje w jednej tabeli na pełną szerokość. Struktura
+   niesie znaczenie — ramka i pasek oddzielają role, a nie zdobią. Etykiety
+   są małe i normalne; rozstrzelone wersaliki czytają się jak szablon, nie
+   jak pismo firmy. Pomarańcz tylko jako akcent. */
 
-/* Oferta ma własny, szerszy margines niż WZ — stąd nazwana strona.
+/* Oferta ma własny margines, stąd nazwana strona.
    Sprawdzone w Electronie: printToPDF kończy się w kilka milisekund. */
 @page oferta {
   size: A4;
-  margin: 17mm 18mm 15mm;
+  margin: 15mm 15mm 14mm;
 }
 
 .of-doc {
   page: oferta;
-  --of-label: 34mm;      /* szerokość kolumny etykiet */
-  --of-ink: #111315;     /* tekst zasadniczy */
-  --of-mid: #55595e;     /* etykiety, opisy, stopka */
-  --of-hair: #d4d7da;    /* linie między wierszami danych */
-  --of-accent: #F15A28;      /* pomarańcz z katalogu Lechrol — paski i linie */
-  --of-accent-text: #C2410C; /* ten sam kolor przyciemniony, czytelny w drobnym tekście */
-  --of-tint: #FAFAF9;        /* ledwie widoczne tło bloku wariantów */
-  --of-rule: #111315;    /* linie niosące podział dokumentu */
-  --of-money: 96mm;      /* oś kwot po prawej */
+  --of-ink: #15171a;      /* tekst zasadniczy */
+  --of-mid: #5c6066;      /* etykiety i opisy */
+  --of-faint: #8a8f95;    /* dane drugorzędne */
+  --of-hair: #dcdfe2;     /* linie w tabeli */
+  --of-rule: #9aa0a6;     /* linie dzielące sekcje */
+  --of-ink-rule: #2b2f33; /* linie mocne */
+  --of-tint: #f4f5f6;     /* wypełnienie pasków i nagłówków */
+  --of-accent: #f15a28;   /* pomarańcz Lechrol — tylko akcent */
 
-  /* Skala modularna 1,125 na podstawie 10 pt — stopnie wynikają z siebie
-     nawzajem, zamiast być dobierane na oko. */
-  --of-s-2: 7.9pt;       /* wersaliki etykiet, stopka */
-  --of-s-1: 8.9pt;       /* opisy, uwagi, kwoty poboczne */
-  --of-s0: 10pt;         /* tekst zasadniczy i dane w tabeli */
-  --of-s1: 11.25pt;      /* nazwy pomieszczeń, numer, podpis */
-  --of-s2: 12.66pt;      /* odbiorca — pierwsza rzecz, którą czyta klient */
-  --of-s6: 20.3pt;       /* cena całkowita, jedyny duży stopień */
-
-  /* Wiersz tekstu ciągłego nie powinien przekraczać ~75 znaków */
-  --of-measure: 105mm;
-  font-family: 'Geist Variable', Geist, 'Inter', Helvetica, Arial, sans-serif;
-  font-size: var(--of-s0);
-  line-height: 1.5;
+  font-family: 'Geist Variable', 'Geist', 'Segoe UI', Arial, sans-serif;
+  font-size: 9pt;
+  line-height: 1.45;
   color: var(--of-ink);
   font-variant-numeric: tabular-nums;
 }
 
-/* ---------- Nagłówek ---------- */
+.of-doc h2 {
+  margin: 0;
+  font-size: 9pt;
+  font-weight: 600;
+}
+
+/* ---------- Nagłówek: kto wystawia i co to za dokument ---------- */
 
 .of-top {
   display: flex;
-  align-items: flex-end;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 12mm;
   padding-bottom: 7pt;
-  border-bottom: 0.75pt solid var(--of-rule);
+  border-bottom: 1.5pt solid var(--of-ink-rule);
 }
 
 .of-mark {
-  height: 21pt;
+  height: 19pt;
   width: auto;
   display: block;
+  margin-bottom: 5pt;
 }
 
+.of-seller-name {
+  font-weight: 600;
+  font-size: 10pt;
+}
+
+.of-seller-lines {
+  margin-top: 1pt;
+  font-size: 8pt;
+  color: var(--of-mid);
+  line-height: 1.4;
+}
+
+/* Identyfikacja dokumentu stoi w ramce — to ona, a nie logo, jest
+   najważniejsza dla kogoś, kto wraca do oferty po tygodniu. */
 .of-ident {
-  text-align: right;
-  padding-bottom: 1pt;
+  flex: none;
+  min-width: 62mm;
+  border: 0.75pt solid var(--of-rule);
+  padding: 5pt 7pt 6pt;
 }
 
 .of-kind {
-  font-size: var(--of-s-2);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-size: 8pt;
   color: var(--of-mid);
 }
 
-/* Numer w kolorze firmowym — przyciemnionym, bo surowy pomarańcz
-   na bieli daje 3,4:1 i jest za słaby na drobny tekst. */
 .of-number {
-  font-size: var(--of-s1);
-  font-weight: 500;
-  color: var(--of-accent-text);
+  font-size: 15pt;
+  font-weight: 600;
   letter-spacing: -0.01em;
-  margin-top: 2pt;
+  line-height: 1.15;
+  margin-bottom: 3pt;
 }
 
-/* ---------- Pary etykieta — wartość ---------- */
-
-.of-row {
-  display: flex;
-  align-items: baseline;
-  padding: 3pt 0;
-}
-
-.of-label {
-  flex: 0 0 var(--of-label);
-  font-size: var(--of-s-2);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--of-mid);
-  line-height: 1.5;
-}
-
-.of-value {
-  flex: 1;
-  min-width: 0;
-  max-width: var(--of-measure);
-}
-
-/* Odbiorca to pierwsza rzecz, którą czyta klient — jedyne wyróżnienie w tym bloku */
-.of-value-lead {
-  font-size: var(--of-s2);
-  font-weight: 500;
-  letter-spacing: -0.01em;
-}
-
-.of-meta {
-  margin: 13pt 0 17pt;
-}
-
-/* ---------- Tabele pozycji ---------- */
-
-.of-group {
-  margin-bottom: 13pt;
-}
-
-/* Nazwa pomieszczenia prowadzi przez ofertę — klient czyta ją pokój po pokoju.
-   Nagłówek trzyma się swojej tabeli i nie zostaje sam na końcu strony. */
-.of-room {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12pt;
-  margin-bottom: 7pt;
-  break-after: avoid;
-  page-break-after: avoid;
-}
-
-.of-room-name {
-  position: relative;
-  padding-left: 15pt;
-  font-size: var(--of-s1);
-  font-weight: 500;
+/* Kwota w ramce nagłówka — ta sama co w podsumowaniu, żeby klient znał cenę
+   bez przewijania do końca. Wyróżniona grubością, nie rozmiarem. */
+.of-ident-sum {
+  font-weight: 600;
   color: var(--of-ink);
 }
 
-/* Pomarańczowa kreska to jedyne miejsce, gdzie kolor niesie strukturę */
-.of-room-name::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0.44em;
-  width: 9pt;
-  height: 2pt;
-  background: var(--of-accent);
+.of-ident-rows {
+  border-top: 0.5pt solid var(--of-hair);
+  padding-top: 3pt;
 }
 
-.of-room-sum {
-  font-size: var(--of-s-1);
-  color: var(--of-mid);
-  white-space: nowrap;
+/* ---------- Para „co — jakie" ---------- */
+
+.of-pair {
+  display: flex;
+  gap: 6pt;
+  font-size: 8.5pt;
+  padding: 1pt 0;
 }
 
-/* Zwrot grzecznościowy nad podpisem — dzięki niemu dokument kończy się
-   jak pismo, a nie urywa jak wydruk z systemu. */
-.of-regards {
-  margin-bottom: 6pt;
-}
-
-/* Nazwa odbiorcy prowadzi, adres i NIP są jej dopowiedzeniem */
-.of-client-name {
-  display: block;
-}
-
-.of-client-sub {
-  display: block;
-  margin-top: 2pt;
-  font-size: var(--of-s-1);
+.of-pair-label {
+  flex: none;
+  width: 34mm;
   color: var(--of-mid);
 }
+
+.of-ident .of-pair-label {
+  width: 22mm;
+}
+
+.of-pair-value {
+  flex: 1;
+}
+
+/* ---------- Odbiorca ---------- */
+
+.of-buyer {
+  margin-top: 8pt;
+  padding: 6pt 8pt;
+  background: var(--of-tint);
+  border-left: 2.5pt solid var(--of-accent);
+}
+
+.of-buyer-label {
+  font-size: 8pt;
+  color: var(--of-mid);
+}
+
+.of-buyer-name {
+  font-size: 11.5pt;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.of-buyer-sub {
+  font-size: 8.5pt;
+  color: var(--of-mid);
+}
+
+/* ---------- Tabela pozycji ---------- */
 
 .of-items {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 10pt;
   page-break-inside: auto;
 }
 
-.of-items th {
-  font-size: var(--of-s-2);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  font-weight: 400;
-  color: var(--of-mid);
+.of-items thead th {
+  font-size: 8pt;
+  font-weight: 600;
+  color: var(--of-ink);
   text-align: left;
-  padding: 0 0 5pt;
-  border-bottom: 0.75pt solid var(--of-rule);
+  background: var(--of-tint);
+  border-top: 0.75pt solid var(--of-ink-rule);
+  border-bottom: 0.75pt solid var(--of-ink-rule);
+  padding: 3pt 5pt;
 }
+
+.of-items thead { display: table-header-group; }
 
 .of-items td {
-  padding: 6pt 0;
-  border-bottom: 0.4pt solid var(--of-hair);
-  vertical-align: baseline;
+  padding: 5pt;
+  border-bottom: 0.5pt solid var(--of-hair);
+  vertical-align: top;
 }
 
-.of-items tr {
-  page-break-inside: avoid;
-}
+.of-items tr { page-break-inside: avoid; }
 
-.of-items th + th,
-.of-items td + td {
-  padding-left: 10pt;
-}
-
-/* Numer pozycji jest jej etykietą — stoi w tej samej kolumnie co „Dla”,
-   „Data” czy „Montaż”, dzięki czemu cały dokument ma jedną oś treści. */
 .of-items .of-lp {
-  width: var(--of-label);
+  width: 8mm;
   color: var(--of-mid);
-  font-size: var(--of-s-1);
+  font-size: 8.5pt;
 }
 
-.of-items th + th,
-.of-items td + td {
-  padding-left: 0;
+.of-items .of-pic { width: 22mm; }
+
+/* Zdjęcie musi zostać `inline-block`: jako `block` w komórce tabeli Chromium
+   odrywa je od wiersza i przerzuca na następną stronę. Sprawdzone na PDF-ie. */
+.of-photo {
+  display: inline-block;
+  width: 20mm;
+  max-height: 22mm;
+  object-fit: contain;
+  object-position: left top;
+  background: #fff;
+}
+
+.of-name-main {
+  display: block;
+  font-weight: 500;
+}
+
+/* Materiał i wymiar to opis pozycji, nie druga pozycja */
+.of-material {
+  display: block;
+  color: var(--of-mid);
+  font-size: 8.5pt;
 }
 
 .of-items .of-qty,
 .of-items .of-unit,
 .of-items .of-price {
-  padding-left: 10pt;
-}
-
-.of-items .of-qty {
-  width: 32pt;
-  text-align: right;
-}
-
-.of-items .of-unit {
-  width: 60pt;
-  text-align: right;
-  white-space: nowrap;
-  color: var(--of-mid);
-}
-
-.of-items .of-price {
-  width: 72pt;
   text-align: right;
   white-space: nowrap;
 }
 
-.of-name-main {
-  font-weight: 500;
+.of-items .of-qty { width: 13mm; }
+.of-items .of-unit { width: 24mm; color: var(--of-mid); }
+.of-items .of-price { width: 26mm; font-weight: 500; }
+
+.of-items thead .of-qty,
+.of-items thead .of-unit,
+.of-items thead .of-price {
+  text-align: right;
 }
 
-/* Zdjęcie produktu wisi pod numerem pozycji, w kolumnie etykiet. Numer
-   zostaje w pierwszym wierszu, więc dalej równa się z nazwą produktu, a
-   zdjęcie schodzi pod spód i nie rusza żadnej kolumny. */
-/* Numer blokiem, zdjęcie pod nim. Zdjęcie musi zostać `inline-block`:
-   jako `block` w komórce wyrównanej do linii bazowej Chromium łamie wiersz
-   na dwie strony i każda pozycja zabiera osobną kartkę. Sprawdzone na
-   wyeksportowanym PDF-ie — `block` dawał 4 strony zamiast 2. */
-.of-lp-nr {
-  display: block;
-}
-
-.of-photo {
-  display: inline-block;
-  width: 22mm;
-  max-height: 24mm;
-  object-fit: contain;
-  object-position: left top;
-  margin-top: 5pt;
-  /* Zdjęcia produktów bywają na białym tle i rozpływałyby się po kartce.
-     Jasny podkład daje im krawędź bez dokładania dokumentowi kresek. */
+/* Pasek pomieszczenia — wiersz tabeli, nie element obok niej */
+.of-items .of-room td {
   background: var(--of-tint);
+  border-top: 0.5pt solid var(--of-rule);
+  border-bottom: 0.5pt solid var(--of-rule);
+  padding: 3pt 5pt;
+  font-weight: 600;
+  font-size: 8.5pt;
 }
 
-/* Materiał i wymiar to opis pozycji, nie druga pozycja — stąd szarość i mniejszy stopień */
-.of-material {
-  display: block;
-  color: var(--of-mid);
-  font-size: var(--of-s-1);
-  margin-top: 1pt;
-}
-
-/* Warianty to alternatywy, nie dodatkowe pozycje — stąd osobny blok,
-   własny podpis i pasek w kolorze firmowym u góry. */
-.of-variants {
-  margin: 10pt 0 16pt;
-  padding: 10pt 12pt 4pt;
-  background: var(--of-tint);
-  border-top: 2pt solid var(--of-accent);
-}
-
-.of-variants-head {
-  margin-bottom: 9pt;
-}
-
-.of-variants-title {
-  display: block;
-  font-size: var(--of-s1);
-  font-weight: 500;
-}
-
-.of-variants-note {
-  display: block;
-  font-size: var(--of-s-1);
-  color: var(--of-mid);
-  margin-top: 1pt;
-}
-
-.of-variant + .of-variant {
-  margin-top: 13pt;
-}
-
-.of-variant-total {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12pt;
-  width: var(--of-money);
-  margin: 8pt 0 0 auto;
-  padding-top: 7pt;
-  border-top: 0.4pt solid var(--of-hair);
-}
-
-.of-variant-label {
-  font-size: 7.5pt;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--of-mid);
-}
-
-.of-variant-value {
-  font-weight: 500;
+.of-items .of-room-sum {
+  text-align: right;
   white-space: nowrap;
 }
 
-/* ---------- Podsumowanie ---------- */
-
-.of-sum {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  margin: 28pt 0 18pt;
-  break-inside: avoid;
-  page-break-inside: avoid;
+/* ---------- Specyfikacja pozycji ---------- */
+/* Dwie kolumny, bo pozycja potrafi mieć kilkanaście parametrów, a jedna para
+   na wiersz rozciągnęłaby ofertę na dodatkową stronę. */
+.of-spec {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr);
+  column-gap: 6pt;
+  row-gap: 0.5pt;
+  margin: 4pt 0 0;
+  padding-top: 3pt;
+  border-top: 0.4pt dotted var(--of-hair);
+  font-size: 8pt;
+  line-height: 1.35;
 }
 
-.of-sum-line {
-  display: flex;
-  justify-content: space-between;
-  gap: 16pt;
-  width: var(--of-money);
-  padding: 2pt 0;
-  font-size: var(--of-s-1);
+.of-spec-label {
   color: var(--of-mid);
+  white-space: nowrap;
 }
 
-.of-sum-line span:last-child {
+.of-spec-label::after { content: ':'; }
+
+.of-spec-value {
+  margin: 0;
   color: var(--of-ink);
 }
 
-.of-grand {
-  width: var(--of-money);
-  margin-top: 8pt;
-  padding-top: 9pt;
-  border-top: 2pt solid var(--of-accent);
-  text-align: right;
-}
+/* ---------- Warianty ---------- */
 
-/* Etykieta dostaje własny wiersz — w jednej linii z liczbą musiałaby się łamać */
-.of-grand-label {
-  display: block;
-  font-size: var(--of-s-2);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--of-mid);
-}
-
-/* Jedyna duża liczba w dokumencie. Archivo w szerszym kroju daje kontrast
-   proporcji wobec Geista — kroje różnią się szerokością, nie rodziną, więc
-   ze sobą nie konkurują. Oba są już w programie, więc nic nie waży. */
-.of-grand-value {
-  display: block;
-  margin-top: 3pt;
-  font-family: 'Archivo Variable', Archivo, Geist, sans-serif;
-  font-stretch: 112%;
-  font-size: var(--of-s6);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-  white-space: nowrap;
-}
-
-/* Rozbicie na netto i VAT — tylko gdy oferta idzie do firmy */
-.of-vat {
-  width: var(--of-money);
-  margin-top: 8pt;
-  padding-top: 7pt;
-  border-top: 0.4pt solid var(--of-hair);
-}
-
-/* Kwota w nagłówku: ta sama co na dole, ale bez krzyku — ma tylko oszczędzić
-   klientowi szukania ceny na końcu dokumentu. */
-.of-value-sum {
-  font-weight: 500;
-}
-
-/* Ramka do sprawdzenia przed akceptacją — jedyny element w ramce na stronie,
-   więc nie trzeba jej niczym dodatkowo wyróżniać. */
-.of-check {
-  margin-top: 16pt;
-  padding: 9pt 11pt;
-  border: 0.75pt solid var(--of-hairline, var(--of-hair));
-  border-left: 2pt solid var(--of-accent);
-  max-width: var(--of-measure);
-  font-size: var(--of-s-1);
-  line-height: 1.5;
+.of-variants {
+  margin-top: 14pt;
   break-inside: avoid;
   page-break-inside: avoid;
 }
 
-/* ---------- Warunki ---------- */
+.of-section-title {
+  padding-bottom: 2pt;
+  border-bottom: 1pt solid var(--of-accent);
+}
+
+.of-section-note {
+  margin: 2pt 0 0;
+  font-size: 8pt;
+  color: var(--of-mid);
+}
+
+.of-variants .of-items { margin-top: 5pt; }
+
+/* ---------- Podsumowanie ---------- */
+/* Tabela dosunięta do prawej, pod kolumną kwot — tam klient i tak patrzy.
+   Cena całkowita wyróżnia się grubością i kreską, nie rozmiarem. */
+.of-sum {
+  margin: 10pt 0 0 auto;
+  border-collapse: collapse;
+  min-width: 78mm;
+  page-break-inside: avoid;
+}
+
+.of-sum th {
+  text-align: left;
+  font-weight: 400;
+  color: var(--of-mid);
+  padding: 2pt 8pt 2pt 0;
+  font-size: 8.5pt;
+}
+
+.of-sum td {
+  text-align: right;
+  white-space: nowrap;
+  padding: 2pt 0;
+}
+
+.of-sum .of-grand th,
+.of-sum .of-grand td {
+  border-top: 1.5pt solid var(--of-ink-rule);
+  border-bottom: 0.75pt solid var(--of-ink-rule);
+  padding-top: 4pt;
+  padding-bottom: 4pt;
+  font-size: 11.5pt;
+  font-weight: 600;
+  color: var(--of-ink);
+}
+
+/* ---------- Warunki, uwagi, podpis ---------- */
 
 .of-terms {
+  margin-top: 14pt;
   break-inside: avoid;
   page-break-inside: avoid;
 }
 
-.of-terms .of-row + .of-row {
-  border-top: 0.4pt solid var(--of-hair);
-}
-
-/* ---------- Uwagi końcowe ---------- */
+.of-terms .of-pair { padding-top: 2pt; }
 
 .of-closing {
-  margin-top: 14pt;
-  padding-top: 9pt;
-  border-top: 0.4pt solid var(--of-hair);
-  font-size: var(--of-s-1);
-  line-height: 1.55;
-  color: var(--of-mid);
-}
-
-/* Punkt nie łamie się w pół na granicy stron. Miara wiąże sam tekst —
-   kreska nad uwagami ma biec przez całą szerokość, inaczej wisi w powietrzu. */
-.of-closing-para,
-.of-closing-bullet {
-  max-width: var(--of-measure);
+  margin-top: 12pt;
   break-inside: avoid;
   page-break-inside: avoid;
+  font-size: 8.5pt;
+  color: var(--of-mid);
+  max-width: 150mm;
 }
 
-.of-closing-para {
-  margin-bottom: 5pt;
-}
+.of-closing-para { margin-bottom: 2pt; }
 
-/* Dalsze linie punktu wyrównane do tekstu, nie do kropki */
 .of-closing-bullet {
   padding-left: 8pt;
   text-indent: -8pt;
-  margin-bottom: 2pt;
+  line-height: 1.4;
 }
 
-.of-closing-space {
-  height: 5pt;
-}
-
-/* ---------- Podpis i stopka ---------- */
-
-.of-sign {
-  margin-top: 18pt;
+.of-check {
+  margin-top: 10pt;
+  padding: 6pt 8pt;
+  border: 0.75pt solid var(--of-rule);
+  font-size: 8.5pt;
+  max-width: 150mm;
   break-inside: avoid;
   page-break-inside: avoid;
 }
 
-/* Numer pod nazwiskiem: klient ma dzwonić do osoby, która liczyła ofertę,
-   a nie szukać telefonu w stopce firmowej. */
-.of-signer-phone {
-  margin-top: 1pt;
-  font-size: var(--of-s-1);
+.of-sign {
+  margin-top: 16pt;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.of-regards {
+  font-size: 8.5pt;
   color: var(--of-mid);
+  margin-bottom: 14pt;
 }
 
 .of-signer {
-  font-size: var(--of-s1);
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  margin-top: 2pt;
+  font-weight: 600;
+  border-top: 0.5pt solid var(--of-rule);
+  padding-top: 3pt;
+  display: inline-block;
+  min-width: 55mm;
 }
 
-/* Dane firmy schodzą na dół: nagłówek należy do oferty, nie do nadawcy */
-.of-foot {
-  margin-top: 20pt;
-  padding-top: 7pt;
-  border-top: 0.75pt solid var(--of-rule);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 14pt;
-  font-size: var(--of-s-2);
+.of-signer-phone {
+  font-size: 8.5pt;
   color: var(--of-mid);
-  break-inside: avoid;
-  page-break-inside: avoid;
 }

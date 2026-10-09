@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { OfferItem } from '../types';
 import { CENNIK, cennikProdukty } from '../lib/cennik';
-import { lookupPrice, matchTable, parseDimensions, surchargeAmount, toCm } from '../lib/pricing';
+import { itemDimensions, lookupPrice, matchTable, surchargeAmount, toCm } from '../lib/pricing';
 import { formatMoney } from '../lib/offers';
 
 interface Props {
@@ -20,7 +20,7 @@ interface Props {
 export default function PricePicker({ item, onPick, onClose }: Props) {
   const produkty = useMemo(() => cennikProdukty(), []);
   const podpowiedz = useMemo(() => matchTable(item, CENNIK), [item]);
-  const wymiarPozycji = useMemo(() => parseDimensions(item.material, item.name), [item]);
+  const wymiarPozycji = useMemo(() => itemDimensions(item), [item]);
 
   // Jeśli program sam rozpoznał produkt, zaczynamy od niego — rzadziej, ale bywa
   const [produktId, setProduktId] = useState(() => {

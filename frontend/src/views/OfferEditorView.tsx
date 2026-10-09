@@ -30,7 +30,7 @@ import { printOffer, savePdfOffer, emailOffer } from '../lib/offerActions';
 import { computeOfferNumberFor } from '../lib/numbering';
 import { photoFor } from '../lib/photos';
 import { priceTablesFor } from '../lib/cennik';
-import { opiszWycene, parseDimensions, priceItem, surchargeAmount } from '../lib/pricing';
+import { dimensionConflict, itemDimensions, opiszWycene, priceItem, surchargeAmount } from '../lib/pricing';
 import { useEditorShortcuts } from '../hooks/useEditorShortcuts';
 import { useActionState } from '../hooks/useActionState';
 import SuffixField from '../components/SuffixField';
@@ -200,7 +200,7 @@ export default function OfferEditorView({
    *  od nowa po każdej zmianie wymiaru, bo profil montażowy rośnie z szerokością. */
   const przelicz = (it: OfferItem): OfferItem => {
     const wycena = priceItem(it, tabeleCennika);
-    const wymiar = parseDimensions(it.material, it.name);
+    const wymiar = itemDimensions(it);
     const dostepne = wycena.table?.surcharges || [];
     const doplaty = (it.surcharges || []).map((d) => {
       const wzorzec = dostepne.find((x) => x.name === d.name);
@@ -231,7 +231,9 @@ export default function OfferEditorView({
                 // ręczna zmiana ceny odbiera cennikowi prawo do jej nadpisywania
                 const zrodlo = 'unitPrice' in patch ? { priceSource: undefined } : {};
                 const nowa = { ...it, ...patch, ...zrodlo };
-                const zmianaOpisu = 'name' in patch || 'material' in patch;
+                // wymiar bierze się także z pól specyfikacji, więc ich zmiana
+                // musi przeliczyć cenę tak samo jak poprawka opisu pozycji
+                const zmianaOpisu = 'name' in patch || 'material' in patch || 'spec' in patch;
                 return zmianaOpisu ? przelicz(nowa) : nowa;
               })
             }
@@ -501,6 +503,8 @@ export default function OfferEditorView({
           oszczędza wpisywania i pilnuje, żeby na dokumencie brzmiały tak samo. */}
       <datalist id="podpowiedzi-specyfikacji">
         {[
+          'Szerokość całkowita',
+          'Wysokość całkowita',
           'Kolor kasety',
           'Kolor prowadnic',
           'Kolor materiału',
@@ -719,13 +723,27 @@ export default function OfferEditorView({
                     {!isItemEmpty(it) && (() => {
                       const wycena = priceItem(it, tabeleCennika);
                       const doplaty = wycena.table?.surcharges || [];
-                      const wymiar = parseDimensions(it.material, it.name);
+                      const wymiar = itemDimensions(it);
                       const wybrane = it.surcharges || [];
                       return (
                         <div className="item-cennik" data-testid={`offer-cennik-${gi}-${ii}`}>
                           <span className={wycena.status === 'ok' ? 'cennik-ok' : 'cennik-brak'}>
                             {opiszWycene(wycena)}
                           </span>
+                          {/* Wycena idzie z pól specyfikacji, a na dokumencie zostaje opis
+                              pozycji — niezgodność trzeba pokazać, zanim klient dostanie
+                              cenę niepasującą do wymiaru, który u siebie przeczyta. */}
+                          {(() => {
+                            const spor = dimensionConflict(it);
+                            if (!spor) return null;
+                            return (
+                              <div className="cennik-brak" data-testid={`offer-wymiar-spor-${gi}-${ii}`}>
+                                Wymiar w opisie ({spor.zOpisu.width} × {spor.zOpisu.height} cm) nie zgadza się
+                                ze specyfikacją ({spor.zPol.width} × {spor.zPol.height} cm). Liczymy ze
+                                specyfikacji.
+                              </div>
+                            );
+                          })()}
                           {doplaty.length > 0 && (
                             <details className="cennik-doplaty">
                               <summary data-testid={`offer-doplaty-${gi}-${ii}`}>

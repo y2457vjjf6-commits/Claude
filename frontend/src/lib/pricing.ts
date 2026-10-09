@@ -1,4 +1,4 @@
-import { OfferItem, PriceSurcharge, PriceTable } from '../types';
+import { OfferItem, OfferSpecRow, PriceSurcharge, PriceTable } from '../types';
 
 /* =======================================================================
    Cennik producenta: tabela krzyżowa szerokość × wysokość.
@@ -59,6 +59,68 @@ export function parseDimensions(...teksty: (string | undefined)[]): Wymiar | nul
     };
   }
   return null;
+}
+
+/** Nazwa parametru bez ogonków, wielkości liter i kropek na końcu. */
+function nazwaParametru(etykieta: string): string {
+  return String(etykieta || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\u0142/g, 'l')
+    .toLowerCase()
+    .replace(/[.:]+\s*$/, '')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+/* Tylko te nazwy znaczą wymiar całej osłony. Celowo wąsko: „Wysokość kasety"
+   też zaczyna się od „wysokość", a jest zupełnie innym parametrem i wzięcie
+   jej do wyceny dałoby cichą pomyłkę w cenie. */
+const SZEROKOSC = ['szerokosc calkowita', 'szerokosc', 'szer'];
+const WYSOKOSC = ['wysokosc calkowita', 'wysokosc', 'wys'];
+
+const SAMA_LICZBA = new RegExp('^' + L + '\\s*(mm|cm|m)?$', 'i');
+
+/** Wymiar wpisany wprost w specyfikacji pozycji. Zwraca tylko to, co
+ *  rzeczywiście podano — brakującą stronę uzupełnia potem opis pozycji. */
+export function specDimensions(spec?: OfferSpecRow[]): { width?: number; height?: number } {
+  const wynik: { width?: number; height?: number } = {};
+  for (const w of spec || []) {
+    const nazwa = nazwaParametru(w.label);
+    const gdzie = SZEROKOSC.includes(nazwa) ? 'width' : WYSOKOSC.includes(nazwa) ? 'height' : null;
+    if (!gdzie || wynik[gdzie] !== undefined) continue;
+    const m = SAMA_LICZBA.exec(String(w.value || '').trim());
+    if (!m) continue;
+    const cm = toCm(naLiczbe(m[1]), m[2]);
+    if (cm > 0) wynik[gdzie] = cm;
+  }
+  return wynik;
+}
+
+/** Wymiar pozycji do wyceny. Pola specyfikacji mają pierwszeństwo — są
+ *  wpisane wprost, a opis pozycji to tekst, w którym liczba może znaczyć
+ *  cokolwiek. Gdy w specyfikacji jest tylko jedna strona, drugą bierzemy
+ *  dalej z opisu, żeby połowicznie wypełniony formularz nie zepsuł wyceny. */
+export function itemDimensions(item: Pick<OfferItem, 'name' | 'material' | 'spec'>): Wymiar | null {
+  const zOpisu = parseDimensions(item.material, item.name);
+  const zPol = specDimensions(item.spec);
+  const width = zPol.width ?? zOpisu?.width;
+  const height = zPol.height ?? zOpisu?.height;
+  if (width === undefined || height === undefined) return null;
+  return { width, height };
+}
+
+/** Czy wymiar w opisie pozycji kłóci się z polami specyfikacji. Wycena idzie
+ *  wtedy z pól, a na dokumencie zostaje stary opis — więc warto o tym
+ *  powiedzieć wprost, zanim klient dostanie cenę niepasującą do wymiaru. */
+export function dimensionConflict(
+  item: Pick<OfferItem, 'name' | 'material' | 'spec'>
+): { zOpisu: Wymiar; zPol: Wymiar } | null {
+  const zOpisu = parseDimensions(item.material, item.name);
+  const zPol = specDimensions(item.spec);
+  if (!zOpisu || zPol.width === undefined || zPol.height === undefined) return null;
+  if (zPol.width === zOpisu.width && zPol.height === zOpisu.height) return null;
+  return { zOpisu, zPol: { width: zPol.width, height: zPol.height } };
 }
 
 /* --------------------------- Dobór tabeli --------------------------- */
@@ -247,11 +309,14 @@ export interface WycenaPozycji {
 }
 
 /** Ile kosztuje nas ta pozycja według cennika. */
-export function priceItem(item: Pick<OfferItem, 'name' | 'material'>, tables: PriceTable[]): WycenaPozycji {
+export function priceItem(
+  item: Pick<OfferItem, 'name' | 'material' | 'spec'>,
+  tables: PriceTable[]
+): WycenaPozycji {
   if (!tables || !tables.length) return { status: 'brak-cennika' };
   const table = matchTable(item, tables);
   if (!table) return { status: 'brak-tabeli' };
-  const wymiar = parseDimensions(item.material, item.name);
+  const wymiar = itemDimensions(item);
   if (!wymiar) return { status: 'brak-wymiaru', table };
   const odczyt = lookupPrice(table, wymiar);
   if (!odczyt) {
@@ -283,7 +348,7 @@ export function opiszWycene(w: WycenaPozycji): string {
     case 'brak-tabeli':
       return 'Żadna tabela cennika nie pasuje do tego produktu ani materiału.';
     case 'brak-wymiaru':
-      return 'Dopisz wymiar w drugiej linijce, np. „186 x 202 cm”.';
+      return 'Podaj wymiar: w drugiej linijce, np. „186 x 202 cm”, albo w specyfikacji — pola „Szerokość całkowita" i „Wysokość całkowita".';
     case 'poza-tabela':
       return 'Wymiar wykracza poza tabelę producenta — cenę trzeba ustalić u niego.';
     case 'brak-ceny':

@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft, Layers, GitCompareArrows, Wallet, FileOutput,
-  Check, Loader2, Table2
+  Check, Loader2, Table2, Copy, ClipboardPaste
 } from 'lucide-react';
-import { AppState, AskConfirm, Offer, OfferColumnHeader, OfferGroup, OfferItem } from '../types';
+import { AppState, AskConfirm, Offer, OfferColumnHeader, OfferGroup, OfferItem, OfferSpecRow } from '../types';
 import { uid } from '../lib/storage';
 import {
   columnHeaderLabel,
+  filledSpec,
   formatMoney,
   groupLpNumbers,
   isItemEmpty,
@@ -21,7 +22,8 @@ import {
   offerVatRate,
   availableIssuers,
   issuerPhone,
-  parseNumber
+  parseNumber,
+  wierszyOdmiana
 } from '../lib/offers';
 import { itemNameSuggestions } from '../lib/suggestions';
 import { printOffer, savePdfOffer, emailOffer } from '../lib/offerActions';
@@ -174,6 +176,19 @@ export default function OfferEditorView({
 
   // Która pozycja ma otwarte okno wyboru ceny z cennika
   const [wybieraczka, setWybieraczka] = useState<{ gi: number; ii: number } | null>(null);
+
+  // Schowek na specyfikację. Kolejne pozycje w ofercie różnią się zwykle samym
+  // wymiarem — reszta parametrów (kolor kasety, prowadnice, strona sterowania)
+  // jest ta sama, a przepisywanie jej ręcznie przy ośmiu oknach to proszenie się
+  // o pomyłkę. Schowek żyje tylko w otwartym edytorze: nie zapisujemy go na dysk,
+  // bo to podręczna kopia, a nie dane oferty.
+  const [schowekSpec, setSchowekSpec] = useState<OfferSpecRow[] | null>(null);
+
+  const kopiujSpec = (spec: OfferSpecRow[]) => {
+    const pary = filledSpec(spec);
+    setSchowekSpec(pary);
+    toast(`Skopiowano specyfikację: ${wierszyOdmiana(pary.length)}.`);
+  };
 
   // --- cennik producenta ---
   const tabeleCennika = priceTablesFor(state.priceTables);
@@ -616,7 +631,44 @@ export default function OfferEditorView({
                       return (
                         <details className="item-spec" open={spec.length > 0}>
                           <summary data-testid={`offer-spec-${gi}-${ii}`}>
-                            Specyfikacja{spec.length ? ` (${spec.length})` : ''}
+                            <span className="spec-title">
+                              Specyfikacja{spec.length ? ` (${spec.length})` : ''}
+                            </span>
+                            {/* Kopiuj i wklej siedzą w nagłówku, a nie w środku: przy zwiniętej
+                                sekcji i tak widać, co można przenieść, i nie trzeba jej rozwijać. */}
+                            {filledSpec(spec).length > 0 && (
+                              <button
+                                className="btn btn-small btn-light spec-btn"
+                                data-testid={`offer-spec-copy-${gi}-${ii}`}
+                                title="Skopiuj tę specyfikację, żeby wstawić ją w innej pozycji"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  kopiujSpec(spec);
+                                }}
+                              >
+                                <Copy className="icon" />
+                                Kopiuj
+                              </button>
+                            )}
+                            {!!schowekSpec?.length && (
+                              <button
+                                className="btn btn-small btn-light spec-btn"
+                                data-testid={`offer-spec-paste-${gi}-${ii}`}
+                                title={
+                                  filledSpec(spec).length
+                                    ? 'Zastąpi specyfikację tej pozycji tym, co w schowku'
+                                    : 'Wstawi skopiowaną specyfikację do tej pozycji'
+                                }
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  zmien(schowekSpec.map((w) => ({ ...w })));
+                                  toast(`Wstawiono specyfikację: ${wierszyOdmiana(schowekSpec.length)}.`);
+                                }}
+                              >
+                                <ClipboardPaste className="icon" />
+                                {filledSpec(spec).length ? 'Zastąp' : 'Wklej'}
+                              </button>
+                            )}
                           </summary>
                           {spec.map((w, si) => (
                             <div className="spec-row" key={si}>

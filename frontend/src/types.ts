@@ -210,6 +210,13 @@ declare global {
 /** Nagłówek drugiej kolumny w tabeli oferty. */
 export type OfferColumnHeader = 'material' | 'size' | 'materialSize' | 'plain';
 
+/** Jedna para specyfikacji: „co" i „jakie". Osobny typ, bo te pary wędrują
+ *  między pozycjami (kopiowanie specyfikacji) i na wydruk. */
+export interface OfferSpecRow {
+  label: string;
+  value: string;
+}
+
 export interface OfferItem {
   /** Nazwa produktu, np. „Rolety wolnowiszące FI32” */
   name: string;
@@ -235,7 +242,7 @@ export interface OfferItem {
   surcharges?: PriceSurcharge[];
   /** Specyfikacja pozycji: pary „co — jakie", np. „Kolor kasety — RAL 9005".
    *  Drukowana pod nazwą, gdy oferta ma włączoną specyfikację. */
-  spec?: { label: string; value: string }[];
+  spec?: OfferSpecRow[];
 }
 
 export interface OfferGroup {

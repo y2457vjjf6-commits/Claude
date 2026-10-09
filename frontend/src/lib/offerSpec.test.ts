@@ -1,4 +1,5 @@
 import { buildOfferHtml } from './printingOffer';
+import { filledSpec, wierszyOdmiana } from './offers';
 import { DEFAULT_STATE } from './storage';
 import { Offer, OfferGroup, OfferItem } from '../types';
 
@@ -57,4 +58,55 @@ test('specyfikacja opisuje swoją pozycję, a nie sąsiednią', () => {
   // tylko jedna pozycja ma specyfikację, więc blok ma być jeden
   expect(html.match(/class="of-spec"/g)).toHaveLength(1);
   expect(html.indexOf('RAL 9005')).toBeLessThan(html.indexOf('Druga'));
+});
+
+// --- kopiowanie specyfikacji: wspólne pomocniki edytora i wydruku ---
+
+test('filledSpec wyrzuca puste wiersze i obcina spacje', () => {
+  expect(
+    filledSpec([
+      { label: '  Kolor kasety ', value: ' RAL 9005' },
+      { label: '   ', value: '' },
+      { label: '', value: 'bez nazwy' },
+      { label: 'bez wartości', value: '   ' }
+    ])
+  ).toEqual([
+    { label: 'Kolor kasety', value: 'RAL 9005' },
+    { label: '', value: 'bez nazwy' },
+    { label: 'bez wartości', value: '' }
+  ]);
+});
+
+test('filledSpec znosi brak pola', () => {
+  expect(filledSpec(undefined)).toEqual([]);
+  expect(filledSpec([])).toEqual([]);
+});
+
+test('filledSpec zwraca nowe obiekty, więc kopia nie trzyma się źródła', () => {
+  const zrodlo = [{ label: 'Kolor', value: 'Biały' }];
+  const kopia = filledSpec(zrodlo);
+  kopia[0].value = 'Antracyt';
+  expect(zrodlo[0].value).toBe('Biały');
+});
+
+test('odmiana wierszy po polsku', () => {
+  const dla = (n: number) => wierszyOdmiana(n);
+  expect(dla(1)).toBe('1 wiersz');
+  expect([dla(2), dla(3), dla(4)]).toEqual(['2 wiersze', '3 wiersze', '4 wiersze']);
+  expect([dla(5), dla(11), dla(21)]).toEqual(['5 wierszy', '11 wierszy', '21 wierszy']);
+  // nastki idą z dopełniaczem mimo końcówki 2–4
+  expect([dla(12), dla(13), dla(14)]).toEqual(['12 wierszy', '13 wierszy', '14 wierszy']);
+  expect([dla(22), dla(102)]).toEqual(['22 wiersze', '102 wiersze']);
+  expect(dla(0)).toBe('0 wierszy');
+});
+
+test('wydruk pomija puste wiersze tak samo jak schowek', () => {
+  const html = buildOfferHtml(
+    oferta({
+      showSpecs: true,
+      groups: [grupa([poz({ spec: [{ label: 'Kolor', value: 'Biały' }, { label: ' ', value: '' }] })])]
+    }),
+    DEFAULT_STATE.settings
+  );
+  expect(html.match(/of-spec-label/g)).toHaveLength(1);
 });

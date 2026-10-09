@@ -1566,6 +1566,15 @@ kbd {
   color: var(--accent, #f15a28);
 }
 
+/* Przyciski zostają w wierszu nagłówka — summary musi pozostać list-item,
+   inaczej Chromium gubi trójkącik rozwijania, więc układamy je liniowo. */
+.spec-title { margin-right: 6px; }
+
+.item-spec .spec-btn {
+  margin: 0 0 0 4px;
+  vertical-align: middle;
+}
+
 /* Dwa pola obok siebie plus kosz — „co" węższe, bo nazwy parametrów
    są krótsze od wartości. */
 .spec-row {
@@ -1575,7 +1584,7 @@ kbd {
   margin-top: 4px;
 }
 
-.item-spec .btn-light {
+.item-spec > .btn-light {
   margin-top: 6px;
 }
 

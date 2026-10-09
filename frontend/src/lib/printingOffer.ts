@@ -4,6 +4,7 @@ import {
   columnHeaderLabel,
   formatMoney,
   groupLabel,
+  filledSpec,
   groupLpNumbers,
   groupSum,
   isItemEmpty,
@@ -32,9 +33,7 @@ function ileKolumn(zeZdjeciem: boolean): number {
  *  zbiór divów, bo to dokładnie para nazwa–wartość; etykiety trzymają wspólną
  *  kolumnę, więc wartości układają się w pion i dają się porównywać wzrokiem. */
 function specyfikacja(it: OfferItem): string {
-  const pary = (it.spec || [])
-    .map((p) => ({ label: String(p.label || '').trim(), value: String(p.value || '').trim() }))
-    .filter((p) => p.label || p.value);
+  const pary = filledSpec(it.spec);
   if (!pary.length) return '';
   const komorki = pary
     .map(

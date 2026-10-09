@@ -1,4 +1,4 @@
-import { Offer, OfferColumnHeader, OfferGroup, OfferItem } from '../types';
+import { Offer, OfferColumnHeader, OfferGroup, OfferItem, OfferSpecRow } from '../types';
 
 /** Liczba z pola tekstowego — przecinek i spacje jak w polskim zapisie kwot. */
 export function parseNumber(value: unknown): number {
@@ -298,4 +298,22 @@ export function availableIssuers(state: {
     }
   }
   return Array.from(zbior);
+}
+
+/** Wypełnione pary specyfikacji, z obciętymi spacjami. Jedno miejsce dla
+ *  wydruku i dla edytora: pusty wiersz, który ktoś dodał i zostawił, nie ma
+ *  po co iść ani na dokument, ani do schowka przy kopiowaniu. */
+export function filledSpec(spec?: OfferSpecRow[]): OfferSpecRow[] {
+  return (spec || [])
+    .map((w) => ({ label: String(w.label || '').trim(), value: String(w.value || '').trim() }))
+    .filter((w) => w.label || w.value);
+}
+
+/** „1 wiersz", „3 wiersze", „5 wierszy" — bez odmiany komunikaty zgrzytają. */
+export function wierszyOdmiana(n: number): string {
+  const jednosci = n % 10;
+  const dziesiatki = n % 100;
+  if (n === 1) return '1 wiersz';
+  if (jednosci >= 2 && jednosci <= 4 && (dziesiatki < 12 || dziesiatki > 14)) return `${n} wiersze`;
+  return `${n} wierszy`;
 }

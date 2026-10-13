@@ -2716,3 +2716,22 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
     transition: none !important;
   }
 }
+
+/* ------------------------------------- szablony specyfikacji w ustawieniach */
+
+.spec-template {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--line, #2a2f36);
+  border-radius: var(--radius, 8px);
+}
+
+/* Nazwa produktu rządzi dopasowaniem, więc dostaje całą szerokość wiersza. */
+.spec-template-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.spec-template .spec-row { font-size: var(--text-xs, 11px); }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft, FileOutput, Check, Loader2 } from 'lucide-react';
 import { AppState, AskConfirm, Item, WZDocument } from '../types';
 import { WzPrefill } from '../lib/offerToWz';
+import { todayStr } from '../lib/dates';
 import Combobox from '../components/Combobox';
 import { computeNumberFor, contractorCode } from '../lib/numbering';
 import { itemNameSuggestions, unitSuggestions } from '../lib/suggestions';
@@ -23,13 +24,6 @@ interface Props {
   askConfirm: AskConfirm;
   /** Dane przeniesione z oferty cenowej — tylko dla nowego dokumentu */
   prefill?: WzPrefill | null;
-}
-
-function todayStr(): string {
-  const d = new Date();
-  return (
-    d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
-  );
 }
 
 const EMPTY_ITEM: Item = { name: '', unit: 'szt.', qty: '' };

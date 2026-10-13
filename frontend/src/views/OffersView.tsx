@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import {
-  Search, Plus, Eye, Pencil, Mail, Trash2, FileSpreadsheet, FileOutput, BellRing, Printer, FileDown, ChevronDown
+  Search, Plus, Eye, Pencil, Mail, Trash2, FileSpreadsheet, FileOutput, BellRing, Printer, FileDown, ChevronDown,
+  Copy
 } from 'lucide-react';
 import { Offer } from '../types';
 import { formatDatePl } from '../lib/printing';
@@ -23,6 +24,7 @@ interface Props {
   showCosts: boolean;
   onIssueWz: (offer: Offer) => void;
   onEdit: (id: string) => void;
+  onCopy: (offer: Offer) => void;
   onNewOffer: () => void;
   onPreview: (offer: Offer, lista: Offer[]) => void;
   onPrint: (offer: Offer) => void;
@@ -63,7 +65,7 @@ function wartoscKolumny(o: Offer, key: string): unknown {
 }
 
 export default function OffersView(props: Props) {
-  const { offers, followUpDays, showCosts, onIssueWz, onEdit, onNewOffer, onPreview, onPrint, onPdf, onEmail, onDelete, onStatusChange } = props;
+  const { offers, followUpDays, showCosts, onIssueWz, onEdit, onNewOffer, onCopy, onPreview, onPrint, onPdf, onEmail, onDelete, onStatusChange } = props;
   const [q, setQ] = useState('');
   const [filtr, setFiltr] = useState<Filtr>('wszystkie');
   const [sort, setSort] = useState<SortState>({ key: 'data', dir: 'desc' });
@@ -266,6 +268,7 @@ export default function OffersView(props: Props) {
                         zaznaczony={zaznaczanie.zbior.has(o.id)}
                         onSelect={zaznaczanie.przelacz}
                         onEdit={onEdit}
+                        onCopy={onCopy}
                         onPreview={(of) => onPreview(of, lista)}
                         onPrint={onPrint}
                         onPdf={onPdf}
@@ -329,6 +332,7 @@ interface RowProps {
   zaznaczony: boolean;
   onSelect: (id: string, zakres: boolean) => void;
   onEdit: (id: string) => void;
+  onCopy: (offer: Offer) => void;
   onPreview: (offer: Offer) => void;
   onPrint: (offer: Offer) => void;
   onPdf: (offer: Offer) => void;
@@ -345,6 +349,7 @@ function Row({
   zaznaczony,
   onSelect,
   onEdit,
+  onCopy,
   onPreview,
   onPrint,
   onPdf,
@@ -416,6 +421,13 @@ function Row({
               { key: 'print', label: 'Drukuj', ikona: <Printer className="icon" />, onPick: () => onPrint(o) },
               { key: 'pdf', label: 'Zapisz PDF', ikona: <FileDown className="icon" />, onPick: () => onPdf(o) },
               { key: 'email', label: 'Wyślij e-mailem', ikona: <Mail className="icon" />, onPick: () => onEmail(o) },
+              {
+                key: 'copy',
+                label: 'Kopiuj do nowej oferty',
+                ikona: <Copy className="icon" />,
+                separator: true,
+                onPick: () => onCopy(o)
+              },
               { key: 'wz', label: 'Wystaw WZ', ikona: <FileOutput className="icon" />, onPick: () => onIssueWz(o) },
               {
                 key: 'delete',

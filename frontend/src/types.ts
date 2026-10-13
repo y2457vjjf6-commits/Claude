@@ -73,6 +73,16 @@ export interface Seller {
 }
 
 /** Zdjęcie produktu pokazywane klientowi przy pozycji oferty. */
+/** Specyfikacja przypisana do produktu. Ten sam produkt wraca na dziesiątkach
+ *  ofert z tym samym zestawem parametrów, więc trzymamy go raz w ustawieniach
+ *  i dobieramy do pozycji po nazwie — tak samo jak zdjęcia. */
+export interface SpecTemplate {
+  /** Nazwa produktu albo jej fragment, np. „roleta kasetowa uni” */
+  name: string;
+  /** Wiersze wstawiane do pozycji; wartości bywają puste — do uzupełnienia */
+  rows: OfferSpecRow[];
+}
+
 export interface ProductPhoto {
   /** Nazwa lub jej fragment, np. „roleta kasetowa uni” albo kod tkaniny „C102” */
   name: string;
@@ -97,6 +107,8 @@ export interface Settings {
   issuerPhones?: Record<string, string>;
   /** Biblioteka zdjęć produktów — dobierane do pozycji po nazwie */
   productPhotos?: ProductPhoto[];
+  /** Szablony specyfikacji przypisane do produktów — wstawiane do pozycji po nazwie */
+  specTemplates?: SpecTemplate[];
   /** Domyślne ustawienia nowej oferty */
   offerDefaults: {
     deadlineDays: string;

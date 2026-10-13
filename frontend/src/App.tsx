@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, AskConfirm, Offer, ViewName, WZDocument } from './types';
+import { AppState, AskConfirm, Offer, OfferSpecRow, ViewName, WZDocument } from './types';
 import { loadState, persistState, DEFAULT_STATE } from './lib/storage';
 import { printDocument, savePdfDocument, emailDocument, buildPrintHtml } from './lib/printing';
 import { printOffer, savePdfOffer, emailOffer } from './lib/offerActions';
 import { buildOfferHtml } from './lib/printingOffer';
 import { offerFileName, offersAwaitingReply, parseNumber } from './lib/offers';
 import { wzPrefillFromOffer, WzPrefill } from './lib/offerToWz';
+import { duplicateOffer } from './lib/offerCopy';
+import { todayStr } from './lib/dates';
 import { emailMany, opiszWysylke, printManyDocs, printManyOffers } from './lib/bulk';
 import { wzPrintable } from './lib/printing';
 import { offerPrintable } from './lib/offerActions';
@@ -37,6 +39,13 @@ export default function App() {
   // każde przeniesienie otwiera świeży formularz, a zwykła „Nowa WZ” go czyści.
   const [wzPrefill, setWzPrefill] = useState<WzPrefill | null>(null);
   const [wzPrefillSeq, setWzPrefillSeq] = useState(0);
+  // Oferta skopiowana do nowej — ta sama sztuczka z licznikiem co przy WZ.
+  const [offerPrefill, setOfferPrefill] = useState<Offer | null>(null);
+  const [offerPrefillSeq, setOfferPrefillSeq] = useState(0);
+  // Schowek na specyfikację. Siedzi tutaj, a nie w edytorze, bo edytor znika
+  // przy wyjściu do listy — a skopiowaną specyfikację chce się wkleić także
+  // w zupełnie innej ofercie.
+  const [schowekSpec, setSchowekSpec] = useState<OfferSpecRow[] | null>(null);
   const [paletaOtwarta, setPaletaOtwarta] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -122,7 +131,18 @@ export default function App() {
   }, []);
 
   const openOfferEditor = useCallback((id: string | null) => {
+    setOfferPrefill(null);
     setEditingOfferId(id);
+    setView('offerEdit');
+  }, []);
+
+  /** Kopiuje ofertę do nowej: ta sama treść, własny numer przy zapisie.
+   *  Nic nie zapisujemy od razu — dopóki użytkownik nie kliknie „Zapisz",
+   *  w danych jest tylko oferta źródłowa, nietknięta. */
+  const copyOfferToNew = useCallback((zrodlo: Offer) => {
+    setOfferPrefill(duplicateOffer(zrodlo, todayStr()));
+    setOfferPrefillSeq((n) => n + 1);
+    setEditingOfferId(null);
     setView('offerEdit');
   }, []);
 
@@ -371,6 +391,7 @@ export default function App() {
             onIssueWz={issueWzFromOffer}
             onEdit={(id) => openOfferEditor(id)}
             onNewOffer={() => openOfferEditor(null)}
+            onCopy={copyOfferToNew}
             onPreview={(offer, lista) => setPreviewOffer({ lista, idx: lista.indexOf(offer) })}
             onPrint={async (offer) => {
               if (await printOffer(offer, state.settings, toast)) {
@@ -396,8 +417,12 @@ export default function App() {
         )}
         {view === 'offerEdit' && (
           <OfferEditorView
+            key={editingOfferId || (offerPrefill ? `kopia-${offerPrefillSeq}` : 'nowa')}
             state={state}
             editingOfferId={editingOfferId}
+            prefill={offerPrefill}
+            specClipboard={schowekSpec}
+            onSpecClipboard={setSchowekSpec}
             onPersist={persist}
             onSaved={(id) => setEditingOfferId(id)}
             onBack={() => setView('offers')}

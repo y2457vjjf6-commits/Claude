@@ -35,6 +35,10 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
       phone: (st.issuerPhones || {})[n] || ''
     })),
     photoRows: (st.productPhotos || []).map((z) => ({ ...z })),
+    specRows: (st.specTemplates || []).map((t) => ({
+      name: t.name,
+      rows: (t.rows || []).map((w) => ({ ...w }))
+    })),
     offerDeadlineDays: st.offerDefaults?.deadlineDays || '21',
     offerValidityDays: st.offerDefaults?.validityDays || '30',
     offerValidityEnabled: st.offerDefaults?.validityEnabled ?? false,
@@ -88,6 +92,12 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
     next.settings.productPhotos = form.photoRows
       .map((z) => ({ name: z.name.trim(), dataUrl: z.dataUrl }))
       .filter((z) => z.name && z.dataUrl);
+    next.settings.specTemplates = form.specRows
+      .map((t) => ({
+        name: t.name.trim(),
+        rows: t.rows.map((w) => ({ label: w.label.trim(), value: w.value.trim() })).filter((w) => w.label)
+      }))
+      .filter((t) => t.name && t.rows.length);
     next.settings.offerClosingText = form.offerClosingText;
     next.settings.offerCheckText = form.offerCheckText;
     next.settings.offerDepositPercent = form.offerDepositPercent.trim();
@@ -391,6 +401,123 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
             </select>
           </label>
         </div>
+      </div>
+
+      <div className="card">
+        <h3 className="card-title">Specyfikacje produktów</h3>
+        <p className="muted card-note">
+          Szablon to zestaw parametrów przypisany do produktu — kaseta, prowadnice, strona
+          sterowania, wymiary. Pozycja dobiera go po nazwie tą samą drogą co zdjęcia: wszystkie
+          słowa wpisu muszą stać w nazwie produktu albo w wierszu materiału. Pozycja bez własnej
+          specyfikacji dostaje szablon od razu po wpisaniu nazwy; pozycji już wypełnionej program
+          nie rusza — wtedy szablon wstawia się przyciskiem przy pozycji. Wartość można zostawić
+          pustą: to miejsce do uzupełnienia przy konkretnym oknie.
+        </p>
+        {form.specRows.map((t, i) => (
+          <div className="spec-template" key={i} data-testid={`spec-template-${i}`}>
+            <div className="spec-template-head">
+              <input
+                type="text"
+                className="input"
+                data-testid={`spec-template-name-${i}`}
+                aria-label="Nazwa produktu lub kod materiału"
+                placeholder="np. roleta kasetowa uni"
+                value={t.name}
+                onChange={(e) =>
+                  set({ specRows: form.specRows.map((r, j) => (j === i ? { ...r, name: e.target.value } : r)) })
+                }
+              />
+              <button
+                className="btn btn-small btn-danger item-remove"
+                data-testid={`spec-template-remove-${i}`}
+                aria-label="Usuń szablon"
+                title="Usuń szablon"
+                onClick={() => set({ specRows: form.specRows.filter((_, j) => j !== i) })}
+              >
+                <X className="icon" />
+              </button>
+            </div>
+            {t.rows.map((w, wi) => (
+              <div className="spec-row" key={wi}>
+                <input
+                  type="text"
+                  className="input"
+                  data-testid={`spec-template-label-${i}-${wi}`}
+                  aria-label="Co"
+                  placeholder="np. Kolor kasety"
+                  value={w.label}
+                  onChange={(e) =>
+                    set({
+                      specRows: form.specRows.map((r, j) =>
+                        j === i
+                          ? { ...r, rows: r.rows.map((x, k) => (k === wi ? { ...x, label: e.target.value } : x)) }
+                          : r
+                      )
+                    })
+                  }
+                />
+                <input
+                  type="text"
+                  className="input"
+                  data-testid={`spec-template-value-${i}-${wi}`}
+                  aria-label="Jakie"
+                  placeholder="zostaw puste, jeśli zależy od okna"
+                  value={w.value}
+                  onChange={(e) =>
+                    set({
+                      specRows: form.specRows.map((r, j) =>
+                        j === i
+                          ? { ...r, rows: r.rows.map((x, k) => (k === wi ? { ...x, value: e.target.value } : x)) }
+                          : r
+                      )
+                    })
+                  }
+                />
+                <button
+                  className="btn btn-small btn-danger item-remove"
+                  data-testid={`spec-template-row-remove-${i}-${wi}`}
+                  aria-label="Usuń wiersz"
+                  onClick={() =>
+                    set({
+                      specRows: form.specRows.map((r, j) =>
+                        j === i ? { ...r, rows: r.rows.filter((_, k) => k !== wi) } : r
+                      )
+                    })
+                  }
+                >
+                  <X className="icon" />
+                </button>
+              </div>
+            ))}
+            <button
+              className="btn btn-small btn-light"
+              data-testid={`spec-template-add-row-${i}`}
+              onClick={() =>
+                set({
+                  specRows: form.specRows.map((r, j) =>
+                    j === i ? { ...r, rows: [...r.rows, { label: '', value: '' }] } : r
+                  )
+                })
+              }
+            >
+              <Plus className="icon" />
+              Dodaj wiersz
+            </button>
+          </div>
+        ))}
+        {!form.specRows.length && (
+          <p className="muted employees-empty">Nie ma jeszcze żadnego szablonu specyfikacji.</p>
+        )}
+        <button
+          className="btn btn-light"
+          data-testid="add-spec-template"
+          onClick={() =>
+            set({ specRows: [...form.specRows, { name: '', rows: [{ label: '', value: '' }] }] })
+          }
+        >
+          <Plus className="icon" />
+          Dodaj szablon
+        </button>
       </div>
 
       <div className="card">

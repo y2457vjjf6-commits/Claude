@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft, Layers, GitCompareArrows, Wallet, FileOutput,
-  Check, Loader2, Table2, Copy, ClipboardPaste
+  Check, Loader2, Table2, Copy, ClipboardPaste, FileText
 } from 'lucide-react';
 import { AppState, AskConfirm, Offer, OfferColumnHeader, OfferGroup, OfferItem, OfferSpecRow } from '../types';
 import { uid } from '../lib/storage';
+import { todayStr } from '../lib/dates';
 import {
   columnHeaderLabel,
   filledSpec,
@@ -31,6 +32,7 @@ import { computeOfferNumberFor } from '../lib/numbering';
 import { photoFor } from '../lib/photos';
 import { priceTablesFor } from '../lib/cennik';
 import { dimensionConflict, itemDimensions, opiszWycene, priceItem, surchargeAmount } from '../lib/pricing';
+import { autoSpecFor, matchSpecTemplate, uzyteczneWiersze } from '../lib/specTemplates';
 import { useEditorShortcuts } from '../hooks/useEditorShortcuts';
 import { useActionState } from '../hooks/useActionState';
 import SuffixField from '../components/SuffixField';
@@ -49,11 +51,12 @@ interface Props {
   askConfirm: AskConfirm;
   /** Przepisanie tej oferty na nowy dokument WZ */
   onIssueWz: (offer: Offer) => void;
-}
-
-function todayStr(): string {
-  const d = new Date();
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  /** Treść oferty skopiowanej do nowej — wypełnia świeży formularz */
+  prefill?: Offer | null;
+  /** Schowek na specyfikację; trzymany poza edytorem, żeby przetrwał
+   *  przejście do innej oferty */
+  specClipboard?: OfferSpecRow[] | null;
+  onSpecClipboard?: (rows: OfferSpecRow[] | null) => void;
 }
 
 const EMPTY_ITEM = (): OfferItem => ({ name: '', material: '', qty: '1', unitPrice: '' });
@@ -78,13 +81,19 @@ export default function OfferEditorView({
   emailConfirm,
   onMark,
   askConfirm,
-  onIssueWz
+  onIssueWz,
+  prefill = null,
+  specClipboard = null,
+  onSpecClipboard
 }: Props) {
   const existing = editingOfferId ? state.offers.find((o) => o.id === editingOfferId) || null : null;
   const initRef = useRef<string | null>('__none__');
 
   function initOffer(o: Offer | null): Offer {
     const d = state.settings.offerDefaults;
+    // Kopia oferty przychodzi gotowa — ma już wszystko poza numerem, który
+    // nada się przy zapisie, bo edytor pracuje tu w trybie nowej oferty.
+    if (!o && prefill) return structuredClone(prefill);
     return o
       ? structuredClone(o)
       : ({
@@ -177,17 +186,18 @@ export default function OfferEditorView({
   // Która pozycja ma otwarte okno wyboru ceny z cennika
   const [wybieraczka, setWybieraczka] = useState<{ gi: number; ii: number } | null>(null);
 
-  // Schowek na specyfikację. Kolejne pozycje w ofercie różnią się zwykle samym
-  // wymiarem — reszta parametrów (kolor kasety, prowadnice, strona sterowania)
-  // jest ta sama, a przepisywanie jej ręcznie przy ośmiu oknach to proszenie się
-  // o pomyłkę. Schowek żyje tylko w otwartym edytorze: nie zapisujemy go na dysk,
-  // bo to podręczna kopia, a nie dane oferty.
-  const [schowekSpec, setSchowekSpec] = useState<OfferSpecRow[] | null>(null);
+  // Schowek na specyfikację. Kolejne pozycje różnią się zwykle samym wymiarem —
+  // reszta parametrów (kolor kasety, prowadnice, strona sterowania) jest ta sama,
+  // a przepisywanie jej ręcznie przy ośmiu oknach to proszenie się o pomyłkę.
+  // Trzyma go App, nie edytor: dzięki temu skopiowaną specyfikację da się wkleić
+  // także po wyjściu do listy i otwarciu zupełnie innej oferty. Na dysk nie
+  // trafia — to podręczna kopia, a nie dane oferty.
+  const schowekSpec = specClipboard;
 
   const kopiujSpec = (spec: OfferSpecRow[]) => {
     const pary = filledSpec(spec);
-    setSchowekSpec(pary);
-    toast(`Skopiowano specyfikację: ${wierszyOdmiana(pary.length)}.`);
+    onSpecClipboard?.(pary);
+    toast(`Skopiowano specyfikację: ${wierszyOdmiana(pary.length)}. Można ją wkleić także w innej ofercie.`);
   };
 
   // --- cennik producenta ---
@@ -234,7 +244,13 @@ export default function OfferEditorView({
                 // wymiar bierze się także z pól specyfikacji, więc ich zmiana
                 // musi przeliczyć cenę tak samo jak poprawka opisu pozycji
                 const zmianaOpisu = 'name' in patch || 'material' in patch || 'spec' in patch;
-                return zmianaOpisu ? przelicz(nowa) : nowa;
+                if (!zmianaOpisu) return nowa;
+                // Szablon przypisany do produktu wchodzi przed wyceną: jego wiersze
+                // mogą nieść wymiar, a wtedy cena ma się policzyć od razu z nich.
+                // Pozycję z własną specyfikacją zostawia w spokoju.
+                const zSzablonu =
+                  'name' in patch || 'material' in patch ? autoSpecFor(nowa, state.settings) : null;
+                return przelicz(zSzablonu ? { ...nowa, spec: zSzablonu } : nowa);
               })
             }
           : g
@@ -654,6 +670,26 @@ export default function OfferEditorView({
                                 Kopiuj
                               </button>
                             )}
+                            {(() => {
+                              const szablon = matchSpecTemplate(it, state.settings.specTemplates);
+                              if (!szablon) return null;
+                              return (
+                                <button
+                                  className="btn btn-small btn-light spec-btn"
+                                  data-testid={`offer-spec-template-${gi}-${ii}`}
+                                  title={`Wstawi specyfikację zapisaną dla „${szablon.name}", zastępując obecne wiersze`}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    const wiersze = uzyteczneWiersze(szablon);
+                                    zmien(wiersze);
+                                    toast(`Wstawiono szablon „${szablon.name}": ${wierszyOdmiana(wiersze.length)}.`);
+                                  }}
+                                >
+                                  <FileText className="icon" />
+                                  Szablon
+                                </button>
+                              );
+                            })()}
                             {!!schowekSpec?.length && (
                               <button
                                 className="btn btn-small btn-light spec-btn"

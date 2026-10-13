@@ -43,9 +43,9 @@ function pasujeSlowo(slowoWpisu: string, slowaPozycji: string[]): boolean {
   return slowaPozycji.some((w) => w.startsWith(rdzen));
 }
 
-/** Dobiera zdjęcie do pozycji. Szukamy i w nazwie, i w wierszu materiału —
- *  dzięki temu można przypisać zdjęcie zarówno produktowi („roleta kasetowa”),
- *  jak i konkretnej tkaninie („C102”).
+/** Dobiera wpis biblioteki do pozycji oferty — po nazwie, nie po kluczu.
+ *  Szukamy i w nazwie pozycji, i w wierszu materiału, więc wpis można przypisać
+ *  zarówno produktowi („roleta kasetowa”), jak i tkaninie („C102”).
  *
  *  Wpis pasuje, gdy wszystkie jego słowa stoją w pozycji, w dowolnej kolejności
  *  i w dowolnej odmianie: wpis „roleta kasetowa uni” trafia na pozycję
@@ -53,21 +53,26 @@ function pasujeSlowo(slowoWpisu: string, slowaPozycji: string[]): boolean {
  *
  *  Wygrywa wpis najbardziej szczegółowy, czyli ten o największej liczbie słów.
  *  Gdy w bibliotece są „roleta” i „roleta kasetowa uni”, pozycja z pełną nazwą
- *  dostaje to drugie zdjęcie. Przy remisie decyduje dłuższa nazwa wpisu.
+ *  dostaje to drugie. Przy remisie decyduje dłuższa nazwa wpisu.
+ *
+ *  `pelny` odsiewa wpisy niegotowe do użycia — zdjęcie bez pliku, szablon bez
+ *  wierszy — żeby pusty wpis nie wygrywał z dobrym tylko dlatego, że ma
+ *  dokładniejszą nazwę.
  */
-export function matchPhoto(
+export function matchByName<T extends { name: string }>(
   item: Pick<OfferItem, 'name' | 'material'>,
-  photos: ProductPhoto[] | undefined
-): ProductPhoto | null {
+  wpisy: T[] | undefined,
+  pelny: (wpis: T) => boolean = () => true
+): T | null {
   const slowaPozycji = slowa(`${item?.name || ''} · ${item?.material || ''}`);
   if (!slowaPozycji.length) return null;
 
-  let najlepsze: ProductPhoto | null = null;
+  let najlepsze: T | null = null;
   let najwiecejSlow = 0;
   let najdluzszaNazwa = 0;
-  for (const z of photos || []) {
+  for (const z of wpisy || []) {
     const slowaWpisu = slowa(z?.name || '');
-    if (!slowaWpisu.length || !z?.dataUrl) continue;
+    if (!slowaWpisu.length || !pelny(z)) continue;
     if (!slowaWpisu.every((s) => pasujeSlowo(s, slowaPozycji))) continue;
 
     const dlugosc = normalizujNazwe(z.name).length;
@@ -81,6 +86,14 @@ export function matchPhoto(
     }
   }
   return najlepsze;
+}
+
+/** Zdjęcie dla pozycji — wpis bez pliku nie liczy się jako dopasowanie. */
+export function matchPhoto(
+  item: Pick<OfferItem, 'name' | 'material'>,
+  photos: ProductPhoto[] | undefined
+): ProductPhoto | null {
+  return matchByName(item, photos, (z) => !!z.dataUrl);
 }
 
 /** Zdjęcie dla pozycji albo pusty napis, gdy nic nie pasuje. */

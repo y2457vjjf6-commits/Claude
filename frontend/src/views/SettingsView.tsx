@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Save, PlugZap, Loader2, FolderOpen, HardDriveDownload, HardDriveUpload, Plus, X } from 'lucide-react';
+import {
+  Save, PlugZap, Loader2, FolderOpen, HardDriveDownload, HardDriveUpload, Plus, X, ChevronUp, ChevronDown
+} from 'lucide-react';
+import { movedBy } from '../lib/offers';
 import { AppState } from '../types';
 import { dataLocation, hasApi } from '../lib/storage';
 import { backupNow, chooseBackupFolder, restoreBackup } from '../lib/backup';
@@ -473,20 +476,56 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
                     })
                   }
                 />
-                <button
-                  className="btn btn-small btn-danger item-remove"
-                  data-testid={`spec-template-row-remove-${i}-${wi}`}
-                  aria-label="Usuń wiersz"
-                  onClick={() =>
-                    set({
-                      specRows: form.specRows.map((r, j) =>
-                        j === i ? { ...r, rows: r.rows.filter((_, k) => k !== wi) } : r
-                      )
-                    })
-                  }
-                >
-                  <X className="icon" />
-                </button>
+                <div className="spec-row-actions">
+                  {/* Szablon wstawia wiersze w swojej kolejności, a ta jest
+                      kolejnością na dokumencie — więc układa się ją tutaj. */}
+                  <button
+                    className="btn btn-small btn-light item-remove"
+                    data-testid={`spec-template-row-up-${i}-${wi}`}
+                    aria-label="Przesuń wiersz wyżej"
+                    title="Przesuń wyżej"
+                    disabled={wi === 0}
+                    onClick={() =>
+                      set({
+                        specRows: form.specRows.map((r, j) =>
+                          j === i ? { ...r, rows: movedBy(r.rows, wi, -1) } : r
+                        )
+                      })
+                    }
+                  >
+                    <ChevronUp className="icon" />
+                  </button>
+                  <button
+                    className="btn btn-small btn-light item-remove"
+                    data-testid={`spec-template-row-down-${i}-${wi}`}
+                    aria-label="Przesuń wiersz niżej"
+                    title="Przesuń niżej"
+                    disabled={wi === t.rows.length - 1}
+                    onClick={() =>
+                      set({
+                        specRows: form.specRows.map((r, j) =>
+                          j === i ? { ...r, rows: movedBy(r.rows, wi, 1) } : r
+                        )
+                      })
+                    }
+                  >
+                    <ChevronDown className="icon" />
+                  </button>
+                  <button
+                    className="btn btn-small btn-danger item-remove"
+                    data-testid={`spec-template-row-remove-${i}-${wi}`}
+                    aria-label="Usuń wiersz"
+                    onClick={() =>
+                      set({
+                        specRows: form.specRows.map((r, j) =>
+                          j === i ? { ...r, rows: r.rows.filter((_, k) => k !== wi) } : r
+                        )
+                      })
+                    }
+                  >
+                    <X className="icon" />
+                  </button>
+                </div>
               </div>
             ))}
             <button

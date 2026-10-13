@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft, Layers, GitCompareArrows, Wallet, FileOutput,
-  Check, Loader2, Table2, Copy, ClipboardPaste, FileText
+  Check, Loader2, Table2, Copy, ClipboardPaste, FileText, ChevronUp, ChevronDown
 } from 'lucide-react';
 import { AppState, AskConfirm, Offer, OfferColumnHeader, OfferGroup, OfferItem, OfferSpecRow } from '../types';
 import { uid } from '../lib/storage';
@@ -13,6 +13,7 @@ import {
   groupLpNumbers,
   isItemEmpty,
   itemTotal,
+  movedBy,
   normalizeAmount,
   offerCosts,
   offerTotals,
@@ -735,14 +736,38 @@ export default function OfferEditorView({
                                   zmien(spec.map((x, k) => (k === si ? { ...x, value: e.target.value } : x)))
                                 }
                               />
-                              <button
-                                className="btn btn-small btn-danger item-remove"
-                                data-testid={`offer-spec-remove-${gi}-${ii}-${si}`}
-                                aria-label="Usuń wiersz specyfikacji"
-                                onClick={() => zmien(spec.filter((_, k) => k !== si))}
-                              >
-                                <X className="icon" />
-                              </button>
+                              <div className="spec-row-actions">
+                                {/* Kolejność wierszy to kolejność na dokumencie — wymiar
+                                    u góry, drobiazgi niżej — więc da się ją ułożyć. */}
+                                <button
+                                  className="btn btn-small btn-light item-remove"
+                                  data-testid={`offer-spec-up-${gi}-${ii}-${si}`}
+                                  aria-label="Przesuń wiersz wyżej"
+                                  title="Przesuń wyżej"
+                                  disabled={si === 0}
+                                  onClick={() => zmien(movedBy(spec, si, -1))}
+                                >
+                                  <ChevronUp className="icon" />
+                                </button>
+                                <button
+                                  className="btn btn-small btn-light item-remove"
+                                  data-testid={`offer-spec-down-${gi}-${ii}-${si}`}
+                                  aria-label="Przesuń wiersz niżej"
+                                  title="Przesuń niżej"
+                                  disabled={si === spec.length - 1}
+                                  onClick={() => zmien(movedBy(spec, si, 1))}
+                                >
+                                  <ChevronDown className="icon" />
+                                </button>
+                                <button
+                                  className="btn btn-small btn-danger item-remove"
+                                  data-testid={`offer-spec-remove-${gi}-${ii}-${si}`}
+                                  aria-label="Usuń wiersz specyfikacji"
+                                  onClick={() => zmien(spec.filter((_, k) => k !== si))}
+                                >
+                                  <X className="icon" />
+                                </button>
+                              </div>
                             </div>
                           ))}
                           <button

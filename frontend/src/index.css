@@ -2735,3 +2735,9 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
 }
 
 .spec-template .spec-row { font-size: var(--text-xs, 11px); }
+
+/* Strzałki i kosz w jednym wierszu specyfikacji — i w ofercie, i w szablonie. */
+.spec-row-actions {
+  display: flex;
+  gap: 3px;
+}

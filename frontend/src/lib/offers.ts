@@ -317,3 +317,15 @@ export function wierszyOdmiana(n: number): string {
   if (jednosci >= 2 && jednosci <= 4 && (dziesiatki < 12 || dziesiatki > 14)) return `${n} wiersze`;
   return `${n} wierszy`;
 }
+
+/** Lista z elementem przesuniętym o `krok` miejsc. Poza zakresem oddaje tę
+ *  samą listę — przycisk na skraju ma nic nie robić, a nie zawijać wiersza
+ *  z góry na dół. */
+export function movedBy<T>(lista: T[], i: number, krok: number): T[] {
+  const cel = i + krok;
+  if (i < 0 || i >= lista.length || cel < 0 || cel >= lista.length || krok === 0) return lista;
+  const kopia = lista.slice();
+  const [wyjety] = kopia.splice(i, 1);
+  kopia.splice(cel, 0, wyjety);
+  return kopia;
+}

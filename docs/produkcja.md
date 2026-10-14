@@ -10,6 +10,29 @@ w tym samym czasie.**
 
 ---
 
+## 0. Decyzje (zatwierdzone 14.10.2026)
+
+| Pytanie | Rozstrzygnięcie |
+|---|---|
+| Etap na pozycję czy na sztukę | **Na pozycję**, z możliwością rozbicia tej pozycji, która idzie różnym tempem |
+| Etapy | Lista z punktu 1 wystarcza na start; zmienne w Ustawieniach |
+| Ceny w warsztacie | **Nie** — zlecenie nie niesie kwot |
+| Termin | **Na zlecenie**, nie na pozycję |
+| Powiadomienia | **Tak** — biuro ma być na bieżąco z postępem |
+| Kto zakłada zlecenie | **Tylko biuro.** Warsztat: odczyt, zmiana etapu i notatka — nic więcej |
+
+**Kolejność ustalona z klientem:** najpierw wersja lokalna na jednym stanowisku,
+żeby zobaczyć, jak to działa i wygląda. Potem ewentualnie wspólny folder
+(OneDrive), a serwer dopiero, gdy przepływ pracy się potwierdzi.
+
+To znaczy, że punkt 3 (SQLite) **świadomie odkładamy**: moduł powstaje na
+dzisiejszym zapisie do pliku JSON, który przy obecnej skali wystarcza. Model
+danych projektuję tak, żeby przeniesienie do bazy było później mechaniczne,
+a nie przepisaniem od zera. Przy kilkuset zleceniach i dzienniku wrócimy
+do tego tematu — i powiem o tym, zanim zacznie przeszkadzać.
+
+---
+
 ## 1. Z czego to się składa
 
 ### Zlecenie produkcyjne
@@ -164,6 +187,19 @@ Dane klientów (nazwa, adres, NIP, telefon) trafią na serwer zewnętrznej firmy
 Potrzebna jest umowa powierzenia przetwarzania z dostawcą i region UE. To nie
 jest przeszkoda, ale formalność, o której trzeba wiedzieć **przed** uruchomieniem,
 a nie po.
+
+---
+
+## 4a. Stan prac
+
+**Zrobione (wersja lokalna, 14.10.2026):** zlecenie z oferty i od zera, lista
+z terminami i postępem, karta zlecenia z autozapisem, etap każdej pozycji,
+rozbijanie pozycji na sztuki, dziennik zmian, tablica produkcji, kartka
+na warsztat bez cen, etapy i osoba stanowiska w Ustawieniach, licznik zleceń
+po terminie przy zakładce.
+
+**Niezrobione:** wspólny folder (OneDrive), konta i role, powiadomienia poza
+licznikiem przy zakładce, przeniesienie zapisu do bazy.
 
 ---
 

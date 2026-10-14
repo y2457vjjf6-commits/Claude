@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import {
   Search, Plus, Eye, Pencil, Mail, Trash2, FileSpreadsheet, FileOutput, BellRing, Printer, FileDown, ChevronDown,
-  Copy
+  Copy, Factory
 } from 'lucide-react';
 import { Offer } from '../types';
 import { formatDatePl } from '../lib/printing';
@@ -25,6 +25,7 @@ interface Props {
   onIssueWz: (offer: Offer) => void;
   onEdit: (id: string) => void;
   onCopy: (offer: Offer) => void;
+  onProduce: (offer: Offer) => void;
   onNewOffer: () => void;
   onPreview: (offer: Offer, lista: Offer[]) => void;
   onPrint: (offer: Offer) => void;
@@ -65,7 +66,7 @@ function wartoscKolumny(o: Offer, key: string): unknown {
 }
 
 export default function OffersView(props: Props) {
-  const { offers, followUpDays, showCosts, onIssueWz, onEdit, onNewOffer, onCopy, onPreview, onPrint, onPdf, onEmail, onDelete, onStatusChange } = props;
+  const { offers, followUpDays, showCosts, onIssueWz, onEdit, onNewOffer, onCopy, onProduce, onPreview, onPrint, onPdf, onEmail, onDelete, onStatusChange } = props;
   const [q, setQ] = useState('');
   const [filtr, setFiltr] = useState<Filtr>('wszystkie');
   const [sort, setSort] = useState<SortState>({ key: 'data', dir: 'desc' });
@@ -269,6 +270,7 @@ export default function OffersView(props: Props) {
                         onSelect={zaznaczanie.przelacz}
                         onEdit={onEdit}
                         onCopy={onCopy}
+                        onProduce={onProduce}
                         onPreview={(of) => onPreview(of, lista)}
                         onPrint={onPrint}
                         onPdf={onPdf}
@@ -333,6 +335,7 @@ interface RowProps {
   onSelect: (id: string, zakres: boolean) => void;
   onEdit: (id: string) => void;
   onCopy: (offer: Offer) => void;
+  onProduce: (offer: Offer) => void;
   onPreview: (offer: Offer) => void;
   onPrint: (offer: Offer) => void;
   onPdf: (offer: Offer) => void;
@@ -350,6 +353,7 @@ function Row({
   onSelect,
   onEdit,
   onCopy,
+  onProduce,
   onPreview,
   onPrint,
   onPdf,
@@ -427,6 +431,12 @@ function Row({
                 ikona: <Copy className="icon" />,
                 separator: true,
                 onPick: () => onCopy(o)
+              },
+              {
+                key: 'produce',
+                label: 'Zleć do produkcji',
+                ikona: <Factory className="icon" />,
+                onPick: () => onProduce(o)
               },
               { key: 'wz', label: 'Wystaw WZ', ikona: <FileOutput className="icon" />, onPick: () => onIssueWz(o) },
               {

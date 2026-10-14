@@ -2741,3 +2741,193 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
   display: flex;
   gap: 3px;
 }
+
+/* =========================================== Produkcja */
+
+/* Nagłówek ekranu z przyciskami w jednej linii — .view-head układa w kolumnę,
+   więc tu wracamy do wiersza. */
+.editor-head {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.editor-head .page-title { margin: 0; }
+
+.stage-dot-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.stage-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.progress-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.progress-bar {
+  width: 86px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line, #2a2f36);
+  overflow: hidden;
+}
+
+.progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent, #f15a28);
+}
+
+/* ---- karta zlecenia ---- */
+
+.order-item {
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--line, #2a2f36);
+  border-radius: var(--radius, 8px);
+}
+
+/* Zrobione pozycje przygasają, zamiast znikać: czasem trzeba do nich wrócić. */
+.order-item.done { opacity: 0.55; }
+
+.order-item-head {
+  display: grid;
+  grid-template-columns: 1fr 90px auto;
+  gap: 6px;
+}
+
+.order-item-material {
+  margin: 6px 0 0;
+  font-size: var(--text-xs, 11px);
+}
+
+.order-item-spec {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr);
+  column-gap: 8px;
+  row-gap: 1px;
+  margin: 6px 0 0;
+  font-size: var(--text-xs, 11px);
+}
+
+.order-item-spec dt { color: var(--muted, #8b94a3); }
+.order-item-spec dt::after { content: ':'; }
+.order-item-spec dd { margin: 0; }
+.order-item-spec > div { display: contents; }
+
+.order-item-stage {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) auto minmax(160px, 2fr) auto;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.order-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--text-xs, 11px);
+}
+
+.order-log li {
+  display: grid;
+  grid-template-columns: 140px 1fr auto;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line, #2a2f36);
+}
+
+.order-log-at { color: var(--muted, #8b94a3); }
+.order-log-by { color: var(--muted, #8b94a3); }
+.order-log-note { grid-column: 2 / -1; color: var(--muted, #8b94a3); }
+
+/* ---- tablica ---- */
+
+.board {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(184px, 1fr);
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.board-col {
+  background: var(--card, #171b21);
+  border: 1px solid var(--line, #2a2f36);
+  border-radius: var(--radius, 8px);
+  padding: 8px;
+  min-height: 160px;
+}
+
+.board-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin: -8px -8px 8px;
+  padding: 8px;
+  border-top: 3px solid var(--accent, #f15a28);
+  border-radius: var(--radius, 8px) var(--radius, 8px) 0 0;
+  font-weight: 600;
+}
+
+.board-card {
+  border: 1px solid var(--line, #2a2f36);
+  border-radius: var(--radius, 8px);
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
+/* Po terminie — czerwona krawędź z boku, czytelna z metra. */
+.board-card.late { border-left: 3px solid var(--danger, #d64545); }
+
+.board-card-open {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.board-card-title { display: block; font-weight: 600; }
+.board-card-meta,
+.board-card-note {
+  display: block;
+  font-size: var(--text-xs, 11px);
+  color: var(--muted, #8b94a3);
+  margin-top: 2px;
+}
+
+.board-card-next { margin-top: 8px; width: 100%; }
+.board-empty { text-align: center; padding: 12px 0; }
+
+/* ---- etapy w ustawieniach ---- */
+
+.stage-row {
+  display: grid;
+  grid-template-columns: 44px 1fr auto auto;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.stage-row input[type='color'] {
+  padding: 2px;
+  height: 32px;
+}

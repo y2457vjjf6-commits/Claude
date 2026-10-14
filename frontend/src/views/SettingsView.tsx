@@ -3,6 +3,8 @@ import {
   Save, PlugZap, Loader2, FolderOpen, HardDriveDownload, HardDriveUpload, Plus, X, ChevronUp, ChevronDown
 } from 'lucide-react';
 import { movedBy } from '../lib/offers';
+import { etapy } from '../lib/production';
+import { uid } from '../lib/storage';
 import { AppState } from '../types';
 import { dataLocation, hasApi } from '../lib/storage';
 import { backupNow, chooseBackupFolder, restoreBackup } from '../lib/backup';
@@ -38,6 +40,8 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
       phone: (st.issuerPhones || {})[n] || ''
     })),
     photoRows: (st.productPhotos || []).map((z) => ({ ...z })),
+    stageRows: etapy(st.stages).map((e) => ({ ...e })),
+    currentUser: st.currentUser || '',
     specRows: (st.specTemplates || []).map((t) => ({
       name: t.name,
       rows: (t.rows || []).map((w) => ({ ...w }))
@@ -95,6 +99,10 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
     next.settings.productPhotos = form.photoRows
       .map((z) => ({ name: z.name.trim(), dataUrl: z.dataUrl }))
       .filter((z) => z.name && z.dataUrl);
+    next.settings.stages = form.stageRows
+      .map((e) => ({ ...e, name: e.name.trim() }))
+      .filter((e) => e.name);
+    next.settings.currentUser = form.currentUser.trim();
     next.settings.specTemplates = form.specRows
       .map((t) => ({
         name: t.name.trim(),
@@ -404,6 +412,108 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
             </select>
           </label>
         </div>
+      </div>
+
+      <div className="card">
+        <h3 className="card-title">Etapy produkcji</h3>
+        <p className="muted card-note">
+          Kolejność etapów jest kolejnością pracy: przycisk „Dalej” na tablicy przestawia pozycję
+          o jeden w dół tej listy. Ostatni etap oznacza rzecz skończoną — pozycja znika z tablicy
+          i liczy się do postępu zlecenia. Zmiana nazwy etapu nie rusza historii: wpisy w dzienniku
+          wskazują na etap, a nie przechowują jego nazwę.
+        </p>
+        {form.stageRows.map((e, i) => (
+          <div className="stage-row" key={e.id} data-testid={`stage-row-${i}`}>
+            <input
+              type="color"
+              className="input"
+              data-testid={`stage-color-${i}`}
+              aria-label="Kolor etapu"
+              value={e.color}
+              onChange={(ev) =>
+                set({ stageRows: form.stageRows.map((r, j) => (j === i ? { ...r, color: ev.target.value } : r)) })
+              }
+            />
+            <input
+              type="text"
+              className="input"
+              data-testid={`stage-name-${i}`}
+              aria-label="Nazwa etapu"
+              value={e.name}
+              onChange={(ev) =>
+                set({ stageRows: form.stageRows.map((r, j) => (j === i ? { ...r, name: ev.target.value } : r)) })
+              }
+            />
+            <label className="checkbox-field" title="Po tym etapie rzecz jest skończona">
+              <input
+                type="checkbox"
+                data-testid={`stage-final-${i}`}
+                checked={!!e.final}
+                onChange={(ev) =>
+                  set({
+                    stageRows: form.stageRows.map((r, j) => (j === i ? { ...r, final: ev.target.checked } : r))
+                  })
+                }
+              />
+              <span>koniec</span>
+            </label>
+            <div className="spec-row-actions">
+              <button
+                className="btn btn-small btn-light item-remove"
+                data-testid={`stage-up-${i}`}
+                aria-label="Wyżej"
+                disabled={i === 0}
+                onClick={() => set({ stageRows: movedBy(form.stageRows, i, -1) })}
+              >
+                <ChevronUp className="icon" />
+              </button>
+              <button
+                className="btn btn-small btn-light item-remove"
+                data-testid={`stage-down-${i}`}
+                aria-label="Niżej"
+                disabled={i === form.stageRows.length - 1}
+                onClick={() => set({ stageRows: movedBy(form.stageRows, i, 1) })}
+              >
+                <ChevronDown className="icon" />
+              </button>
+              <button
+                className="btn btn-small btn-danger item-remove"
+                data-testid={`stage-remove-${i}`}
+                aria-label="Usuń etap"
+                onClick={() => set({ stageRows: form.stageRows.filter((_, j) => j !== i) })}
+              >
+                <X className="icon" />
+              </button>
+            </div>
+          </div>
+        ))}
+        <button
+          className="btn btn-light"
+          data-testid="add-stage"
+          onClick={() =>
+            set({
+              stageRows: [...form.stageRows, { id: uid(), name: '', color: '#8b94a3' }]
+            })
+          }
+        >
+          <Plus className="icon" />
+          Dodaj etap
+        </button>
+        <label className="field" style={{ marginTop: 14 }}>
+          <span>Kto pracuje na tym stanowisku</span>
+          <input
+            type="text"
+            className="input"
+            data-testid="current-user"
+            placeholder="imię podpisujące wpisy w historii etapów"
+            value={form.currentUser}
+            onChange={(e) => set({ currentUser: e.target.value })}
+          />
+          <span className="muted field-hint">
+            Tym imieniem podpisują się zmiany etapów. Gdy puste, program bierze pierwszą osobę
+            wystawiającą dokumenty.
+          </span>
+        </label>
       </div>
 
       <div className="card">

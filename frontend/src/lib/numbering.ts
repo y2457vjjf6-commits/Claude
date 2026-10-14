@@ -1,7 +1,7 @@
 // Numeracja dokumentów WZ.
 // Format: <miesiąc*10><nr kolejny 2-cyfrowy>/<pierwsza i ostatnia litera kontrahenta>/<rok>
 // Przykład: pierwsza WZ dla "Rolety Siejka" z 1 stycznia 2026 -> 1001/RA/2026
-import { Offer, WZDocument } from '../types';
+import { Offer, ProductionOrder, WZDocument } from '../types';
 
 export function parseDate(dateStr: string): { year: number; month: number } {
   const [y, m] = String(dateStr).split('-').map(Number);
@@ -97,4 +97,36 @@ export function computeOfferNumberFor(
     seq = nextOfferSeq(offers, dateStr, editingOfferId);
   }
   return { seq, number: buildOfferNumber(dateStr, seq) };
+}
+
+/* --------------------------- Zlecenia produkcyjne --------------------------- */
+
+export function buildOrderNumber(dateStr: string, seq: number): string {
+  const { year, month } = parseDate(dateStr);
+  const mm = String(month).padStart(2, '0');
+  return `ZL-${mm}-${String(seq).padStart(4, '0')}-${year}`;
+}
+
+export function nextOrderSeq(orders: ProductionOrder[], dateStr: string, excludeId?: string | null): number {
+  const { year } = parseDate(dateStr);
+  let max = 0;
+  for (const o of orders || []) {
+    if (excludeId && o.id === excludeId) continue;
+    if (parseDate(o.date).year === year && Number(o.seq) > max) max = Number(o.seq);
+  }
+  return max + 1;
+}
+
+/** Numer zlecenia: raz nadany zostaje, dopóki nie zmieni się rok. */
+export function computeOrderNumberFor(
+  orders: ProductionOrder[],
+  editingId: string | null,
+  dateStr: string
+): { seq: number; number: string } {
+  const istniejace = editingId ? orders.find((o) => o.id === editingId) || null : null;
+  const seq =
+    istniejace && istniejace.seq && parseDate(istniejace.date).year === parseDate(dateStr).year
+      ? istniejace.seq
+      : nextOrderSeq(orders, dateStr, editingId);
+  return { seq, number: buildOrderNumber(dateStr, seq) };
 }

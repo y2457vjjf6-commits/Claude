@@ -109,6 +109,10 @@ export interface Settings {
   productPhotos?: ProductPhoto[];
   /** Szablony specyfikacji przypisane do produktów — wstawiane do pozycji po nazwie */
   specTemplates?: SpecTemplate[];
+  /** Etapy produkcji; puste = program użyje domyślnych */
+  stages?: Stage[];
+  /** Kto przestawia etapy — jego imię podpisuje wpisy w dzienniku */
+  currentUser?: string;
   /** Domyślne ustawienia nowej oferty */
   offerDefaults: {
     deadlineDays: string;
@@ -136,6 +140,10 @@ export interface AppState {
   offers: Offer[];
   /** Cennik zakupowy — tabele producenta, z których liczymy koszt własny */
   priceTables: PriceTable[];
+  /** Zlecenia produkcyjne */
+  orders?: ProductionOrder[];
+  /** Dziennik zmian etapów — tylko dopisywany */
+  stageEvents?: StageEvent[];
 }
 
 /** Dopłata do pozycji: albo stała kwota, albo kwota odczytana z progów
@@ -189,7 +197,9 @@ export interface PriceTable {
   updatedAt: string;
 }
 
-export type ViewName = 'list' | 'edit' | 'offers' | 'offerEdit' | 'prices' | 'contractors' | 'reports' | 'settings';
+export type ViewName =
+  | 'list' | 'edit' | 'offers' | 'offerEdit' | 'orders' | 'orderEdit' | 'board'
+  | 'prices' | 'contractors' | 'reports' | 'settings';
 
 export type AskConfirm = (message: string, opts?: { confirmLabel?: string; danger?: boolean }) => Promise<boolean>;
 
@@ -318,6 +328,87 @@ export interface Offer {
   printedAt?: string;
   emailedAt?: string;
   emailedTo?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/* ===================== Produkcja ===================== */
+
+/** Etap produkcji. Lista jest w ustawieniach, bo każdy warsztat ma swoją. */
+export interface Stage {
+  id: string;
+  name: string;
+  /** Kolor kropki na liście i paska na tablicy */
+  color: string;
+  /** Etap końcowy: po nim pozycja jest zrobiona i znika z tablicy */
+  final?: boolean;
+}
+
+/** Pozycja zlecenia — to, co faktycznie trzeba wyprodukować.
+ *
+ *  Pozycja z oferty bywa zbiorcza („roleta UNI, 12 szt."). Dopóki całe 12 sztuk
+ *  idzie razem, zostaje jedną pozycją; gdy zacznie się rozjeżdżać, rozbija się
+ *  ją na sztuki (`splitFrom` wskazuje wtedy pozycję, z której powstała).
+ */
+export interface OrderItem {
+  id: string;
+  name: string;
+  material: string;
+  spec?: OfferSpecRow[];
+  qty: string;
+  /** Etap, w którym pozycja jest teraz — wyliczany z dziennika */
+  stageId: string;
+  /** Kto robi; puste = nieprzypisana */
+  assignee?: string;
+  /** Notatka warsztatowa, np. „czekamy na poprawiony wymiar" */
+  note?: string;
+  /** Pozycja, z której ta została wydzielona przy rozbijaniu na sztuki */
+  splitFrom?: string;
+}
+
+/** Wpis dziennika: kto, kiedy i z jakiego etapu na jaki przestawił pozycję.
+ *
+ *  Dziennik tylko się dopisuje. To nie jest wygoda, tylko warunek wspólnej
+ *  pracy: dwie osoby klikające w tej samej chwili dokładają po wpisie, zamiast
+ *  nadpisywać sobie wspólne pole.
+ */
+export interface StageEvent {
+  id: string;
+  orderId: string;
+  itemId: string;
+  /** Pusty przy założeniu zlecenia */
+  fromStageId: string;
+  toStageId: string;
+  /** Czas zdarzenia (ISO) — po nim ustala się, który wpis jest najnowszy */
+  at: string;
+  by: string;
+  note?: string;
+}
+
+export type OrderStatus = 'nowe' | 'w-toku' | 'wydane' | 'wstrzymane';
+
+/** Zlecenie produkcyjne — trzeci dokument obok WZ i oferty. */
+export interface ProductionOrder {
+  id: string;
+  /** Numer ZL-10-0001-2026, nadawany przy pierwszym zapisie */
+  number?: string;
+  seq?: number;
+  /** Data założenia (RRRR-MM-DD) */
+  date: string;
+  /** Termin realizacji całego zlecenia */
+  dueDate?: string;
+  /** Oferta, z której powstało — żeby dało się wrócić do wyceny */
+  sourceOfferId?: string;
+  /** Dane klienta kopiowane, nie przez odnośnik: zmiana w kartotece za pół roku
+   *  nie ma prawa zmienić dokumentu, który poszedł już do produkcji. */
+  client: string;
+  clientAddress?: string;
+  clientPhone?: string;
+  items: OrderItem[];
+  /** Uwagi dla warsztatu — osobne od uwag na ofercie */
+  notes?: string;
+  /** Wstrzymane ustawia człowiek; reszta wylicza się z etapów pozycji */
+  onHold?: boolean;
   createdAt: string;
   updatedAt: string;
 }

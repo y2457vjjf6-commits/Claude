@@ -1,11 +1,14 @@
 import { ReactElement } from 'react';
-import { FileText, Handshake, Settings2, Plus, Sun, Moon, BarChart3, FileSpreadsheet, Table2 } from 'lucide-react';
+import { FileText, Handshake, Settings2, Plus, Sun, Moon, BarChart3, FileSpreadsheet, Table2, Factory
+} from 'lucide-react';
 import { ViewName } from '../types';
 
 interface Props {
   view: ViewName;
   /** Ile wysłanych ofert czeka na decyzję klienta — licznik przy zakładce */
   offersAwaiting: number;
+  /** Ile zleceń jest po terminie albo kończy się dziś */
+  ordersOverdue: number;
   theme: 'light' | 'dark';
   onNavigate: (view: ViewName) => void;
   onNewDoc: () => void;
@@ -34,7 +37,16 @@ function Monogram() {
   );
 }
 
-export default function Sidebar({ view, theme, onNavigate, onNewDoc, onToggleTheme, onNewOffer, offersAwaiting }: Props) {
+export default function Sidebar({
+  view,
+  theme,
+  onNavigate,
+  onNewDoc,
+  onToggleTheme,
+  onNewOffer,
+  offersAwaiting,
+  ordersOverdue
+}: Props) {
   // W zakładce ofert główny przycisk zakłada ofertę, nie WZ
   const wOfertach = view === 'offers' || view === 'offerEdit';
 
@@ -49,6 +61,7 @@ export default function Sidebar({ view, theme, onNavigate, onNewDoc, onToggleThe
   const navItems: { key: ViewName; label: string; icon: ReactElement }[] = [
     { key: 'list', label: 'Dokumenty WZ', icon: <FileText className="icon" /> },
     { key: 'offers', label: 'Oferty cenowe', icon: <FileSpreadsheet className="icon" /> },
+    { key: 'orders', label: 'Zlecenia', icon: <Factory className="icon" /> },
     { key: 'contractors', label: 'Kontrahenci', icon: <Handshake className="icon" /> },
     { key: 'prices', label: 'Cennik', icon: <Table2 className="icon" /> },
     { key: 'reports', label: 'Zestawienia', icon: <BarChart3 className="icon" /> },
@@ -70,12 +83,24 @@ export default function Sidebar({ view, theme, onNavigate, onNewDoc, onToggleThe
         {navItems.map((item) => (
           <button
             key={item.key}
-            className={'nav-btn' + (view === item.key || (item.key === 'list' && view === 'edit') ? ' active' : '')}
+            className={
+              'nav-btn' +
+              (view === item.key ||
+              (item.key === 'list' && view === 'edit') ||
+              (item.key === 'orders' && (view === 'orderEdit' || view === 'board'))
+                ? ' active'
+                : '')
+            }
             data-testid={`nav-${item.key}`}
             onClick={() => onNavigate(item.key)}
           >
             {item.icon}
             {item.label}
+            {item.key === 'orders' && ordersOverdue > 0 && (
+              <span className="nav-badge" data-testid="nav-orders-badge" title="Zlecenia po terminie albo na dziś">
+                {ordersOverdue}
+              </span>
+            )}
             {item.key === 'offers' && offersAwaiting > 0 && (
               <span className="nav-badge" data-testid="nav-offers-badge" title="Wysłane oferty bez decyzji klienta">
                 {offersAwaiting}

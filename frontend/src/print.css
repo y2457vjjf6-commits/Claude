@@ -598,3 +598,113 @@
   font-size: 8.5pt;
   color: var(--of-mid);
 }
+
+/* ======================= Kartka na warsztat =======================
+   Inny dokument niż oferta: bez cen i bez grzeczności. Ma leżeć przy
+   maszynie, więc specyfikacja jest tu największym elementem, a nie
+   przypisem, i wszystko jest o stopień większe niż na ofercie. */
+
+@page zlecenie {
+  size: A4;
+  margin: 14mm 14mm 12mm;
+}
+
+.zl {
+  page: zlecenie;
+  font-family: 'Geist Variable', 'Geist', 'Segoe UI', Arial, sans-serif;
+  font-size: 10pt;
+  color: #15181c;
+}
+
+.zl-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10mm;
+  padding-bottom: 4pt;
+  border-bottom: 2pt solid #15181c;
+}
+
+.zl-kind {
+  font-size: 9pt;
+  color: #5a6069;
+}
+
+.zl-numer {
+  font-size: 20pt;
+  font-weight: 600;
+  line-height: 1.1;
+  /* Numer ma stać w jednej linii — złamany na pół przestaje być numerem */
+  white-space: nowrap;
+}
+
+.zl-meta { border-collapse: collapse; font-size: 9.5pt; }
+.zl-meta th {
+  text-align: left;
+  font-weight: 400;
+  color: #5a6069;
+  padding: 1pt 10pt 1pt 0;
+}
+.zl-meta td { padding: 1pt 0; }
+.zl-meta .zl-termin th,
+.zl-meta .zl-termin td { font-weight: 600; font-size: 11pt; }
+
+.zl-uwagi { margin-top: 6pt; }
+.zl-uwagi h2 { font-size: 9pt; color: #5a6069; margin: 0 0 2pt; font-weight: 400; }
+.zl-uwagi p { margin: 0; }
+
+.zl-items {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8pt;
+}
+
+.zl-items th {
+  text-align: left;
+  font-size: 8.5pt;
+  color: #5a6069;
+  font-weight: 400;
+  padding: 3pt 4pt;
+  border-bottom: 0.75pt solid #15181c;
+}
+
+.zl-poz td {
+  padding: 5pt 4pt;
+  border-bottom: 0.5pt solid #c9ced6;
+  vertical-align: top;
+  /* Pozycja nie ma prawa pęknąć w pół — warsztat czytałby połowę opisu */
+  break-inside: avoid;
+}
+
+.zl-lp { width: 8mm; color: #5a6069; }
+.zl-ilosc { width: 12mm; text-align: center; font-weight: 600; }
+.zl-etap { width: 26mm; }
+.zl-podpis { width: 34mm; }
+
+.zl-nazwa { font-weight: 600; font-size: 11pt; }
+.zl-material { color: #5a6069; font-size: 9pt; }
+
+ /* Jedna para w wierszu, nie dwie jak na ofercie. Kartkę czyta się przy
+    maszynie, często w rękawicach i pod kątem — ciasne dwie kolumny zmusiłyby
+    wartości do łamania się po dwa słowa. Miejsca w pionie tu nie brakuje. */
+.zl-spec {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 8pt;
+  row-gap: 1pt;
+  margin: 3pt 0 0;
+  font-size: 9.5pt;
+  max-width: 95mm;
+}
+
+.zl-spec dt { color: #5a6069; white-space: nowrap; }
+.zl-spec dd { font-weight: 500; }
+.zl-spec dt::after { content: ':'; }
+.zl-spec dd { margin: 0; }
+
+.zl-uwaga {
+  margin-top: 3pt;
+  padding-left: 5pt;
+  border-left: 2pt solid #c2821a;
+  font-size: 9pt;
+}

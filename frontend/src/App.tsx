@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, AskConfirm, Offer, OfferSpecRow, ViewName, WZDocument } from './types';
-import { loadState, persistState, DEFAULT_STATE } from './lib/storage';
+import { AppState, AskConfirm, Offer, OfferSpecRow, ProductionOrder, StageEvent, ViewName, WZDocument } from './types';
+import { loadState, persistState, uid, DEFAULT_STATE } from './lib/storage';
 import { printDocument, savePdfDocument, emailDocument, buildPrintHtml } from './lib/printing';
 import { printOffer, savePdfOffer, emailOffer } from './lib/offerActions';
 import { buildOfferHtml } from './lib/printingOffer';
@@ -13,6 +13,12 @@ import { wzPrintable } from './lib/printing';
 import { offerPrintable } from './lib/offerActions';
 import OffersView from './views/OffersView';
 import OfferEditorView from './views/OfferEditorView';
+import OrdersView from './views/OrdersView';
+import OrderEditorView from './views/OrderEditorView';
+import BoardView from './views/BoardView';
+import { emptyOrder, etapy, orderFromOffer, overdueOrders, stageEvent } from './lib/production';
+import { printOrder } from './lib/orderActions';
+import { computeOrderNumberFor } from './lib/numbering';
 import { backupInBackground } from './lib/backup';
 import ReportsView from './views/ReportsView';
 import Sidebar from './components/Sidebar';
@@ -46,8 +52,15 @@ export default function App() {
   // przy wyjściu do listy — a skopiowaną specyfikację chce się wkleić także
   // w zupełnie innej ofercie.
   const [schowekSpec, setSchowekSpec] = useState<OfferSpecRow[] | null>(null);
+  // Zlecenie otwarte w edytorze. Trzymamy całe, a nie samo id, bo zlecenie
+  // zakładane z oferty nie istnieje jeszcze w danych.
+  const [editingOrder, setEditingOrder] = useState<ProductionOrder | null>(null);
   const [paletaOtwarta, setPaletaOtwarta] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Zapis zlecenia bywa wołany z opóźnieniem (autozapis) — musi sięgnąć po
+  // dane aktualne w chwili zapisu, a nie te sprzed półtorej sekundy.
+  const stateRef = useRef<AppState | null>(null);
+  stateRef.current = state;
 
   const toast = useCallback((msg: string, isError?: boolean, action?: { label: string; run: () => void }) => {
     // wygaszenie przez klasę, żeby zdążyło zniknąć płynnie zamiast zgasnąć
@@ -135,6 +148,78 @@ export default function App() {
     setEditingOfferId(id);
     setView('offerEdit');
   }, []);
+
+  /* ----------------------------- Produkcja ----------------------------- */
+
+  /** Zapisuje zlecenie i — gdy jest — dopisuje wpis dziennika. Jedna droga dla
+   *  obu, żeby zmiana etapu i autozapis tekstu nie wyścigały się o plik.
+   *  Zwraca zapisane zlecenie, bo przy pierwszym zapisie dostaje ono numer. */
+  const saveOrder = useCallback(
+    async (order: ProductionOrder, event?: StageEvent): Promise<ProductionOrder> => {
+      const biezacy = stateRef.current;
+      if (!biezacy) return order;
+      const orders = biezacy.orders || [];
+      const nowIso = new Date().toISOString();
+      const id = order.id || uid();
+      const numer = order.number
+        ? { seq: order.seq as number, number: order.number }
+        : computeOrderNumberFor(orders, null, order.date);
+      const zapisane: ProductionOrder = {
+        ...order,
+        id,
+        seq: numer.seq,
+        number: numer.number,
+        createdAt: order.createdAt || nowIso,
+        updatedAt: nowIso
+      };
+      const idx = orders.findIndex((o) => o.id === id);
+      const nowe = idx >= 0 ? orders.map((o) => (o.id === id ? zapisane : o)) : [...orders, zapisane];
+      // Dziennik tylko się dopisuje — stąd bierze się historia i stąd
+      // weźmie się bezkolizyjna synchronizacja, gdy przyjdzie jej czas.
+      const dziennik = event
+        ? [...(biezacy.stageEvents || []), { ...event, orderId: id }]
+        : biezacy.stageEvents || [];
+      await persist({ ...biezacy, orders: nowe, stageEvents: dziennik });
+      return zapisane;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  const openOrder = useCallback((order: ProductionOrder) => {
+    setEditingOrder(order);
+    setView('orderEdit');
+  }, []);
+
+  const openOrderById = useCallback((id: string) => {
+    const z = stateRef.current?.orders?.find((o) => o.id === id);
+    if (z) openOrder(z);
+  }, [openOrder]);
+
+  /** Zlecenie z oferty — to samo kliknięcie co „Wystaw WZ", tylko w drugą stronę. */
+  const orderFromOfferFn = useCallback(
+    (offer: Offer) => {
+      const st = stateRef.current;
+      if (!st) return;
+      openOrder(orderFromOffer(offer, st.settings.stages, todayStr()));
+    },
+    [openOrder]
+  );
+
+  /** Przestawienie etapu z tablicy — zapis natychmiastowy, bez otwierania zlecenia. */
+  const advanceOnBoard = useCallback(
+    async (order: ProductionOrder, itemId: string, stageId: string) => {
+      const it = order.items.find((x) => x.id === itemId);
+      if (!it) return;
+      const kto = stateRef.current?.settings.currentUser || stateRef.current?.settings.issuers?.[0] || '';
+      const wpis = stageEvent(order, it, stageId, kto, it.note);
+      await saveOrder(
+        { ...order, items: order.items.map((x) => (x.id === itemId ? { ...x, stageId } : x)) },
+        wpis
+      );
+    },
+    [saveOrder]
+  );
 
   /** Kopiuje ofertę do nowej: ta sama treść, własny numer przy zapisie.
    *  Nic nie zapisujemy od razu — dopóki użytkownik nie kliknie „Zapisz",
@@ -332,6 +417,7 @@ export default function App() {
         view={view}
         theme={state.settings.theme}
         offersAwaiting={offersAwaitingReply(state.offers, parseNumber(state.settings.offerFollowUpDays)).length}
+        ordersOverdue={overdueOrders(state.orders || [], state.settings.stages, todayStr()).length}
         onNavigate={(v) => setView(v)}
         onNewDoc={() => openEditor(null)}
         onNewOffer={() => openOfferEditor(null)}
@@ -392,6 +478,7 @@ export default function App() {
             onEdit={(id) => openOfferEditor(id)}
             onNewOffer={() => openOfferEditor(null)}
             onCopy={copyOfferToNew}
+            onProduce={orderFromOfferFn}
             onPreview={(offer, lista) => setPreviewOffer({ lista, idx: lista.indexOf(offer) })}
             onPrint={async (offer) => {
               if (await printOffer(offer, state.settings, toast)) {
@@ -432,6 +519,50 @@ export default function App() {
             emailConfirm={emailConfirm}
             onMark={markOffer}
             askConfirm={askConfirm}
+          />
+        )}
+        {view === 'orders' && (
+          <OrdersView
+            orders={state.orders || []}
+            stages={etapy(state.settings.stages)}
+            events={state.stageEvents || []}
+            onEdit={openOrderById}
+            onNew={() => openOrder(emptyOrder(state.settings.stages, todayStr()))}
+            onBoard={() => setView('board')}
+            onPrint={(o) => void printOrder(o, state.settings, toast)}
+            onDelete={async (o) => {
+              const ok = await askConfirm(
+                `Usunąć zlecenie ${o.number || ''} dla: ${o.client}? Historia etapów zniknie razem z nim.`,
+                { confirmLabel: 'Usuń', danger: true }
+              );
+              if (!ok) return;
+              await persist({
+                ...state,
+                orders: (state.orders || []).filter((x) => x.id !== o.id),
+                stageEvents: (state.stageEvents || []).filter((e) => e.orderId !== o.id)
+              });
+              toast('Zlecenie usunięte.');
+            }}
+          />
+        )}
+        {view === 'orderEdit' && editingOrder && (
+          <OrderEditorView
+            key={editingOrder.id || 'nowe'}
+            state={state}
+            order={editingOrder}
+            onSave={saveOrder}
+            onBack={() => setView('orders')}
+            onPrint={(o) => void printOrder(o, state.settings, toast)}
+            toast={toast}
+          />
+        )}
+        {view === 'board' && (
+          <BoardView
+            orders={state.orders || []}
+            stages={etapy(state.settings.stages)}
+            onBack={() => setView('orders')}
+            onOpen={(id) => openOrderById(id)}
+            onAdvance={(o, itemId, stageId) => void advanceOnBoard(o, itemId, stageId)}
           />
         )}
         {view === 'reports' && <ReportsView state={state} />}

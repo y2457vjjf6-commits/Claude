@@ -1,7 +1,8 @@
 import { ReactElement } from 'react';
-import { FileText, Handshake, Settings2, Plus, Sun, Moon, BarChart3, FileSpreadsheet, Table2, Factory
+import { FileText, Handshake, Settings2, Plus, Sun, Moon, BarChart3, FileSpreadsheet, Table2, Factory, LogOut
 } from 'lucide-react';
-import { ViewName } from '../types';
+import { ViewName, UserAccount } from '../types';
+import { OPISY_STANOWISK, wolno } from '../lib/auth';
 
 interface Props {
   view: ViewName;
@@ -9,6 +10,9 @@ interface Props {
   offersAwaiting: number;
   /** Ile zleceń jest po terminie albo kończy się dziś */
   ordersOverdue: number;
+  /** Zalogowana osoba; null = program bez kont, wszystko widoczne */
+  user: UserAccount | null;
+  onLogout: () => void;
   theme: 'light' | 'dark';
   onNavigate: (view: ViewName) => void;
   onNewDoc: () => void;
@@ -45,7 +49,9 @@ export default function Sidebar({
   onToggleTheme,
   onNewOffer,
   offersAwaiting,
-  ordersOverdue
+  ordersOverdue,
+  user,
+  onLogout
 }: Props) {
   // W zakładce ofert główny przycisk zakłada ofertę, nie WZ
   const wOfertach = view === 'offers' || view === 'offerEdit';
@@ -57,6 +63,19 @@ export default function Sidebar({
       view === 'edit' ? 'list' : view === 'offerEdit' ? 'offers' : view
     )
   );
+
+  // Stanowisko decyduje, co w ogóle widać w menu: warsztatowi nie pokazujemy
+  // zakładek, w które i tak nie wejdzie — pusta zakładka myli bardziej niż jej brak.
+  const widoczna = (key: ViewName): boolean => {
+    if (!user) return true;
+    if (key === 'offers') return wolno(user, 'oferty');
+    if (key === 'list') return wolno(user, 'dokumenty');
+    if (key === 'prices') return wolno(user, 'cennik');
+    if (key === 'reports') return wolno(user, 'zestawienia');
+    if (key === 'settings') return wolno(user, 'ustawienia');
+    if (key === 'contractors') return wolno(user, 'dokumenty');
+    return true;
+  };
 
   const navItems: { key: ViewName; label: string; icon: ReactElement }[] = [
     { key: 'list', label: 'Dokumenty WZ', icon: <FileText className="icon" /> },
@@ -80,7 +99,7 @@ export default function Sidebar({
 
       <nav className="nav">
         <span className="nav-marker" aria-hidden="true" style={{ ['--nav-i' as string]: aktywnaPozycja }} />
-        {navItems.map((item) => (
+        {navItems.filter((i) => widoczna(i.key)).map((item) => (
           <button
             key={item.key}
             className={
@@ -109,6 +128,20 @@ export default function Sidebar({
           </button>
         ))}
       </nav>
+
+      {user && (
+        <div className="sidebar-user" data-testid="sidebar-user">
+          <span>
+            <span className="sidebar-user-name">{user.name || user.login}</span>
+            <br />
+            {OPISY_STANOWISK[user.role]}
+          </span>
+          <span className="spacer" />
+          <button className="btn btn-small btn-light" data-testid="logout-btn" title="Wyloguj" onClick={onLogout}>
+            <LogOut className="icon" />
+          </button>
+        </div>
+      )}
 
       <div className="sidebar-footer">
         <button

@@ -19,6 +19,8 @@ interface Props {
   onBoard: () => void;
   onPrint: (order: ProductionOrder) => void;
   onDelete: (order: ProductionOrder) => void;
+  /** Warsztat ogląda i przestawia etapy; zakładanie i kasowanie to biuro */
+  canEdit: boolean;
 }
 
 function mianoZlecen(n: number): string {
@@ -36,7 +38,17 @@ function doTerminu(due: string | undefined, dzis: string): number | null {
   return Math.round((a.getTime() - b.getTime()) / 86400000);
 }
 
-export default function OrdersView({ orders, stages, events, onEdit, onNew, onBoard, onPrint, onDelete }: Props) {
+export default function OrdersView({
+  orders,
+  stages,
+  events,
+  onEdit,
+  onNew,
+  onBoard,
+  onPrint,
+  onDelete,
+  canEdit
+}: Props) {
   const [q, setQ] = useState('');
   const dzis = todayStr();
   const spoznione = useMemo(() => overdueOrders(orders, stages, dzis), [orders, stages, dzis]);
@@ -94,10 +106,12 @@ export default function OrdersView({ orders, stages, events, onEdit, onNew, onBo
           <LayoutGrid className="icon" />
           Tablica
         </button>
-        <button className="btn btn-primary" data-testid="new-order-btn" onClick={onNew}>
-          <Plus className="icon" />
-          Nowe zlecenie
-        </button>
+        {canEdit && (
+          <button className="btn btn-primary" data-testid="new-order-btn" onClick={onNew}>
+            <Plus className="icon" />
+            Nowe zlecenie
+          </button>
+        )}
       </div>
 
       {spoznione.length > 0 && (
@@ -133,10 +147,12 @@ export default function OrdersView({ orders, stages, events, onEdit, onNew, onBo
             Zlecenie zakłada się z zaakceptowanej oferty — przycisk „Zleć do produkcji” w menu wiersza
             na liście ofert — albo od zera przyciskiem powyżej.
           </p>
-          <button className="btn btn-primary" data-testid="orders-empty-new-btn" onClick={onNew}>
-            <Plus className="icon" />
-            Nowe zlecenie
-          </button>
+          {canEdit && (
+            <button className="btn btn-primary" data-testid="orders-empty-new-btn" onClick={onNew}>
+              <Plus className="icon" />
+              Nowe zlecenie
+            </button>
+          )}
         </div>
       ) : (
         <table className="table" data-testid="orders-table">
@@ -208,6 +224,7 @@ export default function OrdersView({ orders, stages, events, onEdit, onNew, onBo
                       >
                         <Printer className="icon" />
                       </button>
+                      {canEdit && (
                       <button
                         className="btn btn-small btn-danger"
                         data-testid={`order-delete-${o.id}`}
@@ -217,6 +234,7 @@ export default function OrdersView({ orders, stages, events, onEdit, onNew, onBo
                       >
                         <Trash2 className="icon" />
                       </button>
+                      )}
                     </div>
                   </td>
                 </tr>

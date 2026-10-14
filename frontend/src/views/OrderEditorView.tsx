@@ -22,6 +22,9 @@ interface Props {
   onBack: () => void;
   onPrint: (order: ProductionOrder) => void;
   toast: (msg: string, isError?: boolean) => void;
+  /** Warsztat: etapy i notatki tak, reszta nie. Pola zostają widoczne —
+   *  zablokowane, a nie ukryte, bo warsztat ma widzieć termin i adres. */
+  readOnly?: boolean;
 }
 
 /** Ile czasu po ostatnim klawiszu zapisujemy wersję roboczą. Na tyle krótko,
@@ -29,7 +32,15 @@ interface Props {
  *  zapisywać po każdej literze. */
 const AUTOZAPIS_MS = 1200;
 
-export default function OrderEditorView({ state, order: zrodlo, onSave, onBack, onPrint, toast }: Props) {
+export default function OrderEditorView({
+  state,
+  order: zrodlo,
+  onSave,
+  onBack,
+  onPrint,
+  toast,
+  readOnly = false
+}: Props) {
   const [order, setOrder] = useState<ProductionOrder>(() => structuredClone(zrodlo));
   const [zapisano, setZapisano] = useState<string>('');
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -135,6 +146,7 @@ export default function OrderEditorView({ state, order: zrodlo, onSave, onBack, 
             <Check className="icon" /> zapisano {zapisano}
           </span>
         )}
+        {!readOnly && (
         <button
           className="btn btn-light"
           data-testid="order-hold"
@@ -143,6 +155,7 @@ export default function OrderEditorView({ state, order: zrodlo, onSave, onBack, 
           {order.onHold ? <PlayCircle className="icon" /> : <PauseCircle className="icon" />}
           {order.onHold ? 'Wznów' : 'Wstrzymaj'}
         </button>
+        )}
         <button className="btn btn-light" data-testid="order-print" onClick={() => onPrint(order)}>
           <Printer className="icon" />
           Kartka na warsztat
@@ -157,6 +170,7 @@ export default function OrderEditorView({ state, order: zrodlo, onSave, onBack, 
               type="text"
               className="input"
               data-testid="order-client"
+            disabled={readOnly}
               value={order.client}
               onChange={(e) => set({ client: e.target.value })}
             />
@@ -167,6 +181,7 @@ export default function OrderEditorView({ state, order: zrodlo, onSave, onBack, 
               type="date"
               className="input"
               data-testid="order-due"
+            disabled={readOnly}
               value={order.dueDate || ''}
               onChange={(e) => set({ dueDate: e.target.value })}
             />
@@ -177,6 +192,7 @@ export default function OrderEditorView({ state, order: zrodlo, onSave, onBack, 
               type="text"
               className="input"
               data-testid="order-address"
+            disabled={readOnly}
               placeholder="gdzie jedziemy montować"
               value={order.clientAddress || ''}
               onChange={(e) => set({ clientAddress: e.target.value })}
@@ -188,6 +204,7 @@ export default function OrderEditorView({ state, order: zrodlo, onSave, onBack, 
               type="text"
               className="input"
               data-testid="order-phone"
+            disabled={readOnly}
               value={order.clientPhone || ''}
               onChange={(e) => set({ clientPhone: e.target.value })}
             />
@@ -199,12 +216,14 @@ export default function OrderEditorView({ state, order: zrodlo, onSave, onBack, 
             className="input"
             rows={2}
             data-testid="order-notes"
+            disabled={readOnly}
             value={order.notes || ''}
             onChange={(e) => set({ notes: e.target.value })}
           />
         </label>
         <p className="muted field-hint" data-testid="order-progress">
           Zrobione {postep.zrobione} z {postep.wszystkie} · zapisuje się samo, bez klikania.
+          {readOnly ? ' Z tego stanowiska zmieniasz etapy i notatki.' : ''}
         </p>
       </div>
 
@@ -219,6 +238,7 @@ export default function OrderEditorView({ state, order: zrodlo, onSave, onBack, 
                 <input
                   type="text"
                   className="input"
+                  disabled={readOnly}
                   data-testid={`order-item-name-${ii}`}
                   placeholder="co produkujemy"
                   value={it.name}
@@ -227,11 +247,13 @@ export default function OrderEditorView({ state, order: zrodlo, onSave, onBack, 
                 <input
                   type="text"
                   className="input num"
+                  disabled={readOnly}
                   data-testid={`order-item-qty-${ii}`}
                   aria-label="Ilość"
                   value={it.qty}
                   onChange={(e) => setItem(ii, { qty: e.target.value })}
                 />
+                {!readOnly && (
                 <button
                   className="btn btn-small btn-danger item-remove"
                   data-testid={`order-item-remove-${ii}`}
@@ -240,6 +262,7 @@ export default function OrderEditorView({ state, order: zrodlo, onSave, onBack, 
                 >
                   <X className="icon" />
                 </button>
+                )}
               </div>
               {it.material && <p className="muted order-item-material">{it.material}</p>}
               {filledSpec(it.spec).length > 0 && (
@@ -284,6 +307,7 @@ export default function OrderEditorView({ state, order: zrodlo, onSave, onBack, 
                   value={it.note || ''}
                   onChange={(e) => setItem(ii, { note: e.target.value })}
                 />
+                {!readOnly && (
                 <button
                   className="btn btn-small btn-light"
                   data-testid={`order-item-split-${ii}`}
@@ -293,10 +317,12 @@ export default function OrderEditorView({ state, order: zrodlo, onSave, onBack, 
                   <Split className="icon" />
                   Rozbij
                 </button>
+                )}
               </div>
             </div>
           );
         })}
+        {!readOnly && (
         <button
           className="btn btn-light"
           data-testid="order-add-item"
@@ -310,6 +336,7 @@ export default function OrderEditorView({ state, order: zrodlo, onSave, onBack, 
           <Plus className="icon" />
           Dodaj pozycję
         </button>
+        )}
       </div>
 
       <div className="card">

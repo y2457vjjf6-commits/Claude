@@ -2931,3 +2931,80 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
   padding: 2px;
   height: 32px;
 }
+
+/* =========================================== Logowanie */
+
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg, #0f1216);
+}
+
+.login-box {
+  width: 100%;
+  max-width: 380px;
+  background: var(--card, #171b21);
+  border: 1px solid var(--line, #2a2f36);
+  border-radius: var(--radius-lg, 12px);
+  padding: 26px 24px;
+}
+
+.login-brand { margin-bottom: 18px; }
+
+.login-title {
+  font-size: var(--text-lg, 18px);
+  margin: 0 0 6px;
+}
+
+.login-note { margin: 0 0 14px; }
+
+.login-error {
+  color: var(--danger, #d64545);
+  font-size: var(--text-sm, 13px);
+  margin: 10px 0 0;
+}
+
+.login-submit {
+  width: 100%;
+  margin-top: 16px;
+  justify-content: center;
+}
+
+.login-foot {
+  margin: 14px 0 0;
+  font-size: var(--text-xs, 11px);
+  line-height: 1.5;
+}
+
+.spin { animation: spin 1s linear infinite; }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ------------------------------------- konta w ustawieniach */
+
+.user-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 150px auto auto;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.user-row.disabled { opacity: 0.5; }
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: var(--text-xs, 11px);
+  color: var(--muted, #8b94a3);
+  border-top: 1px solid var(--line, #2a2f36);
+}
+
+.sidebar-user-name { color: var(--text, #e6e9ee); font-weight: 600; }

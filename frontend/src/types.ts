@@ -144,6 +144,8 @@ export interface AppState {
   orders?: ProductionOrder[];
   /** Dziennik zmian etapów — tylko dopisywany */
   stageEvents?: StageEvent[];
+  /** Konta pracowników. Pusta lista = program działa bez logowania, jak dotąd. */
+  users?: UserAccount[];
 }
 
 /** Dopłata do pozycji: albo stała kwota, albo kwota odczytana z progów
@@ -411,4 +413,38 @@ export interface ProductionOrder {
   onHold?: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+/* ===================== Konta i stanowiska ===================== */
+
+/** Stanowisko decyduje, co widać i co wolno zmienić. */
+export type UserRole = 'wlasciciel' | 'biuro' | 'warsztat';
+
+/** Hasło zapisane tak, żeby nie dało się go odczytać z pliku danych.
+ *  PBKDF2-SHA256: z hasła i soli liczy się skrót, a sprawdzenie polega
+ *  na policzeniu go jeszcze raz. Liczbę obrotów trzymamy przy haśle, żeby
+ *  dało się ją w przyszłości podnieść bez unieważniania starych kont. */
+export interface PasswordHash {
+  algo: 'pbkdf2-sha256';
+  iterations: number;
+  /** Sól w base64 — osobna dla każdego konta */
+  salt: string;
+  /** Skrót w base64 */
+  hash: string;
+}
+
+export interface UserAccount {
+  id: string;
+  /** Login — bez spacji, porównywany bez względu na wielkość liter */
+  login: string;
+  /** Imię i nazwisko; podpisuje wpisy w dzienniku etapów */
+  name: string;
+  role: UserRole;
+  password: PasswordHash;
+  /** Wyłączone konto zostaje w danych (podpisy w historii mają sens),
+   *  ale nie da się na nie zalogować */
+  disabled?: boolean;
+  createdAt: string;
+  /** Ostatnie udane logowanie — widać, czy konto jest w ogóle używane */
+  lastLoginAt?: string;
 }

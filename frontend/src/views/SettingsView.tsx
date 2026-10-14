@@ -4,8 +4,10 @@ import {
 } from 'lucide-react';
 import { movedBy } from '../lib/offers';
 import { etapy } from '../lib/production';
+import { wolno } from '../lib/auth';
+import UsersCard from '../components/UsersCard';
 import { uid } from '../lib/storage';
-import { AppState } from '../types';
+import { AppState, UserAccount } from '../types';
 import { dataLocation, hasApi } from '../lib/storage';
 import { backupNow, chooseBackupFolder, restoreBackup } from '../lib/backup';
 import { MAX_BOK, resizePhoto } from '../lib/photos';
@@ -13,12 +15,14 @@ import { AskConfirm } from '../types';
 
 interface Props {
   state: AppState;
+  /** Kto jest zalogowany; null = program bez kont */
+  currentUser: UserAccount | null;
   onPersist: (next: AppState) => Promise<void>;
   toast: (msg: string, isError?: boolean) => void;
   askConfirm: AskConfirm;
 }
 
-export default function SettingsView({ state, onPersist, toast, askConfirm }: Props) {
+export default function SettingsView({ state, currentUser, onPersist, toast, askConfirm }: Props) {
   const st = state.settings;
   const [form, setForm] = useState({
     sName: st.seller.name,
@@ -41,7 +45,6 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
     })),
     photoRows: (st.productPhotos || []).map((z) => ({ ...z })),
     stageRows: etapy(st.stages).map((e) => ({ ...e })),
-    currentUser: st.currentUser || '',
     specRows: (st.specTemplates || []).map((t) => ({
       name: t.name,
       rows: (t.rows || []).map((w) => ({ ...w }))
@@ -102,7 +105,6 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
     next.settings.stages = form.stageRows
       .map((e) => ({ ...e, name: e.name.trim() }))
       .filter((e) => e.name);
-    next.settings.currentUser = form.currentUser.trim();
     next.settings.specTemplates = form.specRows
       .map((t) => ({
         name: t.name.trim(),
@@ -414,6 +416,16 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
         </div>
       </div>
 
+      {wolno(currentUser, 'konta') && (
+        <UsersCard
+          state={state}
+          currentUser={currentUser}
+          onPersist={onPersist}
+          toast={toast}
+          askConfirm={askConfirm}
+        />
+      )}
+
       <div className="card">
         <h3 className="card-title">Etapy produkcji</h3>
         <p className="muted card-note">
@@ -499,21 +511,6 @@ export default function SettingsView({ state, onPersist, toast, askConfirm }: Pr
           <Plus className="icon" />
           Dodaj etap
         </button>
-        <label className="field" style={{ marginTop: 14 }}>
-          <span>Kto pracuje na tym stanowisku</span>
-          <input
-            type="text"
-            className="input"
-            data-testid="current-user"
-            placeholder="imię podpisujące wpisy w historii etapów"
-            value={form.currentUser}
-            onChange={(e) => set({ currentUser: e.target.value })}
-          />
-          <span className="muted field-hint">
-            Tym imieniem podpisują się zmiany etapów. Gdy puste, program bierze pierwszą osobę
-            wystawiającą dokumenty.
-          </span>
-        </label>
       </div>
 
       <div className="card">

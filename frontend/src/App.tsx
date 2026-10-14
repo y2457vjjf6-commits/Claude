@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, AskConfirm, Offer, OfferSpecRow, ProductionOrder, StageEvent, ViewName, WZDocument } from './types';
+import { AppState, AskConfirm, Offer, OfferSpecRow, ProductionOrder, StageEvent, UserAccount, ViewName, WZDocument } from './types';
 import { loadState, persistState, uid, DEFAULT_STATE } from './lib/storage';
 import { printDocument, savePdfDocument, emailDocument, buildPrintHtml } from './lib/printing';
 import { printOffer, savePdfOffer, emailOffer } from './lib/offerActions';
@@ -19,6 +19,8 @@ import BoardView from './views/BoardView';
 import { emptyOrder, etapy, orderFromOffer, overdueOrders, stageEvent } from './lib/production';
 import { printOrder } from './lib/orderActions';
 import { computeOrderNumberFor } from './lib/numbering';
+import LoginView from './views/LoginView';
+import { podpis, wolno, wymagaLogowania } from './lib/auth';
 import { backupInBackground } from './lib/backup';
 import ReportsView from './views/ReportsView';
 import Sidebar from './components/Sidebar';
@@ -56,11 +58,20 @@ export default function App() {
   // zakładane z oferty nie istnieje jeszcze w danych.
   const [editingOrder, setEditingOrder] = useState<ProductionOrder | null>(null);
   const [paletaOtwarta, setPaletaOtwarta] = useState(false);
+  // Kto jest zalogowany. Tylko w pamięci — zamknięcie programu wylogowuje,
+  // bo „zostaw mnie zalogowanego" na wspólnym komputerze znosi sens haseł.
+  const [zalogowany, setZalogowany] = useState<UserAccount | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Zapis zlecenia bywa wołany z opóźnieniem (autozapis) — musi sięgnąć po
   // dane aktualne w chwili zapisu, a nie te sprzed półtorej sekundy.
   const stateRef = useRef<AppState | null>(null);
   stateRef.current = state;
+  const uzytkownikRef = useRef<UserAccount | null>(null);
+  // Czy ta sesja ma być za hasłem. Rozstrzygamy raz, przy wczytaniu danych:
+  // kto założył pierwsze konto w trakcie pracy, nie zostaje wyrzucony z
+  // programu w pół zdania — zamek działa od następnego uruchomienia.
+  const bramkaRef = useRef<boolean | null>(null);
+  uzytkownikRef.current = zalogowany;
 
   const toast = useCallback((msg: string, isError?: boolean, action?: { label: string; run: () => void }) => {
     // wygaszenie przez klasę, żeby zdążyło zniknąć płynnie zamiast zgasnąć
@@ -211,7 +222,7 @@ export default function App() {
     async (order: ProductionOrder, itemId: string, stageId: string) => {
       const it = order.items.find((x) => x.id === itemId);
       if (!it) return;
-      const kto = stateRef.current?.settings.currentUser || stateRef.current?.settings.issuers?.[0] || '';
+      const kto = podpis(uzytkownikRef.current, stateRef.current?.settings.issuers?.[0] || '');
       const wpis = stageEvent(order, it, stageId, kto, it.note);
       await saveOrder(
         { ...order, items: order.items.map((x) => (x.id === itemId ? { ...x, stageId } : x)) },
@@ -247,6 +258,7 @@ export default function App() {
       if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'n') {
         ev.preventDefault();
         // Ctrl+N zakłada to, co pasuje do miejsca, w którym jesteś
+        if (!wolno(uzytkownikRef.current, 'oferty') && !wolno(uzytkownikRef.current, 'dokumenty')) return;
         if (view === 'offers' || view === 'offerEdit') openOfferEditor(null);
         else openEditor(null);
       }
@@ -256,6 +268,49 @@ export default function App() {
   }, [openEditor, openOfferEditor, view]);
 
   if (!state) return null;
+  if (bramkaRef.current === null) bramkaRef.current = wymagaLogowania(state);
+
+  // Bramka logowania. Program bez kont działa jak dotąd — zamek pojawia się
+  // dopiero wtedy, gdy ktoś założy pierwsze konto.
+  const widokDozwolony = (v: ViewName): boolean => {
+    if (!zalogowany) return true;
+    if (v === 'offers' || v === 'offerEdit') return wolno(zalogowany, 'oferty');
+    if (v === 'list' || v === 'edit' || v === 'contractors') return wolno(zalogowany, 'dokumenty');
+    if (v === 'prices') return wolno(zalogowany, 'cennik');
+    if (v === 'reports') return wolno(zalogowany, 'zestawienia');
+    if (v === 'settings') return wolno(zalogowany, 'ustawienia');
+    return true;
+  };
+
+  // Gdy ktoś trafi na ekran, na który nie ma prawa — skrótem klawiszowym albo
+  // paletą poleceń — pokazujemy zlecenia, a nie pustą stronę.
+  const widok: ViewName = widokDozwolony(view) ? view : 'orders';
+
+  if (bramkaRef.current && !zalogowany) {
+    return (
+      <>
+        <LoginView
+          state={state}
+          onLogin={(u) => {
+            setZalogowany(u);
+            // Ostatnie logowanie zapisujemy, żeby było widać konta nieużywane
+            void persist({
+              ...state,
+              users: (state.users || []).map((x) =>
+                x.id === u.id ? { ...x, lastLoginAt: new Date().toISOString() } : x
+              )
+            });
+            if (!wolno(u, 'oferty')) setView('orders');
+          }}
+          onCreateOwner={async (u) => {
+            await persist({ ...state, users: [...(state.users || []), u] });
+            setZalogowany(u);
+          }}
+        />
+        <Toast toast={toastState} />
+      </>
+    );
+  }
 
   const toggleTheme = () => {
     const next = structuredClone(state);
@@ -418,14 +473,19 @@ export default function App() {
         theme={state.settings.theme}
         offersAwaiting={offersAwaitingReply(state.offers, parseNumber(state.settings.offerFollowUpDays)).length}
         ordersOverdue={overdueOrders(state.orders || [], state.settings.stages, todayStr()).length}
+        user={zalogowany}
+        onLogout={() => {
+          setZalogowany(null);
+          setView('list');
+        }}
         onNavigate={(v) => setView(v)}
         onNewDoc={() => openEditor(null)}
         onNewOffer={() => openOfferEditor(null)}
         onToggleTheme={toggleTheme}
       />
       <main className="content">
-        <div className="view-swap" key={view}>
-        {view === 'list' && (
+        <div className="view-swap" key={widok}>
+        {widok === 'list' && (
           <DocumentsView
             documents={state.documents}
             onEdit={(id) => openEditor(id)}
@@ -449,7 +509,7 @@ export default function App() {
             onDelete={(doc) => deleteDocument(doc, false)}
           />
         )}
-        {view === 'edit' && (
+        {widok === 'edit' && (
           <EditorView
             key={editingDocId || (wzPrefill ? `z-oferty-${wzPrefillSeq}` : 'nowa')}
             state={state}
@@ -465,11 +525,11 @@ export default function App() {
             askConfirm={askConfirm}
           />
         )}
-        {view === 'contractors' && (
+        {widok === 'contractors' && (
           <ContractorsView state={state} onPersist={persist} toast={toast} />
         )}
-        {view === 'prices' && <PricesView state={state} />}
-        {view === 'offers' && (
+        {widok === 'prices' && <PricesView state={state} />}
+        {widok === 'offers' && (
           <OffersView
             offers={state.offers}
             followUpDays={parseNumber(state.settings.offerFollowUpDays)}
@@ -502,7 +562,7 @@ export default function App() {
             onStatusChange={(offer, status) => markOffer(offer, { status })}
           />
         )}
-        {view === 'offerEdit' && (
+        {widok === 'offerEdit' && (
           <OfferEditorView
             key={editingOfferId || (offerPrefill ? `kopia-${offerPrefillSeq}` : 'nowa')}
             state={state}
@@ -521,12 +581,13 @@ export default function App() {
             askConfirm={askConfirm}
           />
         )}
-        {view === 'orders' && (
+        {widok === 'orders' && (
           <OrdersView
             orders={state.orders || []}
             stages={etapy(state.settings.stages)}
             events={state.stageEvents || []}
             onEdit={openOrderById}
+            canEdit={wolno(zalogowany, 'zlecenia-edycja')}
             onNew={() => openOrder(emptyOrder(state.settings.stages, todayStr()))}
             onBoard={() => setView('board')}
             onPrint={(o) => void printOrder(o, state.settings, toast)}
@@ -545,7 +606,7 @@ export default function App() {
             }}
           />
         )}
-        {view === 'orderEdit' && editingOrder && (
+        {widok === 'orderEdit' && editingOrder && (
           <OrderEditorView
             key={editingOrder.id || 'nowe'}
             state={state}
@@ -554,9 +615,10 @@ export default function App() {
             onBack={() => setView('orders')}
             onPrint={(o) => void printOrder(o, state.settings, toast)}
             toast={toast}
+            readOnly={!wolno(zalogowany, 'zlecenia-edycja')}
           />
         )}
-        {view === 'board' && (
+        {widok === 'board' && (
           <BoardView
             orders={state.orders || []}
             stages={etapy(state.settings.stages)}
@@ -565,9 +627,15 @@ export default function App() {
             onAdvance={(o, itemId, stageId) => void advanceOnBoard(o, itemId, stageId)}
           />
         )}
-        {view === 'reports' && <ReportsView state={state} />}
-        {view === 'settings' && (
-          <SettingsView state={state} onPersist={persist} toast={toast} askConfirm={askConfirm} />
+        {widok === 'reports' && <ReportsView state={state} />}
+        {widok === 'settings' && (
+          <SettingsView
+            state={state}
+            currentUser={zalogowany}
+            onPersist={persist}
+            toast={toast}
+            askConfirm={askConfirm}
+          />
         )}
         </div>
       </main>

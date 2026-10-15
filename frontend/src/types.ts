@@ -76,6 +76,23 @@ export interface Seller {
 /** Specyfikacja przypisana do produktu. Ten sam produkt wraca na dziesiątkach
  *  ofert z tym samym zestawem parametrów, więc trzymamy go raz w ustawieniach
  *  i dobieramy do pozycji po nazwie — tak samo jak zdjęcia. */
+/** Zestaw domyślnej specyfikacji przypisany do kategorii produktów.
+ *
+ *  Rolety mają inne parametry niż moskitiery, więc jeden wspólny zestaw
+ *  wierszy nie wystarcza. Zestaw może obejmować kilka kategorii naraz, a jedna
+ *  kategoria może mieć kilka zestawów — wtedy pierwszy wchodzi sam, a resztę
+ *  wstawia się przyciskiem przy pozycji.
+ */
+export interface SpecPreset {
+  id: string;
+  /** Nazwa dla człowieka, np. „Rolety kasetowe" */
+  name: string;
+  /** Kategorie, których dotyczy. Pusta lista = zestaw na wszystko, używany
+   *  wtedy, gdy nic bardziej szczegółowego nie pasuje. */
+  departments: Department[];
+  rows: OfferSpecRow[];
+}
+
 export interface SpecTemplate {
   /** Nazwa produktu albo jej fragment, np. „roleta kasetowa uni” */
   name: string;
@@ -109,9 +126,12 @@ export interface Settings {
   productPhotos?: ProductPhoto[];
   /** Szablony specyfikacji przypisane do produktów — wstawiane do pozycji po nazwie */
   specTemplates?: SpecTemplate[];
-  /** Domyślna specyfikacja: wiersze dla produktu, który nie ma własnego
-   *  szablonu. Pozycja dostaje je od razu, żeby było wiadomo, co uzupełnić. */
+  /** Domyślna specyfikacja — zastąpiona przez specPresets. Zostaje, żeby dane
+   *  zapisane starszą wersją programu dało się przenieść. */
   defaultSpec?: OfferSpecRow[];
+  /** Zestawy domyślnej specyfikacji, każdy przypisany do oddziałów. Pozycja
+   *  dostaje zestaw pasujący do swojego produktu. */
+  specPresets?: SpecPreset[];
   /** Etapy produkcji; puste = program użyje domyślnych */
   stages?: Stage[];
   /** Domyślne ustawienia nowej oferty */
@@ -350,6 +370,12 @@ export interface Stage {
   color: string;
   /** Etap końcowy: po nim pozycja jest zrobiona i znika z tablicy */
   final?: boolean;
+  /** Podetap: należy do etapu o tym id. Podetapy nie są osobnymi przystankami
+   *  — to lista rzeczy do odhaczenia w ramach etapu nadrzędnego. */
+  parentId?: string;
+  /** Oddziały, których ten etap dotyczy. Pusta lista = każdy; żaluzje mają
+   *  inne kroki niż moskitiery i nie ma powodu pokazywać ich sobie nawzajem. */
+  departments?: Department[];
 }
 
 /** Pozycja zlecenia — to, co faktycznie trzeba wyprodukować.
@@ -395,6 +421,9 @@ export interface StageEvent {
   at: string;
   by: string;
   note?: string;
+  /** Dla podetapów: czy odhaczono (true), czy cofnięto odhaczenie (false).
+   *  Dla zwykłych etapów bez znaczenia. */
+  done?: boolean;
 }
 
 export type OrderStatus = 'nowe' | 'w-toku' | 'wydane' | 'wstrzymane';

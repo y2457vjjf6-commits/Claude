@@ -110,3 +110,32 @@ test('wydruk pomija puste wiersze tak samo jak schowek', () => {
   );
   expect(html.match(/of-spec-label/g)).toHaveLength(1);
 });
+
+test('oferta dla klienta pomija nieuzupełnione wiersze specyfikacji', () => {
+  const html = buildOfferHtml(
+    oferta({
+      showSpecs: true,
+      groups: [
+        grupa([
+          poz({
+            spec: [
+              { label: 'Kolor kasety', value: 'RAL 9005' },
+              { label: 'Szerokość całkowita', value: '' }
+            ]
+          })
+        ])
+      ]
+    }),
+    DEFAULT_STATE.settings
+  );
+  expect(html).toContain('Kolor kasety');
+  expect(html).not.toContain('Szerokość całkowita');
+});
+
+test('pozycja z samymi pustymi wierszami nie drukuje pustej tabelki', () => {
+  const html = buildOfferHtml(
+    oferta({ showSpecs: true, groups: [grupa([poz({ spec: [{ label: 'Kolor', value: '' }] })])] }),
+    DEFAULT_STATE.settings
+  );
+  expect(html).not.toContain('of-spec');
+});

@@ -16,15 +16,71 @@ export const DEFAULT_STATE: AppState = {
     emailCopyTo: 'lechrol@lechrol.pl',
     backupFolder: '',
     issuers: ['Sebastian Wajcht', 'Jacek Wajcht'],
-    // Wiersze, które widać w każdej nowej pozycji zlecenia. Puste wartości są
-    // celowe: to rubryki do uzupełnienia, a nie gotowe odpowiedzi. Firma
-    // zmienia tę listę w Ustawieniach → Produkcja.
-    defaultSpec: [
-      { label: 'Materiał', value: '' },
-      { label: 'Kolor', value: '' },
-      { label: 'Strona sterowania', value: '' },
-      { label: 'Szerokość całkowita', value: '' },
-      { label: 'Wysokość całkowita', value: '' }
+    // Zestawy, które widać w nowej pozycji — osobne dla każdej kategorii, bo
+    // roleta ma inne parametry niż moskitiera. Puste wartości są celowe: to
+    // rubryki do uzupełnienia. Firma zmienia je w Ustawieniach → Produkcja.
+    specPresets: [
+      {
+        id: 'rolety',
+        name: 'Rolety',
+        departments: ['rolety'],
+        rows: [
+          { label: 'Materiał', value: '' },
+          { label: 'Kolor kasety', value: '' },
+          { label: 'Prowadnice', value: '' },
+          { label: 'Strona sterowania', value: '' },
+          { label: 'Szerokość całkowita', value: '' },
+          { label: 'Wysokość całkowita', value: '' }
+        ]
+      },
+      {
+        id: 'zaluzje',
+        name: 'Żaluzje',
+        departments: ['zaluzje'],
+        rows: [
+          { label: 'Materiał', value: '' },
+          { label: 'Kolor lameli', value: '' },
+          { label: 'Drabinka', value: '' },
+          { label: 'Strona sterowania', value: '' },
+          { label: 'Szerokość całkowita', value: '' },
+          { label: 'Wysokość całkowita', value: '' }
+        ]
+      },
+      {
+        id: 'plisy',
+        name: 'Żaluzje plisowane',
+        departments: ['plisy'],
+        rows: [
+          { label: 'Tkanina', value: '' },
+          { label: 'Kolor profili', value: '' },
+          { label: 'Typ montażu', value: '' },
+          { label: 'Szerokość całkowita', value: '' },
+          { label: 'Wysokość całkowita', value: '' }
+        ]
+      },
+      {
+        id: 'moskitiery',
+        name: 'Moskitiery',
+        departments: ['moskitiery'],
+        rows: [
+          { label: 'Typ', value: '' },
+          { label: 'Kolor ramki', value: '' },
+          { label: 'Siatka', value: '' },
+          { label: 'Szerokość całkowita', value: '' },
+          { label: 'Wysokość całkowita', value: '' }
+        ]
+      },
+      {
+        id: 'inne',
+        name: 'Pozostałe',
+        departments: [],
+        rows: [
+          { label: 'Materiał', value: '' },
+          { label: 'Kolor', value: '' },
+          { label: 'Szerokość całkowita', value: '' },
+          { label: 'Wysokość całkowita', value: '' }
+        ]
+      }
     ],
     offerDefaults: {
       deadlineDays: '21',

@@ -9,6 +9,7 @@
  *  2. **Zlecenie nie niesie cen.** Warsztat ma wiedzieć, co zrobić, a nie za ile.
  */
 import type {
+  Department,
   Offer,
   OrderItem,
   OrderStatus,
@@ -19,7 +20,7 @@ import type {
 } from '../types';
 import { uid } from './storage';
 import { filledSpec } from './offers';
-import { autoSpecForOrder, domyslnaSpec } from './specTemplates';
+import { autoSpecFor, domyslnaSpec } from './specTemplates';
 
 /** Etapy na start. Firma zmieni je w Ustawieniach; te są po to, żeby program
  *  działał od pierwszego uruchomienia, a nie witał pustą tablicą. */
@@ -37,19 +38,60 @@ export function etapy(stages: Stage[] | undefined): Stage[] {
   return stages && stages.length ? stages : DOMYSLNE_ETAPY;
 }
 
+/* ------------------------- Etapy a podetapy -------------------------
+   Etap to przystanek, przez który pozycja przechodzi. Podetap to pozycja
+   na liście rzeczy do odhaczenia w ramach etapu — „W produkcji" u żaluzji
+   znaczy co innego niż u moskitier, a rozbijanie tego na osobne przystanki
+   zrobiłoby z tablicy tasiemiec. */
+
+/** Same przystanki: podetapy odpadają. */
+export function etapyGlowne(stages: Stage[] | undefined, dzial?: Department | null): Stage[] {
+  return etapy(stages).filter((e) => !e.parentId && dotyczyDzialu(e, dzial));
+}
+
+/** Lista do odhaczenia w ramach etapu — przefiltrowana po oddziale pozycji. */
+export function podetapy(
+  stages: Stage[] | undefined,
+  parentId: string,
+  dzial?: Department | null
+): Stage[] {
+  return etapy(stages).filter((e) => e.parentId === parentId && dotyczyDzialu(e, dzial));
+}
+
+/** Czy etap dotyczy tego oddziału.
+ *
+ *  Etap bez zaznaczonych oddziałów dotyczy każdego — tak jest łatwiej zacząć
+ *  i trudniej coś zgubić.
+ *
+ *  Rozróżniamy dwa „braki" oddziału, bo znaczą co innego: `undefined` to
+ *  „nie filtruj" (tak pyta ekran ustawień, który ma pokazać wszystko),
+ *  a `null` to „próbowaliśmy rozpoznać i nie wyszło" — wtedy zostają same
+ *  etapy wspólne, żeby pozycja nieznanego rodzaju nie dostała kroków żaluzji.
+ */
+export function dotyczyDzialu(etap: Stage, dzial?: Department | null): boolean {
+  const lista = etap.departments || [];
+  if (!lista.length) return true;
+  if (dzial === undefined) return true;
+  return !!dzial && lista.includes(dzial);
+}
+
 export function etap(stages: Stage[] | undefined, id: string): Stage | null {
   return etapy(stages).find((e) => e.id === id) || null;
 }
 
 /** Pierwszy etap listy — tu ląduje każda nowa pozycja. */
-export function pierwszyEtap(stages: Stage[] | undefined): string {
-  return etapy(stages)[0]?.id || '';
+export function pierwszyEtap(stages: Stage[] | undefined, dzial?: Department | null): string {
+  return etapyGlowne(stages, dzial)[0]?.id || '';
 }
 
 /** Następny etap po tym; null, gdy to już ostatni. Stąd bierze się przycisk
  *  „dalej" na karcie — w warsztacie to jedno kliknięcie zamiast wybierania. */
-export function nastepnyEtap(stages: Stage[] | undefined, id: string): Stage | null {
-  const lista = etapy(stages);
+export function nastepnyEtap(
+  stages: Stage[] | undefined,
+  id: string,
+  dzial?: Department | null
+): Stage | null {
+  const lista = etapyGlowne(stages, dzial);
   const i = lista.findIndex((e) => e.id === id);
   return i >= 0 && i + 1 < lista.length ? lista[i + 1] : null;
 }
@@ -57,14 +99,18 @@ export function nastepnyEtap(stages: Stage[] | undefined, id: string): Stage | n
 /** Etap przed tym; null, gdy to już pierwszy. Potrzebne do cofania: coś
  *  przestawionego przez pomyłkę albo odesłanego do poprawki musi mieć drogę
  *  z powrotem, a kasowanie wpisu dziennika byłoby zacieraniem historii. */
-export function poprzedniEtap(stages: Stage[] | undefined, id: string): Stage | null {
-  const lista = etapy(stages);
+export function poprzedniEtap(
+  stages: Stage[] | undefined,
+  id: string,
+  dzial?: Department | null
+): Stage | null {
+  const lista = etapyGlowne(stages, dzial);
   const i = lista.findIndex((e) => e.id === id);
   return i > 0 ? lista[i - 1] : null;
 }
 
 export function czyKoncowy(stages: Stage[] | undefined, id: string): boolean {
-  const lista = etapy(stages);
+  const lista = etapyGlowne(stages);
   const e = lista.find((x) => x.id === id);
   if (!e) return false;
   // Gdy nikt nie oznaczył etapu końcowego, za koniec uznajemy ostatni na liście
@@ -100,7 +146,7 @@ export function orderFromOffer(
       };
       // Pozycja bez własnej specyfikacji dostaje szablon produktu, a gdy go
       // nie ma — domyślne wiersze. Warsztat widzi wtedy od razu, co uzupełnić.
-      items.push({ ...pozycja, spec: autoSpecForOrder(pozycja, settings) || pozycja.spec });
+      items.push({ ...pozycja, spec: autoSpecFor(pozycja, settings) || pozycja.spec });
     }
   }
   return {
@@ -132,7 +178,7 @@ export function emptyOrder(
         material: '',
         qty: '1',
         stageId: pierwszyEtap(settings?.stages),
-        spec: domyslnaSpec(settings)
+        spec: domyslnaSpec({ name: '', material: '' }, settings)
       }
     ],
     notes: '',
@@ -181,12 +227,74 @@ export function stageEvent(
   };
 }
 
+/* ------------------------- Odhaczanie podetapów ------------------------- */
+
+export interface Odhaczenie {
+  done: boolean;
+  by: string;
+  at: string;
+}
+
+/** Wpis dziennika dla odhaczenia podetapu. Nie kasujemy poprzedniego —
+ *  zdjęcie ptaszka to też zdarzenie i ma zostać w historii. */
+export function substepEvent(
+  orderId: string,
+  itemId: string,
+  substageId: string,
+  done: boolean,
+  by: string
+): StageEvent {
+  return {
+    id: uid(),
+    orderId,
+    itemId,
+    fromStageId: '',
+    toStageId: substageId,
+    at: new Date().toISOString(),
+    by: String(by || '').trim(),
+    done
+  };
+}
+
+/** Stan odhaczeń pozycji: podetap → kto i kiedy. Liczy się ostatni wpis,
+ *  więc zdjęcie ptaszka cofa odhaczenie, zamiast je dublować. */
+export function substepState(
+  itemId: string,
+  events: StageEvent[] | undefined
+): Record<string, Odhaczenie> {
+  const stan: Record<string, Odhaczenie> = {};
+  for (const e of events || []) {
+    if (e.itemId !== itemId || e.done === undefined) continue;
+    const biezace = stan[e.toStageId];
+    if (biezace && biezace.at > e.at) continue;
+    stan[e.toStageId] = { done: e.done, by: e.by, at: e.at };
+  }
+  return stan;
+}
+
+/** Ile podetapów etapu jest odhaczonych — na kafelek tablicy. */
+export function substepProgress(
+  itemId: string,
+  stages: Stage[] | undefined,
+  stageId: string,
+  dzial: Department | null,
+  events: StageEvent[] | undefined
+): { zrobione: number; wszystkie: number } {
+  const lista = podetapy(stages, stageId, dzial);
+  const stan = substepState(itemId, events);
+  return {
+    zrobione: lista.filter((p) => stan[p.id]?.done).length,
+    wszystkie: lista.length
+  };
+}
+
 /** Etap pozycji odtworzony z dziennika — najpóźniejszy wpis wygrywa.
  *  Przy równym czasie decyduje kolejność zapisu, żeby wynik był powtarzalny. */
 export function stageFromEvents(itemId: string, events: StageEvent[] | undefined): string | null {
   let najnowszy: StageEvent | null = null;
   for (const e of events || []) {
-    if (e.itemId !== itemId) continue;
+    // Odhaczenie podetapu nie przesuwa pozycji na inny przystanek
+    if (e.itemId !== itemId || e.done !== undefined) continue;
     if (!najnowszy || e.at >= najnowszy.at) najnowszy = e;
   }
   return najnowszy ? najnowszy.toStageId : null;
@@ -195,6 +303,11 @@ export function stageFromEvents(itemId: string, events: StageEvent[] | undefined
 /** Dziennik jednego zlecenia, od najnowszego. */
 export function orderHistory(orderId: string, events: StageEvent[] | undefined): StageEvent[] {
   return (events || []).filter((e) => e.orderId === orderId).sort((a, b) => (a.at < b.at ? 1 : -1));
+}
+
+/** Nazwa etapu albo podetapu — historia pokazuje jedno i drugie. */
+export function nazwaEtapu(stages: Stage[] | undefined, id: string): string {
+  return etapy(stages).find((e) => e.id === id)?.name || id;
 }
 
 /* ---------------------------- Postęp ---------------------------- */

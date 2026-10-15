@@ -3384,3 +3384,54 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
   .qc-foto,
   .qc-kod { animation: none !important; }
 }
+
+/* Podkategoria etapu — wcięta i z kreską prowadzącą, żeby widać było,
+   do czego należy. */
+.stage-row {
+  grid-template-columns: 44px 1fr auto auto;
+  row-gap: var(--sp-1);
+  margin-bottom: var(--sp-2);
+}
+
+.stage-row.stage-sub {
+  margin-left: var(--sp-6);
+  padding-left: var(--sp-3);
+  border-left: 2px solid var(--hairline);
+}
+
+.stage-row .user-depts { padding-bottom: 0; }
+
+/* Lista rzeczy do odhaczenia w ramach etapu. */
+.substeps {
+  list-style: none;
+  margin: var(--sp-3) 0 0;
+  padding: var(--sp-2) 0 0;
+  border-top: 1px dashed var(--hairline);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-5);
+  font-size: var(--text-xs);
+}
+
+.substeps li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+}
+
+/* Odhaczone przygasa, ale zostaje widoczne — to lista kontrolna,
+   a nie kasowanie rzeczy z oczu. */
+.substeps li.done .checkbox-field span { text-decoration: line-through; opacity: 0.6; }
+
+.substep-kto {
+  color: var(--muted);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.board-card-kroki {
+  display: block;
+  margin-top: var(--sp-1);
+  font-size: var(--text-2xs);
+  color: var(--muted);
+}

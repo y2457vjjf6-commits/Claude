@@ -7,12 +7,16 @@ import { AppState, OrderItem, ProductionOrder, StageEvent, UserAccount } from '.
 import {
   czyKoncowy,
   etapy,
+  etapyGlowne,
   nastepnyEtap,
   orderHistory,
+  podetapy,
   poprzedniEtap,
   orderProgress,
   splitItem,
-  stageEvent
+  stageEvent,
+  substepEvent,
+  substepState
 } from '../lib/production';
 import { uid } from '../lib/storage';
 import { filledSpec, movedBy } from '../lib/offers';
@@ -25,7 +29,7 @@ import {
   peopleForDepartment
 } from '../lib/departments';
 import { MAX_BOK_ZLECENIE, resizePhoto } from '../lib/photos';
-import { autoSpecForOrder, domyslnaSpec, matchSpecTemplate, uzyteczneWiersze } from '../lib/specTemplates';
+import { autoSpecFor, domyslnaSpec, matchSpecTemplate, uzyteczneWiersze } from '../lib/specTemplates';
 
 interface Props {
   state: AppState;
@@ -138,7 +142,7 @@ export default function OrderEditorView({
         if (!('name' in patch) && !('material' in patch)) return nowa;
         return {
           ...nowa,
-          spec: autoSpecForOrder(nowa, state.settings) || nowa.spec,
+          spec: autoSpecFor(nowa, state.settings) || nowa.spec,
           // Jedna osoba w oddziale = oczywisty wybór, więc program robi go sam.
           // Przy dwóch kandydatach decyzja zostaje przy człowieku.
           assignee: nowa.assignee || autoAssignee(nowa, state.users) || undefined
@@ -177,6 +181,14 @@ export default function OrderEditorView({
     if (!obraz) return;
     e.preventDefault();
     void wgrajZdjecie(ii, obraz.getAsFile());
+  };
+
+  /** Odhaczenie podkategorii. Zapisuje się od razu i zostawia ślad w dzienniku
+   *  — także wtedy, gdy ktoś ptaszka zdejmuje. */
+  const odhacz = (ii: number, substageId: string, done: boolean) => {
+    const it = order.items[ii];
+    if (!it) return;
+    void zapisz(orderRef.current, substepEvent(nadane.current.id, it.id, substageId, done, kto));
   };
 
   const rozbij = (ii: number) => {
@@ -320,8 +332,11 @@ export default function OrderEditorView({
       <div className="card">
         <h3 className="card-title">Pozycje</h3>
         {order.items.map((it, ii) => {
-          const dalej = nastepnyEtap(state.settings.stages, it.stageId);
-          const wstecz = poprzedniEtap(state.settings.stages, it.stageId);
+          const dzialPozycji = departmentForProduct(it);
+          const dalej = nastepnyEtap(state.settings.stages, it.stageId, dzialPozycji);
+          const wstecz = poprzedniEtap(state.settings.stages, it.stageId, dzialPozycji);
+          const kroki = podetapy(state.settings.stages, it.stageId, dzialPozycji);
+          const odhaczenia = substepState(it.id, state.stageEvents);
           const gotowa = czyKoncowy(state.settings.stages, it.stageId);
           return (
             <div className={'order-item' + (gotowa ? ' done' : '')} key={it.id} data-testid={`order-item-${ii}`}>
@@ -449,6 +464,33 @@ export default function OrderEditorView({
                 )}
               </details>
 
+              {kroki.length > 0 && (
+                <ul className="substeps" data-testid={`order-substeps-${ii}`}>
+                  {kroki.map((k) => {
+                    const stan = odhaczenia[k.id];
+                    return (
+                      <li key={k.id} className={stan?.done ? 'done' : ''}>
+                        <label className="checkbox-field">
+                          <input
+                            type="checkbox"
+                            data-testid={`order-substep-${ii}-${k.id}`}
+                            checked={!!stan?.done}
+                            onChange={(e) => odhacz(ii, k.id, e.target.checked)}
+                          />
+                          <span>{k.name}</span>
+                        </label>
+                        {stan && (
+                          <span className="substep-kto">
+                            {stan.done ? '' : 'cofnięte · '}
+                            {stan.by || '—'} · {new Date(stan.at).toLocaleString('pl-PL')}
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+
               <div className="order-item-photo" data-testid={`order-photo-${ii}`}>
                 {it.photo ? (
                   <>
@@ -514,10 +556,11 @@ export default function OrderEditorView({
                   className="input"
                   data-testid={`order-item-stageid-${ii}`}
                   aria-label="Etap"
+                  disabled={readOnly}
                   value={it.stageId}
                   onChange={(e) => przestaw(ii, e.target.value)}
                 >
-                  {lista.map((e) => (
+                  {etapyGlowne(state.settings.stages, departmentForProduct(it)).map((e) => (
                     <option key={e.id} value={e.id}>
                       {e.name}
                     </option>
@@ -599,7 +642,7 @@ export default function OrderEditorView({
                   material: '',
                   qty: '1',
                   stageId: lista[0].id,
-                  spec: domyslnaSpec(state.settings)
+                  spec: domyslnaSpec({ name: '', material: '' }, state.settings)
                 }
               ]
             }))

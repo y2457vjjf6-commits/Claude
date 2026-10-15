@@ -1,8 +1,14 @@
 import { useMemo } from 'react';
 import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ProductionOrder, Stage, StageEvent, UserAccount } from '../types';
-import { czyKoncowy, etapy, nastepnyEtap, poprzedniEtap } from '../lib/production';
-import { nazwaOsoby } from '../lib/departments';
+import {
+  czyKoncowy,
+  etapyGlowne,
+  nastepnyEtap,
+  poprzedniEtap,
+  substepProgress
+} from '../lib/production';
+import { departmentForProduct, nazwaOsoby } from '../lib/departments';
 import { todayStr } from '../lib/dates';
 
 interface Props {
@@ -10,6 +16,8 @@ interface Props {
   stages: Stage[];
   /** Potrzebne, żeby pokazać imię osoby przypisanej do pozycji */
   users: UserAccount[];
+  /** Dziennik — z niego bierze się postęp odhaczania podkategorii */
+  events: StageEvent[];
   onBack: () => void;
   onOpen: (id: string) => void;
   onAdvance: (order: ProductionOrder, itemId: string, stageId: string) => void;
@@ -25,10 +33,11 @@ interface Karta {
   note?: string;
   numerWlasny?: string;
   kto?: string;
+  kroki?: { zrobione: number; wszystkie: number };
 }
 
-export default function BoardView({ orders, stages, users, onBack, onOpen, onAdvance }: Props) {
-  const lista = etapy(stages);
+export default function BoardView({ orders, stages, users, events, onBack, onOpen, onAdvance }: Props) {
+  const lista = etapyGlowne(stages);
   const dzis = todayStr();
 
   // Tablica pokazuje robotę w toku. Zlecenia wstrzymane i rzeczy już wydane
@@ -50,7 +59,8 @@ export default function BoardView({ orders, stages, users, onBack, onOpen, onAdv
           qty: it.qty,
           note: it.note,
           numerWlasny: o.ownNumber,
-          kto: nazwaOsoby(users, it.assignee)
+          kto: nazwaOsoby(users, it.assignee),
+          kroki: substepProgress(it.id, stages, it.stageId, departmentForProduct(it), events)
         });
       }
     }
@@ -59,7 +69,7 @@ export default function BoardView({ orders, stages, users, onBack, onOpen, onAdv
       karty.sort((a, b) => (a.termin || '9999-12-31') < (b.termin || '9999-12-31') ? -1 : 1);
     }
     return mapa;
-  }, [orders, lista, stages, users]);
+  }, [orders, lista, stages, users, events]);
 
   return (
     <section className="view" data-testid="view-board">
@@ -106,6 +116,11 @@ export default function BoardView({ orders, stages, users, onBack, onOpen, onAdv
                           {k.termin ? ` · ${k.termin}` : ''}
                         </span>
                         {k.kto && <span className="board-card-who">{k.kto}</span>}
+                        {!!k.kroki?.wszystkie && (
+                          <span className="board-card-kroki">
+                            odhaczone {k.kroki.zrobione} z {k.kroki.wszystkie}
+                          </span>
+                        )}
                         {k.note && <span className="board-card-note">{k.note}</span>}
                       </button>
                       <div className="board-card-moves">

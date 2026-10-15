@@ -33,7 +33,10 @@ function ileKolumn(zeZdjeciem: boolean): number {
  *  zbiór divów, bo to dokładnie para nazwa–wartość; etykiety trzymają wspólną
  *  kolumnę, więc wartości układają się w pion i dają się porównywać wzrokiem. */
 function specyfikacja(it: OfferItem): string {
-  const pary = filledSpec(it.spec);
+  // Na dokumencie dla klienta pokazujemy tylko uzupełnione parametry: rubryka
+  // „Kolor kasety: —" nic mu nie mówi, a wygląda na niedokończoną robotę.
+  // Na kartce dla warsztatu jest odwrotnie i tam puste wiersze zostają.
+  const pary = filledSpec(it.spec).filter((p) => p.value);
   if (!pary.length) return '';
   const komorki = pary
     .map(

@@ -643,6 +643,7 @@ export default function App() {
             orders={state.orders || []}
             stages={etapy(state.settings.stages)}
             users={state.users || []}
+            events={state.stageEvents || []}
             onBack={() => setView('orders')}
             onOpen={(id) => openOrderById(id)}
             onAdvance={(o, itemId, stageId) => void advanceOnBoard(o, itemId, stageId)}

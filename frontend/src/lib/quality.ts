@@ -40,7 +40,9 @@ export function stageProtocol(
 ): WierszProtokolu[] {
   const lista = etapy(stages);
   const moje = (events || [])
-    .filter((e) => e.orderId === order.id)
+    // Odhaczenia podetapów mają własne miejsce w karcie pozycji; w protokole
+    // liczą się przystanki, przez które zlecenie przeszło.
+    .filter((e) => e.orderId === order.id && e.done === undefined)
     .slice()
     .sort((a, b) => (a.at < b.at ? -1 : 1));
 

@@ -4,6 +4,8 @@ import {
 } from 'lucide-react';
 import { movedBy } from '../lib/offers';
 import { etapy } from '../lib/production';
+import { zestawy } from '../lib/specTemplates';
+import { ODDZIALY, OPISY_ODDZIALOW } from '../lib/departments';
 import { wolno } from '../lib/auth';
 import UsersCard from '../components/UsersCard';
 import { uid } from '../lib/storage';
@@ -45,7 +47,7 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
     })),
     photoRows: (st.productPhotos || []).map((z) => ({ ...z })),
     stageRows: etapy(st.stages).map((e) => ({ ...e })),
-    defaultSpecRows: (st.defaultSpec || []).map((w) => ({ ...w })),
+    specPresetRows: zestawy(st).map((z) => ({ ...z, departments: [...z.departments], rows: z.rows.map((w) => ({ ...w })) })),
     specRows: (st.specTemplates || []).map((t) => ({
       name: t.name,
       rows: (t.rows || []).map((w) => ({ ...w }))
@@ -108,9 +110,15 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
     next.settings.productPhotos = form.photoRows
       .map((z) => ({ name: z.name.trim(), dataUrl: z.dataUrl }))
       .filter((z) => z.name && z.dataUrl);
-    next.settings.defaultSpec = form.defaultSpecRows
-      .map((w) => ({ label: w.label.trim(), value: w.value.trim() }))
-      .filter((w) => w.label);
+    next.settings.specPresets = form.specPresetRows
+      .map((z) => ({
+        ...z,
+        name: z.name.trim(),
+        rows: z.rows.map((w) => ({ label: w.label.trim(), value: w.value.trim() })).filter((w) => w.label)
+      }))
+      .filter((z) => z.rows.length);
+    // Stara płaska lista przestaje cokolwiek znaczyć, gdy są zestawy
+    delete next.settings.defaultSpec;
     next.settings.stages = form.stageRows
       .map((e) => ({ ...e, name: e.name.trim() }))
       .filter((e) => e.name);
@@ -512,13 +520,24 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
       <div className="card">
         <h3 className="card-title">Etapy produkcji</h3>
         <p className="muted card-note">
-          Kolejność etapów jest kolejnością pracy: przycisk „Dalej” na tablicy przestawia pozycję
-          o jeden w dół tej listy. Ostatni etap oznacza rzecz skończoną — pozycja znika z tablicy
-          i liczy się do postępu zlecenia. Zmiana nazwy etapu nie rusza historii: wpisy w dzienniku
-          wskazują na etap, a nie przechowują jego nazwę.
+          Kolejność etapów jest kolejnością pracy: przycisk „Dalej” przestawia pozycję o jeden
+          w dół tej listy. Ostatni etap oznacza rzecz skończoną — pozycja znika z tablicy i liczy
+          się do postępu zlecenia.
+          <br />
+          <strong>Podkategorie</strong> (przycisk „+” przy etapie) nie są osobnymi przystankami,
+          tylko listą rzeczy do odhaczenia w ramach etapu — przy pozycji widać, co już zrobiono
+          i kto. <strong>Działy</strong> decydują, komu etap się w ogóle pokaże: żaluzje mają inne
+          kroki niż moskitiery. Etap bez zaznaczonego działu dotyczy wszystkich.
+          <br />
+          Zmiana nazwy nie rusza historii: wpisy w dzienniku wskazują na etap, a nie przechowują
+          jego nazwę.
         </p>
         {form.stageRows.map((e, i) => (
-          <div className="stage-row" key={e.id} data-testid={`stage-row-${i}`}>
+          <div
+            className={'stage-row' + (e.parentId ? ' stage-sub' : '')}
+            key={e.id}
+            data-testid={`stage-row-${i}`}
+          >
             <input
               type="color"
               className="input"
@@ -533,26 +552,61 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
               type="text"
               className="input"
               data-testid={`stage-name-${i}`}
-              aria-label="Nazwa etapu"
+              aria-label={e.parentId ? 'Nazwa podkategorii' : 'Nazwa etapu'}
+              placeholder={e.parentId ? 'np. Do wycięcia' : 'np. W produkcji'}
               value={e.name}
               onChange={(ev) =>
                 set({ stageRows: form.stageRows.map((r, j) => (j === i ? { ...r, name: ev.target.value } : r)) })
               }
             />
-            <label className="checkbox-field" title="Po tym etapie rzecz jest skończona">
-              <input
-                type="checkbox"
-                data-testid={`stage-final-${i}`}
-                checked={!!e.final}
-                onChange={(ev) =>
-                  set({
-                    stageRows: form.stageRows.map((r, j) => (j === i ? { ...r, final: ev.target.checked } : r))
-                  })
-                }
-              />
-              <span>koniec</span>
-            </label>
+            {!e.parentId && (
+              <label className="checkbox-field" title="Po tym etapie rzecz jest skończona">
+                <input
+                  type="checkbox"
+                  data-testid={`stage-final-${i}`}
+                  checked={!!e.final}
+                  onChange={(ev) =>
+                    set({
+                      stageRows: form.stageRows.map((r, j) => (j === i ? { ...r, final: ev.target.checked } : r))
+                    })
+                  }
+                />
+                <span>koniec</span>
+              </label>
+            )}
             <div className="spec-row-actions">
+              {!e.parentId && (
+                <button
+                  className="btn btn-small btn-light item-remove"
+                  data-testid={`stage-add-sub-${i}`}
+                  aria-label="Dodaj podkategorię"
+                  title="Dodaj podkategorię tego etapu"
+                  onClick={() => {
+                    // Podkategoria ląduje tuż za ostatnią swoją — lista czyta
+                    // się wtedy z góry na dół jak w warsztacie
+                    const ostatnia = form.stageRows.reduce(
+                      (acc, r, j) => (r.parentId === e.id ? j : acc),
+                      i
+                    );
+                    const nowa = {
+                      id: uid(),
+                      name: '',
+                      color: e.color,
+                      parentId: e.id,
+                      departments: [...(e.departments || [])]
+                    };
+                    set({
+                      stageRows: [
+                        ...form.stageRows.slice(0, ostatnia + 1),
+                        nowa,
+                        ...form.stageRows.slice(ostatnia + 1)
+                      ]
+                    });
+                  }}
+                >
+                  <Plus className="icon" />
+                </button>
+              )}
               <button
                 className="btn btn-small btn-light item-remove"
                 data-testid={`stage-up-${i}`}
@@ -574,11 +628,45 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
               <button
                 className="btn btn-small btn-danger item-remove"
                 data-testid={`stage-remove-${i}`}
-                aria-label="Usuń etap"
-                onClick={() => set({ stageRows: form.stageRows.filter((_, j) => j !== i) })}
+                aria-label={e.parentId ? 'Usuń podkategorię' : 'Usuń etap'}
+                onClick={() =>
+                  // Z etapem znikają jego podkategorie — zostałyby sierotami
+                  set({ stageRows: form.stageRows.filter((r, j) => j !== i && r.parentId !== e.id) })
+                }
               >
                 <X className="icon" />
               </button>
+            </div>
+
+            <div className="user-depts" data-testid={`stage-depts-${i}`}>
+              {ODDZIALY.map((d) => {
+                const ma = (e.departments || []).includes(d);
+                return (
+                  <label className="checkbox-field" key={d}>
+                    <input
+                      type="checkbox"
+                      data-testid={`stage-dept-${i}-${d}`}
+                      checked={ma}
+                      onChange={() =>
+                        set({
+                          stageRows: form.stageRows.map((r, j) =>
+                            j === i
+                              ? {
+                                  ...r,
+                                  departments: ma
+                                    ? (r.departments || []).filter((x) => x !== d)
+                                    : [...(r.departments || []), d]
+                                }
+                              : r
+                          )
+                        })
+                      }
+                    />
+                    <span>{OPISY_ODDZIALOW[d]}</span>
+                  </label>
+                );
+              })}
+              {!(e.departments || []).length && <span className="muted">dotyczy wszystkich</span>}
             </div>
           </div>
         ))}
@@ -599,85 +687,205 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
       <div className="card">
         <h3 className="card-title">Domyślna specyfikacja</h3>
         <p className="muted card-note">
-          Te wiersze dostaje każda nowa pozycja zlecenia, dla której nie ma szablonu przypisanego
-          do produktu. Wartości zostawia się puste — chodzi o to, żeby warsztat od razu widział,
-          co trzeba uzupełnić. Szablony dla konkretnych produktów ustawia się w zakładce Biblioteki
-          i mają pierwszeństwo przed tą listą.
+          Zestaw wierszy, które dostaje nowa pozycja — w zleceniu i w ofercie. Zaznacz kategorie,
+          których zestaw dotyczy: rolety mają inne parametry niż moskitiery. Zestaw bez zaznaczonej
+          kategorii jest zapasowy — wchodzi wtedy, gdy nic bardziej szczegółowego nie pasuje.
+          Kilka zestawów może należeć do tej samej kategorii; pierwszy z listy wchodzi sam,
+          pozostałe wstawia się przyciskiem przy pozycji. Wartości zostawia się puste — chodzi o to,
+          żeby było widać, co uzupełnić. Na ofercie dla klienta nieuzupełnione wiersze się nie drukują.
         </p>
-        {form.defaultSpecRows.map((w, i) => (
-          <div className="spec-row" key={i} data-testid={`default-spec-${i}`}>
-            <input
-              type="text"
-              className="input"
-              data-testid={`default-spec-label-${i}`}
-              aria-label="Co"
-              placeholder="np. Strona sterowania"
-              value={w.label}
-              onChange={(e) =>
-                set({
-                  defaultSpecRows: form.defaultSpecRows.map((r, j) =>
-                    j === i ? { ...r, label: e.target.value } : r
-                  )
-                })
-              }
-            />
-            <input
-              type="text"
-              className="input"
-              data-testid={`default-spec-value-${i}`}
-              aria-label="Jakie"
-              placeholder="zostaw puste, jeśli zależy od okna"
-              value={w.value}
-              onChange={(e) =>
-                set({
-                  defaultSpecRows: form.defaultSpecRows.map((r, j) =>
-                    j === i ? { ...r, value: e.target.value } : r
-                  )
-                })
-              }
-            />
-            <div className="spec-row-actions">
-              <button
-                className="btn btn-small btn-light item-remove"
-                data-testid={`default-spec-up-${i}`}
-                aria-label="Przesuń wyżej"
-                disabled={i === 0}
-                onClick={() => set({ defaultSpecRows: movedBy(form.defaultSpecRows, i, -1) })}
-              >
-                <ChevronUp className="icon" />
-              </button>
-              <button
-                className="btn btn-small btn-light item-remove"
-                data-testid={`default-spec-down-${i}`}
-                aria-label="Przesuń niżej"
-                disabled={i === form.defaultSpecRows.length - 1}
-                onClick={() => set({ defaultSpecRows: movedBy(form.defaultSpecRows, i, 1) })}
-              >
-                <ChevronDown className="icon" />
-              </button>
-              <button
-                className="btn btn-small btn-danger item-remove"
-                data-testid={`default-spec-remove-${i}`}
-                aria-label="Usuń wiersz"
-                onClick={() => set({ defaultSpecRows: form.defaultSpecRows.filter((_, j) => j !== i) })}
-              >
-                <X className="icon" />
-              </button>
+
+        {form.specPresetRows.map((z, i) => (
+          <div className="spec-template" key={z.id} data-testid={`preset-${i}`}>
+            <div className="spec-template-head">
+              <input
+                type="text"
+                className="input"
+                data-testid={`preset-name-${i}`}
+                aria-label="Nazwa zestawu"
+                placeholder="np. Rolety kasetowe"
+                value={z.name}
+                onChange={(e) =>
+                  set({ specPresetRows: form.specPresetRows.map((r, j) => (j === i ? { ...r, name: e.target.value } : r)) })
+                }
+              />
+              <div className="spec-row-actions">
+                <button
+                  className="btn btn-small btn-light item-remove"
+                  data-testid={`preset-up-${i}`}
+                  aria-label="Wyżej"
+                  disabled={i === 0}
+                  onClick={() => set({ specPresetRows: movedBy(form.specPresetRows, i, -1) })}
+                >
+                  <ChevronUp className="icon" />
+                </button>
+                <button
+                  className="btn btn-small btn-light item-remove"
+                  data-testid={`preset-down-${i}`}
+                  aria-label="Niżej"
+                  disabled={i === form.specPresetRows.length - 1}
+                  onClick={() => set({ specPresetRows: movedBy(form.specPresetRows, i, 1) })}
+                >
+                  <ChevronDown className="icon" />
+                </button>
+                <button
+                  className="btn btn-small btn-danger item-remove"
+                  data-testid={`preset-remove-${i}`}
+                  aria-label="Usuń zestaw"
+                  onClick={() => set({ specPresetRows: form.specPresetRows.filter((_, j) => j !== i) })}
+                >
+                  <X className="icon" />
+                </button>
+              </div>
             </div>
+
+            <div className="user-depts" data-testid={`preset-depts-${i}`}>
+              {ODDZIALY.map((d) => {
+                const ma = z.departments.includes(d);
+                return (
+                  <label className="checkbox-field" key={d}>
+                    <input
+                      type="checkbox"
+                      data-testid={`preset-dept-${i}-${d}`}
+                      checked={ma}
+                      onChange={() =>
+                        set({
+                          specPresetRows: form.specPresetRows.map((r, j) =>
+                            j === i
+                              ? {
+                                  ...r,
+                                  departments: ma
+                                    ? r.departments.filter((x) => x !== d)
+                                    : [...r.departments, d]
+                                }
+                              : r
+                          )
+                        })
+                      }
+                    />
+                    <span>{OPISY_ODDZIALOW[d]}</span>
+                  </label>
+                );
+              })}
+              {!z.departments.length && <span className="muted">zapasowy — na wszystko</span>}
+            </div>
+
+            {z.rows.map((w, wi) => (
+              <div className="spec-row" key={wi}>
+                <input
+                  type="text"
+                  className="input"
+                  data-testid={`preset-label-${i}-${wi}`}
+                  aria-label="Co"
+                  placeholder="np. Strona sterowania"
+                  value={w.label}
+                  onChange={(e) =>
+                    set({
+                      specPresetRows: form.specPresetRows.map((r, j) =>
+                        j === i ? { ...r, rows: r.rows.map((x, k) => (k === wi ? { ...x, label: e.target.value } : x)) } : r
+                      )
+                    })
+                  }
+                />
+                <input
+                  type="text"
+                  className="input"
+                  data-testid={`preset-value-${i}-${wi}`}
+                  aria-label="Jakie"
+                  placeholder="zostaw puste, jeśli zależy od okna"
+                  value={w.value}
+                  onChange={(e) =>
+                    set({
+                      specPresetRows: form.specPresetRows.map((r, j) =>
+                        j === i ? { ...r, rows: r.rows.map((x, k) => (k === wi ? { ...x, value: e.target.value } : x)) } : r
+                      )
+                    })
+                  }
+                />
+                <div className="spec-row-actions">
+                  <button
+                    className="btn btn-small btn-light item-remove"
+                    data-testid={`preset-row-up-${i}-${wi}`}
+                    aria-label="Przesuń wyżej"
+                    disabled={wi === 0}
+                    onClick={() =>
+                      set({
+                        specPresetRows: form.specPresetRows.map((r, j) =>
+                          j === i ? { ...r, rows: movedBy(r.rows, wi, -1) } : r
+                        )
+                      })
+                    }
+                  >
+                    <ChevronUp className="icon" />
+                  </button>
+                  <button
+                    className="btn btn-small btn-light item-remove"
+                    data-testid={`preset-row-down-${i}-${wi}`}
+                    aria-label="Przesuń niżej"
+                    disabled={wi === z.rows.length - 1}
+                    onClick={() =>
+                      set({
+                        specPresetRows: form.specPresetRows.map((r, j) =>
+                          j === i ? { ...r, rows: movedBy(r.rows, wi, 1) } : r
+                        )
+                      })
+                    }
+                  >
+                    <ChevronDown className="icon" />
+                  </button>
+                  <button
+                    className="btn btn-small btn-danger item-remove"
+                    data-testid={`preset-row-remove-${i}-${wi}`}
+                    aria-label="Usuń wiersz"
+                    onClick={() =>
+                      set({
+                        specPresetRows: form.specPresetRows.map((r, j) =>
+                          j === i ? { ...r, rows: r.rows.filter((_, k) => k !== wi) } : r
+                        )
+                      })
+                    }
+                  >
+                    <X className="icon" />
+                  </button>
+                </div>
+              </div>
+            ))}
+            <button
+              className="btn btn-small btn-light"
+              data-testid={`preset-add-row-${i}`}
+              onClick={() =>
+                set({
+                  specPresetRows: form.specPresetRows.map((r, j) =>
+                    j === i ? { ...r, rows: [...r.rows, { label: '', value: '' }] } : r
+                  )
+                })
+              }
+            >
+              <Plus className="icon" />
+              Dodaj wiersz
+            </button>
           </div>
         ))}
-        {!form.defaultSpecRows.length && (
-          <p className="muted employees-empty" data-testid="default-spec-empty">
-            Brak domyślnych wierszy — nowa pozycja zlecenia zaczyna z pustą specyfikacją.
+
+        {!form.specPresetRows.length && (
+          <p className="muted employees-empty" data-testid="presets-empty">
+            Nie ma żadnego zestawu — nowa pozycja zaczyna z pustą specyfikacją.
           </p>
         )}
         <button
           className="btn btn-light"
-          data-testid="add-default-spec"
-          onClick={() => set({ defaultSpecRows: [...form.defaultSpecRows, { label: '', value: '' }] })}
+          data-testid="add-preset"
+          onClick={() =>
+            set({
+              specPresetRows: [
+                ...form.specPresetRows,
+                { id: uid(), name: '', departments: [], rows: [{ label: '', value: '' }] }
+              ]
+            })
+          }
         >
           <Plus className="icon" />
-          Dodaj wiersz
+          Dodaj zestaw
         </button>
       </div>
         </div>

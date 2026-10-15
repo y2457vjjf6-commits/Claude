@@ -67,3 +67,51 @@ export function nazwaOsoby(users: UserAccount[] | undefined, login: string | und
   const u = (users || []).find((x) => x.login === login);
   return u ? u.name || u.login : login;
 }
+
+/* ----------------------- Kto co widzi i co mu wolno ----------------------- */
+
+/** Czy ta osoba odpowiada za tę pozycję.
+ *
+ *  Dwa wyjątki są celowe i warto je znać:
+ *
+ *  1. **Warsztatowiec bez przypisanych oddziałów widzi wszystko.** Inaczej
+ *     program po aktualizacji pokazałby pustą listę każdemu, komu nikt jeszcze
+ *     oddziału nie zaznaczył — a cicha utrata dostępu jest gorsza niż jego brak.
+ *  2. **Pozycja, której rodzaju nie rozpoznaliśmy, jest widoczna dla każdego.**
+ *     Nikt za nią nie odpowiada; ukrycie jej przed wszystkimi znaczyłoby, że
+ *     robota ginie z oczu całego warsztatu.
+ */
+export function mojaPozycja(
+  user: UserAccount | null,
+  item: Pick<OfferItem, 'name' | 'material'>
+): boolean {
+  // Brak kont albo biuro i właściciel — pełny wgląd, bo oni prowadzą zlecenia
+  if (!user || user.role !== 'warsztat') return true;
+  const moje = user.departments || [];
+  if (!moje.length) return true;
+  const dzial = departmentForProduct(item);
+  if (!dzial) return true;
+  return moje.includes(dzial);
+}
+
+/** Czy zlecenie ma cokolwiek dla tej osoby. */
+export function mojeZlecenie(
+  user: UserAccount | null,
+  order: { items: Pick<OfferItem, 'name' | 'material'>[] }
+): boolean {
+  if (!user || user.role !== 'warsztat') return true;
+  if (!(user.departments || []).length) return true;
+  return (order.items || []).some((it) => mojaPozycja(user, it));
+}
+
+/** Czego ta osoba nie może ruszyć — do wyjaśnienia na ekranie. */
+export function powodBlokady(
+  user: UserAccount | null,
+  item: Pick<OfferItem, 'name' | 'material'>
+): string {
+  if (mojaPozycja(user, item)) return '';
+  const dzial = departmentForProduct(item);
+  return dzial
+    ? `Ta pozycja należy do oddziału ${OPISY_ODDZIALOW[dzial]} — etap zmienia ktoś z tego oddziału.`
+    : 'Ta pozycja nie należy do Twojego oddziału.';
+}

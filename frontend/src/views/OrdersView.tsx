@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Search, Plus, Pencil, Trash2, LayoutGrid, Clock, Printer, FileOutput } from 'lucide-react';
-import { ProductionOrder, Stage, StageEvent } from '../types';
+import { ProductionOrder, Stage, StageEvent, UserAccount } from '../types';
 import {
   leastAdvancedStage,
   OPISY_STATUSU,
@@ -9,6 +9,7 @@ import {
   overdueOrders
 } from '../lib/production';
 import { todayStr } from '../lib/dates';
+import { mojaPozycja, mojeZlecenie } from '../lib/departments';
 
 interface Props {
   orders: ProductionOrder[];
@@ -20,6 +21,8 @@ interface Props {
   onPrint: (order: ProductionOrder) => void;
   onDelete: (order: ProductionOrder) => void;
   onIssueWz: (order: ProductionOrder) => void;
+  /** Kto patrzy — warsztat widzi tylko zlecenia ze swoich oddziałów */
+  user: UserAccount | null;
   /** Warsztat ogląda i przestawia etapy; zakładanie i kasowanie to biuro */
   canEdit: boolean;
 }
@@ -49,6 +52,7 @@ export default function OrdersView({
   onPrint,
   onDelete,
   onIssueWz,
+  user,
   canEdit
 }: Props) {
   const [q, setQ] = useState('');
@@ -56,7 +60,10 @@ export default function OrdersView({
   // odpowiada na pytanie „co dziś czeka na materiał", bez przeglądania całości.
   const [etapFiltr, setEtapFiltr] = useState<string>('wszystkie');
   const dzis = todayStr();
-  const spoznione = useMemo(() => overdueOrders(orders, stages, dzis), [orders, stages, dzis]);
+  // Warsztat widzi tylko swoje oddziały — i to samo musi dotyczyć liczników
+  // oraz przypomnień, bo inaczej program mówiłby o zleceniach, których nie widać.
+  const moje = useMemo(() => orders.filter((o) => mojeZlecenie(user, o)), [orders, user]);
+  const spoznione = useMemo(() => overdueOrders(moje, stages, dzis), [moje, stages, dzis]);
 
   const widoczne = useMemo(() => {
     const szukane = q.trim().toLowerCase();
@@ -72,7 +79,7 @@ export default function OrdersView({
       etapFiltr === 'wszystkie' || o.items.some((i) => i.stageId === etapFiltr);
     // Niewydane na górze, w kolejności terminu — to jest lista „co robimy dalej",
     // a nie archiwum, więc najpilniejsze ma stać najwyżej.
-    return orders
+    return moje
       .filter((o) => pasuje(o) && wEtapie(o))
       .slice()
       .sort((a, b) => {
@@ -82,27 +89,27 @@ export default function OrdersView({
         if (termin(a) !== termin(b)) return termin(a) < termin(b) ? -1 : 1;
         return (b.number || '') < (a.number || '') ? -1 : 1;
       });
-  }, [orders, stages, q, etapFiltr]);
+  }, [moje, stages, q, etapFiltr]);
 
   const ileWEtapie = (id: string) =>
     id === 'wszystkie'
-      ? orders.length
-      : orders.filter((o) => o.items.some((i) => i.stageId === id)).length;
+      ? moje.length
+      : moje.filter((o) => o.items.some((i) => i.stageId === id && mojaPozycja(user, i))).length;
 
   return (
     <section className="view" data-testid="view-orders">
       <header className="view-head">
         <h1 className="page-title">Zlecenia</h1>
-        {orders.length > 0 && (
+        {moje.length > 0 && (
           <p className="view-meta" data-testid="orders-count">
-            {orders.length} {mianoZlecen(orders.length)}
+            {moje.length} {mianoZlecen(moje.length)}
             {spoznione.length ? ` · ${spoznione.length} po terminie` : ''}
           </p>
         )}
       </header>
 
       <div className="toolbar">
-        {orders.length > 0 && (
+        {moje.length > 0 && (
           <div className="search-wrap">
             <Search className="icon" />
             <input
@@ -154,7 +161,7 @@ export default function OrdersView({
         </div>
       )}
 
-      {orders.length > 0 && (
+      {moje.length > 0 && (
         <div className="chips tabs" data-testid="stage-tabs" role="tablist">
           <button
             type="button"
@@ -186,9 +193,13 @@ export default function OrdersView({
       )}
 
       <div className="tab-panel" key={etapFiltr} data-testid="orders-panel">
-      {orders.length === 0 ? (
+      {moje.length === 0 ? (
         <div className="empty-state" data-testid="orders-empty">
-          <p>Nie ma jeszcze żadnego zlecenia.</p>
+          <p>
+            {orders.length
+              ? 'Nie ma zleceń dla Twoich oddziałów.'
+              : 'Nie ma jeszcze żadnego zlecenia.'}
+          </p>
           <p className="muted">
             Zlecenie zakłada się z zaakceptowanej oferty — przycisk „Zleć do produkcji” w menu wiersza
             na liście ofert — albo od zera przyciskiem powyżej.

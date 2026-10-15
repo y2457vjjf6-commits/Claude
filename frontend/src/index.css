@@ -3435,3 +3435,13 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
   font-size: var(--text-2xs);
   color: var(--muted);
 }
+
+/* Pozycja z cudzego oddziału: widoczna, ale nie do ruszenia. */
+.order-obcy {
+  margin: var(--sp-3) 0 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: var(--text-xs);
+}

@@ -18,7 +18,7 @@ import OrderEditorView from './views/OrderEditorView';
 import BoardView from './views/BoardView';
 import { emptyOrder, etapy, orderFromOffer, overdueOrders, stageEvent } from './lib/production';
 import { printOrder } from './lib/orderActions';
-import { autoAssignee } from './lib/departments';
+import { autoAssignee, mojaPozycja, powodBlokady } from './lib/departments';
 import { computeOrderNumberFor } from './lib/numbering';
 import LoginView from './views/LoginView';
 import { podpis, wolno, wymagaLogowania } from './lib/auth';
@@ -239,6 +239,10 @@ export default function App() {
     async (order: ProductionOrder, itemId: string, stageId: string) => {
       const it = order.items.find((x) => x.id === itemId);
       if (!it) return;
+      if (!mojaPozycja(uzytkownikRef.current, it)) {
+        toast(powodBlokady(uzytkownikRef.current, it), true);
+        return;
+      }
       const kto = podpis(uzytkownikRef.current, stateRef.current?.settings.issuers?.[0] || '');
       const wpis = stageEvent(order, it, stageId, kto, it.note);
       await saveOrder(
@@ -246,7 +250,7 @@ export default function App() {
         wpis
       );
     },
-    [saveOrder]
+    [saveOrder, toast]
   );
 
   /** Kopiuje ofertę do nowej: ta sama treść, własny numer przy zapisie.
@@ -610,6 +614,7 @@ export default function App() {
             onBoard={() => setView('board')}
             onPrint={(o) => void printOrder(o, state.settings, toast, state.stageEvents)}
             onIssueWz={issueWzFromOrder}
+            user={zalogowany}
             onDelete={async (o) => {
               const ok = await askConfirm(
                 `Usunąć zlecenie ${o.number || ''} dla: ${o.client}? Historia etapów zniknie razem z nim.`,
@@ -644,6 +649,7 @@ export default function App() {
             stages={etapy(state.settings.stages)}
             users={state.users || []}
             events={state.stageEvents || []}
+            user={zalogowany}
             onBack={() => setView('orders')}
             onOpen={(id) => openOrderById(id)}
             onAdvance={(o, itemId, stageId) => void advanceOnBoard(o, itemId, stageId)}

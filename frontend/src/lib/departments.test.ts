@@ -1,5 +1,8 @@
 import {
   autoAssignee,
+  mojaPozycja,
+  mojeZlecenie,
+  powodBlokady,
   departmentForProduct,
   nazwaOsoby,
   ODDZIALY,
@@ -82,4 +85,65 @@ test('nazwa osoby zostaje nawet po skasowaniu konta', () => {
 test('każdy oddział ma nazwę po polsku', () => {
   expect(ODDZIALY.every((d) => !!OPISY_ODDZIALOW[d])).toBe(true);
   expect(OPISY_ODDZIALOW.plisy).toBe('Żaluzje plisowane');
+});
+
+// --- kto co widzi i co mu wolno ---
+
+const zlecenie = (nazwy: string[]) => ({ items: nazwy.map((n) => ({ name: n, material: '' })) });
+
+test('warsztatowiec widzi tylko pozycje ze swoich oddziałów', () => {
+  const czarek = osoba('czarek', ['rolety']);
+  expect(mojaPozycja(czarek, poz('Roleta kasetowa UNI'))).toBe(true);
+  expect(mojaPozycja(czarek, poz('Żaluzja drewniana 50 mm'))).toBe(false);
+  expect(mojaPozycja(czarek, poz('Moskitiera ramkowa'))).toBe(false);
+});
+
+test('to samo dotyczy każdego oddziału, nie tylko rolet', () => {
+  const marek = osoba('marek', ['moskitiery']);
+  expect(mojaPozycja(marek, poz('Moskitiera ramkowa'))).toBe(true);
+  expect(mojaPozycja(marek, poz('Roleta kasetowa'))).toBe(false);
+  const ola = osoba('ola', ['plisy']);
+  expect(mojaPozycja(ola, poz('Żaluzja plisowana'))).toBe(true);
+  expect(mojaPozycja(ola, poz('Żaluzja drewniana'))).toBe(false);
+});
+
+test('osoba w kilku oddziałach widzi pozycje z każdego z nich', () => {
+  const duet = osoba('duet', ['rolety', 'moskitiery']);
+  expect(mojaPozycja(duet, poz('Roleta'))).toBe(true);
+  expect(mojaPozycja(duet, poz('Moskitiera'))).toBe(true);
+  expect(mojaPozycja(duet, poz('Żaluzja'))).toBe(false);
+});
+
+test('biuro i właściciel widzą wszystko', () => {
+  for (const rola of ['biuro', 'wlasciciel'] as const) {
+    const u = { ...osoba('x', ['rolety']), role: rola };
+    expect(mojaPozycja(u, poz('Moskitiera'))).toBe(true);
+  }
+});
+
+test('program bez kont nic nie zasłania', () => {
+  expect(mojaPozycja(null, poz('Moskitiera'))).toBe(true);
+  expect(mojeZlecenie(null, zlecenie(['Moskitiera']))).toBe(true);
+});
+
+test('warsztatowiec bez przypisanego oddziału widzi wszystko', () => {
+  const nikt = osoba('nikt', []);
+  expect(mojaPozycja(nikt, poz('Moskitiera'))).toBe(true);
+  expect(mojeZlecenie(nikt, zlecenie(['Moskitiera']))).toBe(true);
+});
+
+test('pozycja nierozpoznanego rodzaju nie ginie nikomu z oczu', () => {
+  expect(mojaPozycja(osoba('czarek', ['rolety']), poz('Markiza tarasowa'))).toBe(true);
+});
+
+test('zlecenie widać, gdy ma choć jedną pozycję dla tej osoby', () => {
+  const czarek = osoba('czarek', ['rolety']);
+  expect(mojeZlecenie(czarek, zlecenie(['Żaluzja', 'Roleta']))).toBe(true);
+  expect(mojeZlecenie(czarek, zlecenie(['Żaluzja', 'Moskitiera']))).toBe(false);
+});
+
+test('blokada tłumaczy się po ludzku', () => {
+  const czarek = osoba('czarek', ['rolety']);
+  expect(powodBlokady(czarek, poz('Roleta'))).toBe('');
+  expect(powodBlokady(czarek, poz('Żaluzja drewniana'))).toMatch(/Żaluzje/);
 });

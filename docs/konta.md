@@ -30,6 +30,35 @@ Warsztat nie widzi w menu zakładek, do których nie ma prawa — pusta zakładk
 myli bardziej niż jej brak. Nie założy ani nie skasuje zlecenia; w karcie
 zlecenia pola są widoczne, ale zablokowane, bo termin i adres ma widzieć.
 
+## Oddziały
+
+Warsztatowcowi zaznacza się oddziały: Rolety, Żaluzje, Żaluzje plisowane,
+Moskitiery. Jedna osoba może być w kilku. Oddział rozpoznaje się z nazwy
+produktu, więc „Roleta kasetowa UNI" trafia do rolet, a „Żaluzja plisowana"
+do plis, nie do żaluzji.
+
+Oddział decyduje o trzech rzeczach:
+
+1. **Co widać.** Na liście zleceń i na tablicy warsztatowiec widzi tylko to,
+   co należy do jego oddziałów.
+2. **Co wolno ruszyć.** Pozycję z cudzego oddziału widać w zleceniu, ale etapu,
+   podkategorii ani notatki przy niej nie zmieni — program mówi wprost, czyja
+   to robota.
+3. **Komu program proponuje pozycję.** Gdy w oddziale jest jedna osoba,
+   przypisuje ją sam.
+
+Dwa wyjątki są celowe:
+
+- **Warsztatowiec bez zaznaczonego oddziału widzi wszystko.** Inaczej po
+  aktualizacji program pokazałby pustą listę każdemu, komu nikt jeszcze
+  oddziału nie przypisał — a ciche odcięcie dostępu jest gorsze niż jego brak.
+- **Pozycja, której rodzaju nie rozpoznano, jest widoczna dla każdego.** Nikt
+  za nią nie odpowiada; ukrycie jej przed wszystkimi znaczyłoby, że robota
+  ginie z oczu całego warsztatu.
+
+Biuro i właściciel widzą wszystko niezależnie od oddziałów — oni prowadzą
+zlecenia, a nie wykonują je przy maszynie.
+
 ## Zakładanie kont
 
 Ustawienia → **Konta i stanowiska**. Konta zapisują się od razu, bez klikania

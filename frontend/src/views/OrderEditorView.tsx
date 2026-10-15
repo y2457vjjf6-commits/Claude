@@ -25,8 +25,10 @@ import QualityCard from '../components/QualityCard';
 import {
   autoAssignee,
   departmentForProduct,
+  mojaPozycja,
   OPISY_ODDZIALOW,
-  peopleForDepartment
+  peopleForDepartment,
+  powodBlokady
 } from '../lib/departments';
 import { MAX_BOK_ZLECENIE, resizePhoto } from '../lib/photos';
 import { autoSpecFor, domyslnaSpec, matchSpecTemplate, uzyteczneWiersze } from '../lib/specTemplates';
@@ -154,6 +156,10 @@ export default function OrderEditorView({
   const przestaw = (ii: number, stageId: string) => {
     const it = order.items[ii];
     if (!it || it.stageId === stageId) return;
+    if (!mojaPozycja(user, it)) {
+      toast(powodBlokady(user, it), true);
+      return;
+    }
     const wpis = stageEvent({ ...order, id: nadane.current.id }, it, stageId, kto, it.note);
     const nowe = { ...order, items: order.items.map((x, i) => (i === ii ? { ...x, stageId } : x)) };
     setOrder(nowe);
@@ -188,6 +194,10 @@ export default function OrderEditorView({
   const odhacz = (ii: number, substageId: string, done: boolean) => {
     const it = order.items[ii];
     if (!it) return;
+    if (!mojaPozycja(user, it)) {
+      toast(powodBlokady(user, it), true);
+      return;
+    }
     void zapisz(orderRef.current, substepEvent(nadane.current.id, it.id, substageId, done, kto));
   };
 
@@ -333,6 +343,10 @@ export default function OrderEditorView({
         <h3 className="card-title">Pozycje</h3>
         {order.items.map((it, ii) => {
           const dzialPozycji = departmentForProduct(it);
+          // Pozycję z cudzego oddziału widać, ale się jej nie rusza: warsztat
+          // ma wiedzieć, co jeszcze jest w zleceniu, i nie przestawiać tego.
+          const moja = mojaPozycja(user, it);
+          const blokada = powodBlokady(user, it);
           const dalej = nastepnyEtap(state.settings.stages, it.stageId, dzialPozycji);
           const wstecz = poprzedniEtap(state.settings.stages, it.stageId, dzialPozycji);
           const kroki = podetapy(state.settings.stages, it.stageId, dzialPozycji);
@@ -474,6 +488,7 @@ export default function OrderEditorView({
                           <input
                             type="checkbox"
                             data-testid={`order-substep-${ii}-${k.id}`}
+                            disabled={!moja}
                             checked={!!stan?.done}
                             onChange={(e) => odhacz(ii, k.id, e.target.checked)}
                           />
@@ -540,8 +555,13 @@ export default function OrderEditorView({
                   )
                 )}
               </div>
+              {!moja && (
+                <p className="order-obcy" data-testid={`order-item-obcy-${ii}`}>
+                  {blokada}
+                </p>
+              )}
               <div className="order-item-stage">
-                {wstecz && (
+                {wstecz && moja && (
                   <button
                     className="btn btn-small btn-light"
                     data-testid={`order-item-prev-${ii}`}
@@ -556,7 +576,10 @@ export default function OrderEditorView({
                   className="input"
                   data-testid={`order-item-stageid-${ii}`}
                   aria-label="Etap"
-                  disabled={readOnly}
+                  // Warsztat pracuje w trybie „tylko odczyt" dla reszty zlecenia,
+                  // ale etapy i notatki to właśnie jego robota — tu blokuje
+                  // wyłącznie cudzy oddział.
+                  disabled={!moja}
                   value={it.stageId}
                   onChange={(e) => przestaw(ii, e.target.value)}
                 >
@@ -566,7 +589,7 @@ export default function OrderEditorView({
                     </option>
                   ))}
                 </select>
-                {dalej && (
+                {dalej && moja && (
                   <button
                     className="btn btn-small btn-light"
                     data-testid={`order-item-next-${ii}`}
@@ -608,6 +631,7 @@ export default function OrderEditorView({
                   type="text"
                   className="input order-note"
                   data-testid={`order-item-note-${ii}`}
+                  disabled={!moja}
                   placeholder="notatka, np. czekamy na poprawiony wymiar"
                   value={it.note || ''}
                   onChange={(e) => setItem(ii, { note: e.target.value })}

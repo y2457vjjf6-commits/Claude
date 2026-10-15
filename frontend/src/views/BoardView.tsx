@@ -8,7 +8,7 @@ import {
   poprzedniEtap,
   substepProgress
 } from '../lib/production';
-import { departmentForProduct, nazwaOsoby } from '../lib/departments';
+import { departmentForProduct, mojaPozycja, nazwaOsoby } from '../lib/departments';
 import { todayStr } from '../lib/dates';
 
 interface Props {
@@ -18,6 +18,8 @@ interface Props {
   users: UserAccount[];
   /** Dziennik — z niego bierze się postęp odhaczania podkategorii */
   events: StageEvent[];
+  /** Kto patrzy — warsztat widzi tylko pozycje ze swoich oddziałów */
+  user: UserAccount | null;
   onBack: () => void;
   onOpen: (id: string) => void;
   onAdvance: (order: ProductionOrder, itemId: string, stageId: string) => void;
@@ -36,7 +38,16 @@ interface Karta {
   kroki?: { zrobione: number; wszystkie: number };
 }
 
-export default function BoardView({ orders, stages, users, events, onBack, onOpen, onAdvance }: Props) {
+export default function BoardView({
+  orders,
+  stages,
+  users,
+  events,
+  user,
+  onBack,
+  onOpen,
+  onAdvance
+}: Props) {
   const lista = etapyGlowne(stages);
   const dzis = todayStr();
 
@@ -48,6 +59,8 @@ export default function BoardView({ orders, stages, users, events, onBack, onOpe
       if (o.onHold) continue;
       for (const it of o.items) {
         if (czyKoncowy(stages, it.stageId)) continue;
+        // Cudzy oddział to nie moja robota — na tablicy nie ma po co stać
+        if (!mojaPozycja(user, it)) continue;
         const kolumna = mapa.get(it.stageId);
         if (!kolumna) continue;
         kolumna.push({
@@ -69,7 +82,7 @@ export default function BoardView({ orders, stages, users, events, onBack, onOpe
       karty.sort((a, b) => (a.termin || '9999-12-31') < (b.termin || '9999-12-31') ? -1 : 1);
     }
     return mapa;
-  }, [orders, lista, stages, users, events]);
+  }, [orders, lista, stages, users, events, user]);
 
   return (
     <section className="view" data-testid="view-board">

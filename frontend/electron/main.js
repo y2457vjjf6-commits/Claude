@@ -12,6 +12,8 @@ let mainWindow = null;
 // i przy drukowaniu — na czas renderowania dokumentu przestawiamy je na białe.
 const WINDOW_BG = '#1D1813';
 
+const qcServer = require('./qc-server');
+
 const dataFile = () => path.join(app.getPath('userData'), 'dane-wz.json');
 const backupFile = () => path.join(app.getPath('userData'), 'dane-wz.backup.json');
 
@@ -46,6 +48,22 @@ app.whenReady().then(() => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
+
+// ---------- Kontrola jakości: zdjęcia z telefonu ----------
+
+ipcMain.handle('qc:start', (_zd, dane) => qcServer.start(dane || {}));
+ipcMain.handle('qc:stop', (_zd, token) => {
+  qcServer.stop(token);
+  return true;
+});
+
+// Zdjęcie przyszło z telefonu — przekazujemy je do okna, bo to ono wie,
+// jak dopisać je do zlecenia i zapisać dane.
+qcServer.naZdjecie((foto) => {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('qc:photo', foto);
+});
+
+app.on('before-quit', () => qcServer.zamknij());
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

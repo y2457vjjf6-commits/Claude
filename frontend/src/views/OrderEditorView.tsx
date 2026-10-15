@@ -17,6 +17,7 @@ import {
 import { uid } from '../lib/storage';
 import { filledSpec, movedBy } from '../lib/offers';
 import { podpis } from '../lib/auth';
+import QualityCard from '../components/QualityCard';
 import {
   autoAssignee,
   departmentForProduct,
@@ -609,6 +610,19 @@ export default function OrderEditorView({
         </button>
         )}
       </div>
+
+      <QualityCard
+        order={order}
+        events={state.stageEvents || []}
+        stages={lista}
+        user={user}
+        onChange={(patch) => {
+          const nowe = { ...orderRef.current, ...patch };
+          setOrder(nowe);
+          void zapisz(nowe);
+        }}
+        toast={toast}
+      />
 
       <div className="card">
         <h3 className="card-title">Historia</h3>

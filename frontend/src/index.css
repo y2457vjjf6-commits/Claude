@@ -3290,3 +3290,97 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
   font-size: var(--text-2xs);
   font-weight: 560;
 }
+
+/* ===================================================== Kontrola jakości */
+
+.qc-znacznik {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-left: var(--sp-2);
+  padding: 1px var(--sp-2);
+  border-radius: var(--r-pill);
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: var(--text-2xs);
+  font-weight: 560;
+  vertical-align: middle;
+}
+
+.qc-znacznik.qc-ok {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.qc-protokol td,
+.qc-protokol th { font-size: var(--text-sm); }
+
+.qc-zdjecia {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+.qc-foto {
+  margin: 0;
+  max-width: 200px;
+  animation: zakladka-wejscie 200ms var(--ease-out) both;
+}
+
+.qc-foto img {
+  width: 100%;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--hairline);
+}
+
+.qc-foto figcaption {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+  font-size: var(--text-2xs);
+  color: var(--muted);
+}
+
+.qc-akcje {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+
+/* Kod QR dostaje białe tło zawsze — czytnik telefonu nie lubi odwróconych
+   kolorów, a w ciemnym motywie kod wyszedłby w negatywie. */
+.qc-kod {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-4);
+  padding: var(--sp-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  animation: zakladka-wejscie 200ms var(--ease-out) both;
+}
+
+.qc-kod img {
+  width: 168px;
+  height: 168px;
+  border-radius: var(--r-sm);
+  background: #fff;
+  padding: var(--sp-2);
+  flex: none;
+}
+
+.qc-kod p { margin: 0 0 var(--sp-2); font-size: var(--text-sm); line-height: 1.5; }
+
+.qc-adres {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--muted);
+  word-break: break-all;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qc-foto,
+  .qc-kod { animation: none !important; }
+}

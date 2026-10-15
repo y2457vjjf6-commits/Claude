@@ -226,6 +226,11 @@ declare global {
       chooseBackupFolder: () => Promise<{ ok: boolean; folder?: string; canceled?: boolean }>;
       backupNow: (payload: { state: AppState; folder: string }) => Promise<{ ok: boolean; file?: string; error?: string }>;
       restoreBackup: (folder: string) => Promise<{ ok: boolean; state?: AppState; canceled?: boolean; error?: string }>;
+      /** Otwiera okno na zdjęcia z telefonu i zwraca adres do kodu QR */
+      qcStart: (dane: { orderId: string; numer: string }) => Promise<{ url?: string; token?: string; error?: string }>;
+      qcStop: (token: string) => Promise<boolean>;
+      /** Nasłuch na zdjęcia przysyłane z telefonu; zwraca funkcję odpinającą */
+      onQcPhoto: (cb: (foto: { orderId: string; dataUrl: string }) => void) => () => void;
     };
   }
 }
@@ -394,6 +399,18 @@ export interface StageEvent {
 
 export type OrderStatus = 'nowe' | 'w-toku' | 'wydane' | 'wstrzymane';
 
+/** Zdjęcie kontroli jakości: dowód, że to, co wyjechało, wyglądało tak,
+ *  jak wyglądało. Robione telefonem po zeskanowaniu kodu ze zlecenia. */
+export interface QcPhoto {
+  id: string;
+  /** Miniatura jako dataurl — program działa bez sieci, więc nie trzymamy ścieżek */
+  dataUrl: string;
+  at: string;
+  /** Kto wysłał; z telefonu bywa puste */
+  by?: string;
+  note?: string;
+}
+
 /** Zlecenie produkcyjne — trzeci dokument obok WZ i oferty. */
 export interface ProductionOrder {
   id: string;
@@ -419,6 +436,11 @@ export interface ProductionOrder {
   notes?: string;
   /** Wstrzymane ustawia człowiek; reszta wylicza się z etapów pozycji */
   onHold?: boolean;
+  /** Zdjęcia kontroli jakości — dorzucane telefonem po zeskanowaniu kodu */
+  qcPhotos?: QcPhoto[];
+  /** Kiedy i przez kogo zlecenie zostało odebrane po kontroli */
+  qcDoneAt?: string;
+  qcBy?: string;
   createdAt: string;
   updatedAt: string;
 }

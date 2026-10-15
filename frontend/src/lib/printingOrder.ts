@@ -5,8 +5,9 @@
  *  co dokładnie zrobić i do kiedy — więc specyfikacja jest tu największym
  *  elementem, a nie przypisem.
  */
-import type { ProductionOrder, Settings, Stage } from '../types';
+import type { ProductionOrder, Settings, Stage, StageEvent } from '../types';
 import { etapy } from './production';
+import { orderFinished, stageProtocol } from './quality';
 import { filledSpec } from './offers';
 import { formatDatePl } from './printing';
 
@@ -18,7 +19,11 @@ function esc(tekst: string): string {
     .replace(/"/g, '&quot;');
 }
 
-export function buildOrderHtml(order: ProductionOrder, settings: Settings): string {
+export function buildOrderHtml(
+  order: ProductionOrder,
+  settings: Settings,
+  events?: StageEvent[]
+): string {
   const lista = etapy(settings.stages);
   const nazwaEtapu = (id: string) => lista.find((e) => e.id === id)?.name || id;
 
@@ -46,6 +51,18 @@ export function buildOrderHtml(order: ProductionOrder, settings: Settings): stri
         `</tr>`
       );
     })
+    .join('');
+
+  // Protokół drukujemy dopiero, gdy jest co protokołować — na kartce
+  // wędrującej z robotą po warsztacie byłby pustą rubryką.
+  const protokol = orderFinished(order, settings.stages) ? stageProtocol(order, events, settings.stages) : [];
+  const wierszeProtokolu = protokol
+    .map(
+      (w) =>
+        `<tr><td>${esc(w.stage.name)}</td><td>${esc(w.osoby.join(', ')) || '—'}</td>` +
+        `<td class="zl-ilosc">${w.pozycji}</td>` +
+        `<td>${w.do ? esc(new Date(w.do).toLocaleString('pl-PL')) : '—'}</td></tr>`
+    )
     .join('');
 
   return `
@@ -81,6 +98,25 @@ export function buildOrderHtml(order: ProductionOrder, settings: Settings): stri
     </thead>
     <tbody>${pozycje}</tbody>
   </table>
+
+  ${
+    protokol.length
+      ? `<section class="zl-protokol">
+    <h2>Protokół wykonania</h2>
+    <table class="zl-items">
+      <thead><tr><th>Etap</th><th>Kto realizował</th><th class="zl-ilosc">Poz.</th><th>Zakończono</th></tr></thead>
+      <tbody>${wierszeProtokolu}</tbody>
+    </table>
+    ${
+      order.qcDoneAt
+        ? `<p class="zl-odbior">Odebrane po kontroli jakości: ${esc(
+            new Date(order.qcDoneAt).toLocaleString('pl-PL')
+          )}${order.qcBy ? ` · ${esc(order.qcBy)}` : ''}.</p>`
+        : '<p class="zl-odbior">Odbiór po kontroli jakości: ……………………………………</p>'
+    }
+  </section>`
+      : ''
+  }
 </article>`;
 }
 

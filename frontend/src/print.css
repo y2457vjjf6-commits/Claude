@@ -723,3 +723,24 @@
 }
 
 .zl-wlasny { font-weight: 600; }
+
+/* Protokół wykonania — drukowany dopiero na skończonym zleceniu. */
+.zl-protokol {
+  margin-top: 10pt;
+  break-inside: avoid;
+}
+
+.zl-protokol h2 {
+  font-size: 9pt;
+  color: #5a6069;
+  font-weight: 400;
+  margin: 0 0 3pt;
+}
+
+.zl-protokol .zl-items { margin-top: 0; }
+.zl-protokol td { padding: 3pt 4pt; border-bottom: 0.5pt solid #c9ced6; }
+
+.zl-odbior {
+  margin: 6pt 0 0;
+  font-size: 9.5pt;
+}

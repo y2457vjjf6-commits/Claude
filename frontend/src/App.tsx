@@ -608,7 +608,7 @@ export default function App() {
             canEdit={wolno(zalogowany, 'zlecenia-edycja')}
             onNew={() => openOrder(emptyOrder(state.settings, todayStr()))}
             onBoard={() => setView('board')}
-            onPrint={(o) => void printOrder(o, state.settings, toast)}
+            onPrint={(o) => void printOrder(o, state.settings, toast, state.stageEvents)}
             onIssueWz={issueWzFromOrder}
             onDelete={async (o) => {
               const ok = await askConfirm(
@@ -632,7 +632,7 @@ export default function App() {
             order={editingOrder}
             onSave={saveOrder}
             onBack={() => setView('orders')}
-            onPrint={(o) => void printOrder(o, state.settings, toast)}
+            onPrint={(o) => void printOrder(o, state.settings, toast, state.stageEvents)}
             toast={toast}
             user={zalogowany}
             readOnly={!wolno(zalogowany, 'zlecenia-edycja')}

@@ -10,5 +10,13 @@ contextBridge.exposeInMainWorld('wzApi', {
   testEmail: (smtp) => ipcRenderer.invoke('doc:testEmail', smtp),
   chooseBackupFolder: () => ipcRenderer.invoke('backup:choose'),
   backupNow: (payload) => ipcRenderer.invoke('backup:now', payload),
-  restoreBackup: (folder) => ipcRenderer.invoke('backup:restore', folder)
+  restoreBackup: (folder) => ipcRenderer.invoke('backup:restore', folder),
+  // Kontrola jakości: otwarcie okna na zdjęcia z telefonu i nasłuch na nie
+  qcStart: (dane) => ipcRenderer.invoke('qc:start', dane),
+  qcStop: (token) => ipcRenderer.invoke('qc:stop', token),
+  onQcPhoto: (cb) => {
+    const sluchacz = (_zd, foto) => cb(foto);
+    ipcRenderer.on('qc:photo', sluchacz);
+    return () => ipcRenderer.removeListener('qc:photo', sluchacz);
+  }
 });

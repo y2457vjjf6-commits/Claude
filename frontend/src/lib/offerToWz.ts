@@ -1,4 +1,4 @@
-import { Contractor, DocContractor, Item, Offer } from '../types';
+import { Contractor, DocContractor, Item, Offer, ProductionOrder } from '../types';
 import { formatDatePl } from './printing';
 
 /** Dane, którymi wypełniamy nową WZ wystawianą na podstawie oferty. */
@@ -55,5 +55,50 @@ export function wzPrefillFromOffer(offer: Offer, contractors: Contractor[]): WzP
     items,
     notes: `Na podstawie oferty cenowej z dnia ${formatDatePl(offer.date)}.`,
     hadVariants: (offer.groups || []).some((g) => g.variant)
+  };
+}
+
+/** Przepisanie zlecenia produkcyjnego na pozycje dokumentu WZ.
+ *
+ *  Zamyka drogę oferta → zlecenie → WZ. Numer własny i numer zlecenia idą
+ *  w uwagi, bo po nich klient i warsztat rozpoznają, czego dotyczy wydanie.
+ *  Pozycje zbiorcze, rozbite wcześniej na sztuki, scalamy z powrotem: na WZ
+ *  liczy się ile i czego wydajemy, a nie jak to szło przez warsztat.
+ */
+export function wzPrefillFromOrder(order: ProductionOrder, contractors: Contractor[]): WzPrefill {
+  const klient = (order.client || '').trim();
+  const zBazy =
+    contractors.find((c) => (c.name || '').trim().toLowerCase() === klient.toLowerCase()) || null;
+
+  const contractor: DocContractor = zBazy
+    ? {
+        name: zBazy.name,
+        address: zBazy.address || order.clientAddress || '',
+        nip: zBazy.nip || '',
+        email: zBazy.email || '',
+        code: zBazy.code || ''
+      }
+    : { name: klient, address: (order.clientAddress || '').trim(), nip: '', email: '', code: '' };
+
+  const scalone = new Map<string, Item>();
+  for (const it of order.items || []) {
+    // „Roleta — szt. 2 z 3" to ta sama rzecz co „Roleta": wracamy do nazwy
+    // sprzed rozbicia, żeby WZ nie wyliczała trzech osobnych pozycji po sztuce
+    const nazwa = itemName(String(it.name || '').replace(/\s*—\s*szt\.\s*\d+\s*z\s*\d+\s*$/i, ''), it.material);
+    if (!nazwa) continue;
+    const ile = Number(String(it.qty || '1').replace(',', '.')) || 0;
+    const byla = scalone.get(nazwa);
+    if (byla) byla.qty = String((Number(byla.qty) || 0) + ile);
+    else scalone.set(nazwa, { name: nazwa, unit: 'szt.', qty: String(ile), order: '' });
+  }
+
+  const skad = [order.number, order.ownNumber].filter(Boolean).join(' · ');
+  return {
+    sourceOfferId: order.sourceOfferId || '',
+    contractorId: zBazy ? zBazy.id : null,
+    contractor,
+    items: Array.from(scalone.values()),
+    notes: skad ? `Na podstawie zlecenia ${skad}.` : 'Na podstawie zlecenia produkcyjnego.',
+    hadVariants: false
   };
 }

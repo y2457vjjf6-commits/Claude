@@ -61,6 +61,11 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
     mBody: st.emailBody
   });
   const [location, setLocation] = useState<string | null>(null);
+  // Ustawienia urosły do ośmiu kart — jedna długa strona znaczyła przewijanie
+  // w poszukiwaniu pola, o którym wiadomo, że gdzieś jest.
+  const [zakladka, setZakladka] = useState<
+    'firma' | 'oferty' | 'produkcja' | 'biblioteki' | 'konta' | 'poczta' | 'dane'
+  >('firma');
   const [testing, setTesting] = useState(false);
 
   useEffect(() => {
@@ -218,8 +223,84 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
     <section className="view" data-testid="view-settings">
       <header className="view-head">
         <h1 className="page-title">Ustawienia</h1>
-        <p className="view-meta">Dane firmy, poczta, kopia zapasowa i domyślne ustawienia ofert.</p>
+        <p className="view-meta">Firma, oferty, produkcja, konta i poczta — każde w swojej zakładce.</p>
       </header>
+
+      <div className="chips settings-tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          className={'chip' + (zakladka === 'firma' ? ' active' : '')}
+          aria-selected={zakladka === 'firma'}
+          data-testid="settings-tab-firma"
+          onClick={() => setZakladka('firma')}
+        >
+          Firma
+        </button>
+        <button
+          type="button"
+          role="tab"
+          className={'chip' + (zakladka === 'oferty' ? ' active' : '')}
+          aria-selected={zakladka === 'oferty'}
+          data-testid="settings-tab-oferty"
+          onClick={() => setZakladka('oferty')}
+        >
+          Oferty
+        </button>
+        <button
+          type="button"
+          role="tab"
+          className={'chip' + (zakladka === 'produkcja' ? ' active' : '')}
+          aria-selected={zakladka === 'produkcja'}
+          data-testid="settings-tab-produkcja"
+          onClick={() => setZakladka('produkcja')}
+        >
+          Produkcja
+        </button>
+        <button
+          type="button"
+          role="tab"
+          className={'chip' + (zakladka === 'biblioteki' ? ' active' : '')}
+          aria-selected={zakladka === 'biblioteki'}
+          data-testid="settings-tab-biblioteki"
+          onClick={() => setZakladka('biblioteki')}
+        >
+          Biblioteki
+        </button>
+        <button
+          type="button"
+          role="tab"
+          className={'chip' + (zakladka === 'konta' ? ' active' : '')}
+          aria-selected={zakladka === 'konta'}
+          data-testid="settings-tab-konta"
+          onClick={() => setZakladka('konta')}
+        >
+          Konta
+        </button>
+        <button
+          type="button"
+          role="tab"
+          className={'chip' + (zakladka === 'poczta' ? ' active' : '')}
+          aria-selected={zakladka === 'poczta'}
+          data-testid="settings-tab-poczta"
+          onClick={() => setZakladka('poczta')}
+        >
+          Poczta
+        </button>
+        <button
+          type="button"
+          role="tab"
+          className={'chip' + (zakladka === 'dane' ? ' active' : '')}
+          aria-selected={zakladka === 'dane'}
+          data-testid="settings-tab-dane"
+          onClick={() => setZakladka('dane')}
+        >
+          Dane
+        </button>
+      </div>
+
+      {zakladka === 'firma' && (
+        <>
       <div className="card">
         <h3 className="card-title">Dane sprzedawcy / wydającego (nagłówek dokumentu)</h3>
         <div className="grid2">
@@ -249,7 +330,11 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
           </label>
         </div>
       </div>
+        </>
+      )}
 
+      {zakladka === 'oferty' && (
+        <>
       <div className="card">
         <h3 className="card-title">Oferty cenowe</h3>
         <p className="muted card-note">
@@ -415,17 +500,11 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
           </label>
         </div>
       </div>
-
-      {wolno(currentUser, 'konta') && (
-        <UsersCard
-          state={state}
-          currentUser={currentUser}
-          onPersist={onPersist}
-          toast={toast}
-          askConfirm={askConfirm}
-        />
+        </>
       )}
 
+      {zakladka === 'produkcja' && (
+        <>
       <div className="card">
         <h3 className="card-title">Etapy produkcji</h3>
         <p className="muted card-note">
@@ -512,7 +591,11 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
           Dodaj etap
         </button>
       </div>
+        </>
+      )}
 
+      {zakladka === 'biblioteki' && (
+        <>
       <div className="card">
         <h3 className="card-title">Specyfikacje produktów</h3>
         <p className="muted card-note">
@@ -758,41 +841,25 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
             : 'Bez zdjęć oferta wygląda tak jak dotąd — to dodatek, nie wymóg.'}
         </p>
       </div>
+        </>
+      )}
 
-      <div className="card">
-        <h3 className="card-title">Kopia zapasowa danych</h3>
-        <p className="muted card-note">
-          Wskaż folder poza komputerem — pendrive, dysk sieciowy albo katalog OneDrive / Dysku Google.
-          Program zapisuje tam kopię wszystkich dokumentów i kontrahentów przy każdej zmianie
-          (jeden plik na dzień, więc zostaje historia z ostatnich dni).
-        </p>
-        <label className="field">
-          <span>Folder kopii zapasowych</span>
-          <input
-            type="text"
-            className="input"
-            data-testid="backup-folder-input"
-            placeholder="np. D:\\Kopie\\LechrolWZ — kliknij „Wybierz folder”"
-            value={form.backupFolder}
-            onChange={(e) => set({ backupFolder: e.target.value })}
-          />
-        </label>
-        <div className="actions-bar" style={{ marginTop: 16 }}>
-          <button className="btn" data-testid="backup-choose-btn" onClick={wybierzFolder}>
-            <FolderOpen className="icon" />
-            Wybierz folder
-          </button>
-          <button className="btn" data-testid="backup-now-btn" onClick={zapiszKopie}>
-            <HardDriveDownload className="icon" />
-            Zapisz kopię teraz
-          </button>
-          <button className="btn" data-testid="backup-restore-btn" onClick={przywroc}>
-            <HardDriveUpload className="icon" />
-            Przywróć z kopii
-          </button>
-        </div>
-      </div>
+      {zakladka === 'konta' && (
+        <>
+      {wolno(currentUser, 'konta') && (
+        <UsersCard
+          state={state}
+          currentUser={currentUser}
+          onPersist={onPersist}
+          toast={toast}
+          askConfirm={askConfirm}
+        />
+      )}
+        </>
+      )}
 
+      {zakladka === 'poczta' && (
+        <>
       <div className="card">
         <h3 className="card-title">Poczta e-mail (wysyłka WZ jako PDF)</h3>
         <p className="muted card-note">
@@ -848,6 +915,46 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
           <span className="muted">Sprawdza dane skrzynki bez wysyłania wiadomości.</span>
         </div>
       </div>
+        </>
+      )}
+
+      {zakladka === 'dane' && (
+        <>
+      <div className="card">
+        <h3 className="card-title">Kopia zapasowa danych</h3>
+        <p className="muted card-note">
+          Wskaż folder poza komputerem — pendrive, dysk sieciowy albo katalog OneDrive / Dysku Google.
+          Program zapisuje tam kopię wszystkich dokumentów i kontrahentów przy każdej zmianie
+          (jeden plik na dzień, więc zostaje historia z ostatnich dni).
+        </p>
+        <label className="field">
+          <span>Folder kopii zapasowych</span>
+          <input
+            type="text"
+            className="input"
+            data-testid="backup-folder-input"
+            placeholder="np. D:\\Kopie\\LechrolWZ — kliknij „Wybierz folder”"
+            value={form.backupFolder}
+            onChange={(e) => set({ backupFolder: e.target.value })}
+          />
+        </label>
+        <div className="actions-bar" style={{ marginTop: 16 }}>
+          <button className="btn" data-testid="backup-choose-btn" onClick={wybierzFolder}>
+            <FolderOpen className="icon" />
+            Wybierz folder
+          </button>
+          <button className="btn" data-testid="backup-now-btn" onClick={zapiszKopie}>
+            <HardDriveDownload className="icon" />
+            Zapisz kopię teraz
+          </button>
+          <button className="btn" data-testid="backup-restore-btn" onClick={przywroc}>
+            <HardDriveUpload className="icon" />
+            Przywróć z kopii
+          </button>
+        </div>
+      </div>
+        </>
+      )}
 
       <div className="actions-bar actions-sticky">
         <button className="btn btn-primary" data-testid="save-settings-btn" onClick={save}>

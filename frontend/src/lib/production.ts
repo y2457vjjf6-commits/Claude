@@ -52,6 +52,15 @@ export function nastepnyEtap(stages: Stage[] | undefined, id: string): Stage | n
   return i >= 0 && i + 1 < lista.length ? lista[i + 1] : null;
 }
 
+/** Etap przed tym; null, gdy to już pierwszy. Potrzebne do cofania: coś
+ *  przestawionego przez pomyłkę albo odesłanego do poprawki musi mieć drogę
+ *  z powrotem, a kasowanie wpisu dziennika byłoby zacieraniem historii. */
+export function poprzedniEtap(stages: Stage[] | undefined, id: string): Stage | null {
+  const lista = etapy(stages);
+  const i = lista.findIndex((e) => e.id === id);
+  return i > 0 ? lista[i - 1] : null;
+}
+
 export function czyKoncowy(stages: Stage[] | undefined, id: string): boolean {
   const lista = etapy(stages);
   const e = lista.find((x) => x.id === id);

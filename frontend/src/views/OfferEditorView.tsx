@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft, Layers, GitCompareArrows, Wallet, FileOutput,
-  Check, Loader2, Table2, Copy, ClipboardPaste, FileText, ChevronUp, ChevronDown
+  Check, Loader2, Table2, Copy, ClipboardPaste, FileText, ChevronUp, ChevronDown, Factory
 } from 'lucide-react';
 import { AppState, AskConfirm, Offer, OfferColumnHeader, OfferGroup, OfferItem, OfferSpecRow } from '../types';
 import { uid } from '../lib/storage';
@@ -52,6 +52,8 @@ interface Props {
   askConfirm: AskConfirm;
   /** Przepisanie tej oferty na nowy dokument WZ */
   onIssueWz: (offer: Offer) => void;
+  /** Założenie zlecenia produkcyjnego z tej oferty */
+  onProduce: (offer: Offer) => void;
   /** Treść oferty skopiowanej do nowej — wypełnia świeży formularz */
   prefill?: Offer | null;
   /** Schowek na specyfikację; trzymany poza edytorem, żeby przetrwał
@@ -83,6 +85,7 @@ export default function OfferEditorView({
   onMark,
   askConfirm,
   onIssueWz,
+  onProduce,
   prefill = null,
   specClipboard = null,
   onSpecClipboard
@@ -358,6 +361,13 @@ export default function OfferEditorView({
   const handleIssueWz = async () => {
     const z = await saveOffer();
     if (z) onIssueWz(z);
+  };
+
+  /** Oferta → zlecenie produkcyjne. Zapisujemy najpierw, bo zlecenie ma
+   *  wskazywać ofertę, a ta bez zapisu nie ma jeszcze numeru. */
+  const handleProduce = async () => {
+    const z = await saveOffer();
+    if (z) onProduce(z);
   };
   const handleEmail = () =>
     akcje.wykonaj('mail', async () => {
@@ -1143,6 +1153,15 @@ export default function OfferEditorView({
           <kbd>Ctrl</kbd>+<kbd>S</kbd> zapis · <kbd>Ctrl</kbd>+<kbd>P</kbd> wydruk · <kbd>Esc</kbd> powrót
         </span>
         <span className="spacer" />
+        <button
+          className="btn"
+          data-testid="offer-produce-btn"
+          onClick={handleProduce}
+          title="Załóż zlecenie produkcyjne na podstawie tej oferty"
+        >
+          <Factory className="icon" />
+          Zleć do produkcji
+        </button>
         <button className="btn" data-testid="offer-issue-wz-btn" onClick={handleIssueWz} title="Przepisz pozycje tej oferty na dokument WZ">
           <FileOutput className="icon" />
           Wystaw WZ

@@ -31,6 +31,8 @@ export function buildOrderHtml(order: ProductionOrder, settings: Settings): stri
         `<td>` +
         `<div class="zl-nazwa">${esc(it.name)}</div>` +
         (it.material ? `<div class="zl-material">${esc(it.material)}</div>` : '') +
+        // Zdjęcie z pomiaru mówi warsztatowi więcej niż akapit opisu
+        (it.photo ? `<img class="zl-foto" src="${esc(it.photo)}" alt="">` : '') +
         (spec.length
           ? `<dl class="zl-spec">${spec
               .map((w) => `<dt>${esc(w.label)}</dt><dd>${esc(w.value) || '—'}</dd>`)
@@ -55,6 +57,7 @@ export function buildOrderHtml(order: ProductionOrder, settings: Settings): stri
     </div>
     <table class="zl-meta">
       <tbody>
+        ${order.ownNumber ? `<tr><th>Numer własny</th><td class="zl-wlasny">${esc(order.ownNumber)}</td></tr>` : ''}
         <tr><th>Klient</th><td>${esc(order.client) || '—'}</td></tr>
         ${order.clientAddress ? `<tr><th>Adres</th><td>${esc(order.clientAddress)}</td></tr>` : ''}
         ${order.clientPhone ? `<tr><th>Telefon</th><td>${esc(order.clientPhone)}</td></tr>` : ''}

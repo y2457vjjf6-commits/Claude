@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Search, Plus, Pencil, Trash2, LayoutGrid, Clock, Printer } from 'lucide-react';
+import { Search, Plus, Pencil, Trash2, LayoutGrid, Clock, Printer, FileOutput } from 'lucide-react';
 import { ProductionOrder, Stage, StageEvent } from '../types';
 import {
   leastAdvancedStage,
@@ -19,6 +19,7 @@ interface Props {
   onBoard: () => void;
   onPrint: (order: ProductionOrder) => void;
   onDelete: (order: ProductionOrder) => void;
+  onIssueWz: (order: ProductionOrder) => void;
   /** Warsztat ogląda i przestawia etapy; zakładanie i kasowanie to biuro */
   canEdit: boolean;
 }
@@ -47,9 +48,13 @@ export default function OrdersView({
   onBoard,
   onPrint,
   onDelete,
+  onIssueWz,
   canEdit
 }: Props) {
   const [q, setQ] = useState('');
+  // Zakładka etapu. „Wszystkie" to lista robocza, każdy etap z osobna
+  // odpowiada na pytanie „co dziś czeka na materiał", bez przeglądania całości.
+  const [etapFiltr, setEtapFiltr] = useState<string>('wszystkie');
   const dzis = todayStr();
   const spoznione = useMemo(() => overdueOrders(orders, stages, dzis), [orders, stages, dzis]);
 
@@ -57,14 +62,18 @@ export default function OrdersView({
     const szukane = q.trim().toLowerCase();
     const pasuje = (o: ProductionOrder) =>
       !szukane ||
-      [o.number, o.client, o.notes, ...o.items.map((i) => `${i.name} ${i.material}`)]
+      [o.number, o.ownNumber, o.client, o.notes, ...o.items.map((i) => `${i.name} ${i.material}`)]
         .join(' ')
         .toLowerCase()
         .includes(szukane);
+    // Zlecenie trafia do zakładki etapu, gdy choć jedna jego pozycja tam stoi —
+    // zlecenie z ośmioma roletami bywa naraz w trzech etapach.
+    const wEtapie = (o: ProductionOrder) =>
+      etapFiltr === 'wszystkie' || o.items.some((i) => i.stageId === etapFiltr);
     // Niewydane na górze, w kolejności terminu — to jest lista „co robimy dalej",
     // a nie archiwum, więc najpilniejsze ma stać najwyżej.
     return orders
-      .filter(pasuje)
+      .filter((o) => pasuje(o) && wEtapie(o))
       .slice()
       .sort((a, b) => {
         const zrobione = (o: ProductionOrder) => (orderStatus(o, stages) === 'wydane' ? 1 : 0);
@@ -73,7 +82,12 @@ export default function OrdersView({
         if (termin(a) !== termin(b)) return termin(a) < termin(b) ? -1 : 1;
         return (b.number || '') < (a.number || '') ? -1 : 1;
       });
-  }, [orders, stages, q]);
+  }, [orders, stages, q, etapFiltr]);
+
+  const ileWEtapie = (id: string) =>
+    id === 'wszystkie'
+      ? orders.length
+      : orders.filter((o) => o.items.some((i) => i.stageId === id)).length;
 
   return (
     <section className="view" data-testid="view-orders">
@@ -140,6 +154,37 @@ export default function OrdersView({
         </div>
       )}
 
+      {orders.length > 0 && (
+        <div className="chips stage-tabs" data-testid="stage-tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            className={'chip' + (etapFiltr === 'wszystkie' ? ' active' : '')}
+            aria-selected={etapFiltr === 'wszystkie'}
+            data-testid="stage-tab-wszystkie"
+            onClick={() => setEtapFiltr('wszystkie')}
+          >
+            Wszystkie
+            <span className="chip-count">{ileWEtapie('wszystkie')}</span>
+          </button>
+          {stages.map((e) => (
+            <button
+              key={e.id}
+              type="button"
+              role="tab"
+              className={'chip' + (etapFiltr === e.id ? ' active' : '')}
+              aria-selected={etapFiltr === e.id}
+              data-testid={`stage-tab-${e.id}`}
+              onClick={() => setEtapFiltr(e.id)}
+            >
+              <span className="stage-dot" style={{ background: e.color }} />
+              {e.name}
+              <span className="chip-count">{ileWEtapie(e.id)}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {orders.length === 0 ? (
         <div className="empty-state" data-testid="orders-empty">
           <p>Nie ma jeszcze żadnego zlecenia.</p>
@@ -159,11 +204,12 @@ export default function OrdersView({
           <thead>
             <tr>
               <th>Numer</th>
+              <th>Numer własny</th>
               <th>Klient</th>
               <th>Termin</th>
               <th>Etap</th>
               <th>Postęp</th>
-              <th style={{ width: 150 }}></th>
+              <th style={{ width: 190 }}></th>
             </tr>
           </thead>
           <tbody data-testid="orders-body">
@@ -175,6 +221,7 @@ export default function OrdersView({
               return (
                 <tr key={o.id} data-testid={`order-row-${o.id}`} onDoubleClick={() => onEdit(o.id)}>
                   <td className="mono">{o.number || '—'}</td>
+                  <td className="mono">{o.ownNumber || '—'}</td>
                   <td>{o.client || '—'}</td>
                   <td className={dni !== null && dni <= 0 && stan !== 'wydane' ? 'cennik-brak' : ''}>
                     {o.dueDate || '—'}
@@ -215,6 +262,17 @@ export default function OrdersView({
                         <Pencil className="icon" />
                         Otwórz
                       </button>
+                      {canEdit && (
+                      <button
+                        className="btn btn-small btn-light"
+                        data-testid={`order-wz-${o.id}`}
+                        aria-label="Wystaw WZ"
+                        title="Wystaw dokument WZ na podstawie tego zlecenia"
+                        onClick={() => onIssueWz(o)}
+                      >
+                        <FileOutput className="icon" />
+                      </button>
+                      )}
                       <button
                         className="btn btn-small btn-light"
                         data-testid={`order-print-${o.id}`}

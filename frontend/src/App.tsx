@@ -5,7 +5,7 @@ import { printDocument, savePdfDocument, emailDocument, buildPrintHtml } from '.
 import { printOffer, savePdfOffer, emailOffer } from './lib/offerActions';
 import { buildOfferHtml } from './lib/printingOffer';
 import { offerFileName, offersAwaitingReply, parseNumber } from './lib/offers';
-import { wzPrefillFromOffer, WzPrefill } from './lib/offerToWz';
+import { wzPrefillFromOffer, wzPrefillFromOrder, WzPrefill } from './lib/offerToWz';
 import { duplicateOffer } from './lib/offerCopy';
 import { todayStr } from './lib/dates';
 import { emailMany, opiszWysylke, printManyDocs, printManyOffers } from './lib/bulk';
@@ -196,6 +196,16 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
+
+  /** Zlecenie → WZ. Domyka drogę oferta → zlecenie → wydanie. */
+  const issueWzFromOrder = (order: ProductionOrder) => {
+    if (!state) return;
+    setWzPrefill(wzPrefillFromOrder(order, state.contractors));
+    setWzPrefillSeq((n) => n + 1);
+    setEditingDocId(null);
+    setView('edit');
+    toast(`Przeniesiono pozycje ze zlecenia ${order.number || ''} — sprawdź ilości przed zapisem.`);
+  };
 
   const openOrder = useCallback((order: ProductionOrder) => {
     setEditingOrder(order);
@@ -575,6 +585,7 @@ export default function App() {
             onBack={() => setView('offers')}
             onDelete={(offer) => deleteOffer(offer, true)}
             onIssueWz={issueWzFromOffer}
+            onProduce={orderFromOfferFn}
             toast={toast}
             emailConfirm={emailConfirm}
             onMark={markOffer}
@@ -591,6 +602,7 @@ export default function App() {
             onNew={() => openOrder(emptyOrder(state.settings.stages, todayStr()))}
             onBoard={() => setView('board')}
             onPrint={(o) => void printOrder(o, state.settings, toast)}
+            onIssueWz={issueWzFromOrder}
             onDelete={async (o) => {
               const ok = await askConfirm(
                 `Usunąć zlecenie ${o.number || ''} dla: ${o.client}? Historia etapów zniknie razem z nim.`,

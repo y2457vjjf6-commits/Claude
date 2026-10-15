@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { ArrowLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ProductionOrder, Stage, StageEvent } from '../types';
-import { czyKoncowy, etapy, nastepnyEtap } from '../lib/production';
+import { czyKoncowy, etapy, nastepnyEtap, poprzedniEtap } from '../lib/production';
 import { todayStr } from '../lib/dates';
 
 interface Props {
@@ -20,6 +20,7 @@ interface Karta {
   termin?: string;
   qty: string;
   note?: string;
+  numerWlasny?: string;
 }
 
 export default function BoardView({ orders, stages, onBack, onOpen, onAdvance }: Props) {
@@ -43,7 +44,8 @@ export default function BoardView({ orders, stages, onBack, onOpen, onAdvance }:
           klient: o.client,
           termin: o.dueDate,
           qty: it.qty,
-          note: it.note
+          note: it.note,
+          numerWlasny: o.ownNumber
         });
       }
     }
@@ -77,6 +79,7 @@ export default function BoardView({ orders, stages, onBack, onOpen, onAdvance }:
                 </div>
                 {karty.map((k) => {
                   const dalej = nastepnyEtap(stages, e.id);
+                  const wstecz = poprzedniEtap(stages, e.id);
                   const popsute = !!k.termin && k.termin <= dzis;
                   return (
                     <div
@@ -93,22 +96,36 @@ export default function BoardView({ orders, stages, onBack, onOpen, onAdvance }:
                         <span className="board-card-title">{k.tytul}</span>
                         <span className="board-card-meta">
                           {k.klient}
+                          {k.numerWlasny ? ` · ${k.numerWlasny}` : ''}
                           {Number(k.qty) > 1 ? ` · ${k.qty} szt.` : ''}
                           {k.termin ? ` · ${k.termin}` : ''}
                         </span>
                         {k.note && <span className="board-card-note">{k.note}</span>}
                       </button>
-                      {dalej && (
-                        <button
-                          className="btn btn-small btn-light board-card-next"
-                          data-testid={`board-next-${k.itemId}`}
-                          title={`Przestaw na: ${dalej.name}`}
-                          onClick={() => onAdvance(k.order, k.itemId, dalej.id)}
-                        >
-                          <ChevronRight className="icon" />
-                          {dalej.name}
-                        </button>
-                      )}
+                      <div className="board-card-moves">
+                        {wstecz && (
+                          <button
+                            className="btn btn-small btn-light"
+                            data-testid={`board-prev-${k.itemId}`}
+                            title={`Cofnij na: ${wstecz.name}`}
+                            aria-label={`Cofnij na: ${wstecz.name}`}
+                            onClick={() => onAdvance(k.order, k.itemId, wstecz.id)}
+                          >
+                            <ChevronLeft className="icon" />
+                          </button>
+                        )}
+                        {dalej && (
+                          <button
+                            className="btn btn-small btn-light board-card-next"
+                            data-testid={`board-next-${k.itemId}`}
+                            title={`Przestaw na: ${dalej.name}`}
+                            onClick={() => onAdvance(k.order, k.itemId, dalej.id)}
+                          >
+                            {dalej.name}
+                            <ChevronRight className="icon" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}

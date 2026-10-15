@@ -1,17 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Plus, X, Printer, Split, PauseCircle, PlayCircle, Check } from 'lucide-react';
+import {
+  ArrowLeft, Plus, X, Printer, Split, PauseCircle, PlayCircle, Check, ChevronLeft, ChevronRight,
+  ImagePlus, Trash2, ChevronUp, ChevronDown
+} from 'lucide-react';
 import { AppState, OrderItem, ProductionOrder, StageEvent } from '../types';
 import {
   czyKoncowy,
   etapy,
   nastepnyEtap,
   orderHistory,
+  poprzedniEtap,
   orderProgress,
   splitItem,
   stageEvent
 } from '../lib/production';
 import { uid } from '../lib/storage';
-import { filledSpec } from '../lib/offers';
+import { filledSpec, movedBy } from '../lib/offers';
+import { MAX_BOK_ZLECENIE, resizePhoto } from '../lib/photos';
+import { matchSpecTemplate, uzyteczneWiersze } from '../lib/specTemplates';
 
 interface Props {
   state: AppState;
@@ -120,6 +126,29 @@ export default function OrderEditorView({
     void zapisz(nowe, wpis);
   };
 
+  /** Zdjęcie przy pozycji — ze schowka (Ctrl+V) albo z pliku. Trzymamy je
+   *  zmniejszone: z pomiaru trzeba odczytać wymiar, ale nie ma powodu, żeby
+   *  plik danych rósł o oryginał z telefonu. */
+  const wgrajZdjecie = async (ii: number, plik: File | null | undefined) => {
+    if (!plik || !plik.type.startsWith('image/')) {
+      toast('To nie jest obraz.', true);
+      return;
+    }
+    try {
+      setItem(ii, { photo: await resizePhoto(plik, MAX_BOK_ZLECENIE) });
+      toast('Zdjęcie dodane do pozycji.');
+    } catch {
+      toast('Nie udało się odczytać tego obrazu.', true);
+    }
+  };
+
+  const zeSchowka = (ii: number, e: React.ClipboardEvent) => {
+    const obraz = Array.from(e.clipboardData?.items || []).find((x) => x.type.startsWith('image/'));
+    if (!obraz) return;
+    e.preventDefault();
+    void wgrajZdjecie(ii, obraz.getAsFile());
+  };
+
   const rozbij = (ii: number) => {
     const czesci = splitItem(order.items[ii]);
     if (czesci.length < 2) {
@@ -129,6 +158,8 @@ export default function OrderEditorView({
     setOrder((o) => ({ ...o, items: [...o.items.slice(0, ii), ...czesci, ...o.items.slice(ii + 1)] }));
     toast(`Rozbito na ${czesci.length} sztuk — każda ma teraz własny etap.`);
   };
+
+  const szablonDla = (it: OrderItem) => matchSpecTemplate(it, state.settings.specTemplates);
 
   const nazwaEtapu = (id: string) => lista.find((e) => e.id === id)?.name || id;
 
@@ -173,6 +204,18 @@ export default function OrderEditorView({
             disabled={readOnly}
               value={order.client}
               onChange={(e) => set({ client: e.target.value })}
+            />
+          </label>
+          <label className="field">
+            <span>Numer własny</span>
+            <input
+              type="text"
+              className="input"
+              data-testid="order-own-number"
+              disabled={readOnly}
+              placeholder="np. zamówienie klienta albo własne oznaczenie"
+              value={order.ownNumber || ''}
+              onChange={(e) => set({ ownNumber: e.target.value })}
             />
           </label>
           <label className="field">
@@ -227,10 +270,28 @@ export default function OrderEditorView({
         </p>
       </div>
 
+      <datalist id="podpowiedzi-specyfikacji-zlecenia">
+        {[
+          'Szerokość całkowita',
+          'Wysokość całkowita',
+          'Kolor kasety',
+          'Kolor prowadnic',
+          'Kolor materiału',
+          'Typ prowadnic',
+          'Typ montażu',
+          'Strona sterowania',
+          'Napęd',
+          'Sterowanie'
+        ].map((n) => (
+          <option key={n} value={n} />
+        ))}
+      </datalist>
+
       <div className="card">
         <h3 className="card-title">Pozycje</h3>
         {order.items.map((it, ii) => {
           const dalej = nastepnyEtap(state.settings.stages, it.stageId);
+          const wstecz = poprzedniEtap(state.settings.stages, it.stageId);
           const gotowa = czyKoncowy(state.settings.stages, it.stageId);
           return (
             <div className={'order-item' + (gotowa ? ' done' : '')} key={it.id} data-testid={`order-item-${ii}`}>
@@ -265,17 +326,160 @@ export default function OrderEditorView({
                 )}
               </div>
               {it.material && <p className="muted order-item-material">{it.material}</p>}
-              {filledSpec(it.spec).length > 0 && (
-                <dl className="order-item-spec" data-testid={`order-item-spec-${ii}`}>
-                  {filledSpec(it.spec).map((w, k) => (
-                    <div key={k}>
-                      <dt>{w.label}</dt>
-                      <dd>{w.value || '—'}</dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
+              <details className="item-spec" open={filledSpec(it.spec).length > 0}>
+                <summary data-testid={`order-spec-${ii}`}>
+                  <span className="spec-title">
+                    Specyfikacja{(it.spec || []).length ? ` (${(it.spec || []).length})` : ''}
+                  </span>
+                  {!readOnly && szablonDla(it) && (
+                    <button
+                      className="btn btn-small btn-light spec-btn"
+                      data-testid={`order-spec-template-${ii}`}
+                      title={`Wstaw specyfikację zapisaną dla „${szablonDla(it)!.name}"`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setItem(ii, { spec: uzyteczneWiersze(szablonDla(it)) });
+                      }}
+                    >
+                      Szablon
+                    </button>
+                  )}
+                </summary>
+                {(it.spec || []).map((w, si) => (
+                  <div className="spec-row" key={si}>
+                    <input
+                      type="text"
+                      className="input"
+                      disabled={readOnly}
+                      data-testid={`order-spec-label-${ii}-${si}`}
+                      aria-label="Co"
+                      list="podpowiedzi-specyfikacji-zlecenia"
+                      placeholder="np. Kolor kasety"
+                      value={w.label}
+                      onChange={(e) =>
+                        setItem(ii, {
+                          spec: (it.spec || []).map((x, k) => (k === si ? { ...x, label: e.target.value } : x))
+                        })
+                      }
+                    />
+                    <input
+                      type="text"
+                      className="input"
+                      disabled={readOnly}
+                      data-testid={`order-spec-value-${ii}-${si}`}
+                      aria-label="Jakie"
+                      value={w.value}
+                      onChange={(e) =>
+                        setItem(ii, {
+                          spec: (it.spec || []).map((x, k) => (k === si ? { ...x, value: e.target.value } : x))
+                        })
+                      }
+                    />
+                    {!readOnly && (
+                      <div className="spec-row-actions">
+                        <button
+                          className="btn btn-small btn-light item-remove"
+                          data-testid={`order-spec-up-${ii}-${si}`}
+                          aria-label="Przesuń wyżej"
+                          disabled={si === 0}
+                          onClick={() => setItem(ii, { spec: movedBy(it.spec || [], si, -1) })}
+                        >
+                          <ChevronUp className="icon" />
+                        </button>
+                        <button
+                          className="btn btn-small btn-light item-remove"
+                          data-testid={`order-spec-down-${ii}-${si}`}
+                          aria-label="Przesuń niżej"
+                          disabled={si === (it.spec || []).length - 1}
+                          onClick={() => setItem(ii, { spec: movedBy(it.spec || [], si, 1) })}
+                        >
+                          <ChevronDown className="icon" />
+                        </button>
+                        <button
+                          className="btn btn-small btn-danger item-remove"
+                          data-testid={`order-spec-remove-${ii}-${si}`}
+                          aria-label="Usuń wiersz"
+                          onClick={() => setItem(ii, { spec: (it.spec || []).filter((_, k) => k !== si) })}
+                        >
+                          <X className="icon" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {!readOnly && (
+                  <button
+                    className="btn btn-small btn-light"
+                    data-testid={`order-spec-add-${ii}`}
+                    onClick={() => setItem(ii, { spec: [...(it.spec || []), { label: '', value: '' }] })}
+                  >
+                    <Plus className="icon" />
+                    Dodaj wiersz
+                  </button>
+                )}
+              </details>
+
+              <div className="order-item-photo" data-testid={`order-photo-${ii}`}>
+                {it.photo ? (
+                  <>
+                    <img src={it.photo} alt="Zdjęcie pozycji" className="order-photo-thumb" />
+                    {!readOnly && (
+                      <button
+                        className="btn btn-small btn-light"
+                        data-testid={`order-photo-remove-${ii}`}
+                        onClick={() => setItem(ii, { photo: undefined })}
+                      >
+                        <Trash2 className="icon" />
+                        Usuń zdjęcie
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  !readOnly && (
+                    <>
+                      <div
+                        className="photo-drop"
+                        data-testid={`order-photo-drop-${ii}`}
+                        tabIndex={0}
+                        onPaste={(e) => zeSchowka(ii, e)}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          void wgrajZdjecie(ii, e.dataTransfer.files?.[0]);
+                        }}
+                      >
+                        Kliknij i wklej zdjęcie (Ctrl+V) albo przeciągnij tutaj plik
+                      </div>
+                      <label className="btn btn-small btn-light">
+                        <ImagePlus className="icon" />
+                        Wybierz plik
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="photo-file"
+                          data-testid={`order-photo-input-${ii}`}
+                          onChange={(e) => {
+                            void wgrajZdjecie(ii, e.target.files?.[0]);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                    </>
+                  )
+                )}
+              </div>
               <div className="order-item-stage">
+                {wstecz && (
+                  <button
+                    className="btn btn-small btn-light"
+                    data-testid={`order-item-prev-${ii}`}
+                    title={`Cofnij na: ${wstecz.name}`}
+                    aria-label={`Cofnij na: ${wstecz.name}`}
+                    onClick={() => przestaw(ii, wstecz.id)}
+                  >
+                    <ChevronLeft className="icon" />
+                  </button>
+                )}
                 <select
                   className="input"
                   data-testid={`order-item-stageid-${ii}`}
@@ -296,12 +500,13 @@ export default function OrderEditorView({
                     title={`Przestaw na: ${dalej.name}`}
                     onClick={() => przestaw(ii, dalej.id)}
                   >
-                    Dalej: {dalej.name}
+                    {dalej.name}
+                    <ChevronRight className="icon" />
                   </button>
                 )}
                 <input
                   type="text"
-                  className="input"
+                  className="input order-note"
                   data-testid={`order-item-note-${ii}`}
                   placeholder="notatka, np. czekamy na poprawiony wymiar"
                   value={it.note || ''}

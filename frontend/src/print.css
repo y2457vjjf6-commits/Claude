@@ -644,6 +644,9 @@
   font-weight: 400;
   color: #5a6069;
   padding: 1pt 10pt 1pt 0;
+  /* Etykiety nie mają się łamać — „Numer własny" w dwóch liniach rozpycha
+     całą metrykę i rozjeżdża nagłówek. */
+  white-space: nowrap;
 }
 .zl-meta td { padding: 1pt 0; }
 .zl-meta .zl-termin th,
@@ -708,3 +711,15 @@
   border-left: 2pt solid #c2821a;
   font-size: 9pt;
 }
+
+/* Zdjęcie z pomiaru przy pozycji zlecenia. inline-block, nie block —
+   Chromium przenosi blokowy obraz z komórki tabeli na następną stronę. */
+.zl-foto {
+  display: inline-block;
+  max-width: 55mm;
+  max-height: 40mm;
+  margin-top: 3pt;
+  border: 0.5pt solid #c9ced6;
+}
+
+.zl-wlasny { font-weight: 600; }

@@ -11,6 +11,7 @@ import {
   orderStatus,
   overdueOrders,
   pierwszyEtap,
+  poprzedniEtap,
   splitItem,
   stageEvent,
   stageFromEvents
@@ -228,4 +229,15 @@ test('po terminie zbierają się zlecenia niewydane', () => {
   const bezTerminu = zlecenie([poz()], { id: 'd' });
   const lista = overdueOrders([spóźnione, naDzis, skonczone, bezTerminu], undefined, '2026-10-14');
   expect(lista.map((o) => o.id)).toEqual(['a', 'b']);
+});
+
+test('etap poprzedni — żeby dało się cofnąć pomyłkę', () => {
+  expect(poprzedniEtap(undefined, 'material-zamowiony')?.id).toBe('przyjete');
+  expect(poprzedniEtap(undefined, 'przyjete')).toBeNull();
+  expect(poprzedniEtap(undefined, 'nie-ma-takiego')).toBeNull();
+});
+
+test('cofnięcie i powrót trafiają w ten sam etap', () => {
+  const dalej = nastepnyEtap(undefined, 'w-produkcji')!;
+  expect(poprzedniEtap(undefined, dalej.id)?.id).toBe('w-produkcji');
 });

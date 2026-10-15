@@ -67,7 +67,7 @@ export default function LoginView({ state, onLogin, onCreateOwner }: Props) {
       <div className="login-box">
         <div className="login-brand">
           <div className="brand-logo">LECHROL</div>
-          <div className="brand-sub">Wydania, oferty i produkcja</div>
+          <div className="brand-sub">Oferty i produkcja</div>
         </div>
 
         {zakladanie ? (

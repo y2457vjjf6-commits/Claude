@@ -10,6 +10,9 @@ import type { OfferItem, ProductPhoto, Settings } from '../types';
  *  więc 360 px daje ponad 400 dpi — ostro na wydruku i wciąż lekko w pliku. */
 export const MAX_BOK = 360;
 
+/** Zdjęcie przy pozycji zlecenia: większe, bo z niego czyta się wymiary. */
+export const MAX_BOK_ZLECENIE = 1000;
+
 /** Nazwy porównujemy bez względu na wielkość liter, ogonki i zdwojone spacje.
  *  Dzięki temu „Roleta Kasetowa UNI” trafia na wpis „roleta kasetowa uni”. */
 export function normalizujNazwe(tekst: string): string {
@@ -111,7 +114,10 @@ export function photoFor(
  *  Korzysta z `canvas`, więc działa tylko w przeglądarce — stąd nie ma testu
  *  jednostkowego, sprawdzamy to na żywym programie.
  */
-export function resizePhoto(plik: File): Promise<string> {
+/** Zmniejsza obraz do miniatury. `maxBok` ustawia dłuższą krawędź: domyślne
+ *  360 px wystarcza na zdjęcie produktu przy pozycji oferty, ale zdjęcie
+ *  z pomiaru, na którym warsztat ma odczytać wymiar z taśmy, potrzebuje więcej. */
+export function resizePhoto(plik: File, maxBok: number = MAX_BOK): Promise<string> {
   return new Promise((spelnij, odrzuc) => {
     const czytnik = new FileReader();
     czytnik.onerror = () => odrzuc(new Error('Nie udało się odczytać pliku.'));
@@ -119,7 +125,7 @@ export function resizePhoto(plik: File): Promise<string> {
       const obraz = new Image();
       obraz.onerror = () => odrzuc(new Error('To nie jest obraz, który umiemy otworzyć.'));
       obraz.onload = () => {
-        const skala = Math.min(1, MAX_BOK / Math.max(obraz.width, obraz.height));
+        const skala = Math.min(1, maxBok / Math.max(obraz.width, obraz.height));
         const sz = Math.max(1, Math.round(obraz.width * skala));
         const wy = Math.max(1, Math.round(obraz.height * skala));
         const plotno = document.createElement('canvas');

@@ -93,7 +93,7 @@ export default function Sidebar({
         <Monogram />
         <div className="brand-text">
           <div className="brand-logo">LECHROL</div>
-          <div className="brand-sub">Wydania i oferty</div>
+          <div className="brand-sub">Oferty i produkcja</div>
         </div>
       </div>
 

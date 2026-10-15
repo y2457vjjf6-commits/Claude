@@ -364,6 +364,9 @@ export interface OrderItem {
   assignee?: string;
   /** Notatka warsztatowa, np. „czekamy na poprawiony wymiar" */
   note?: string;
+  /** Zdjęcie wklejone ze schowka albo wgrane z pliku — zwykle okno z pomiaru
+   *  albo szkic. Trzymane przy pozycji jako dataurl, żeby działało bez sieci. */
+  photo?: string;
   /** Pozycja, z której ta została wydzielona przy rozbijaniu na sztuki */
   splitFrom?: string;
 }
@@ -395,6 +398,9 @@ export interface ProductionOrder {
   /** Numer ZL-10-0001-2026, nadawany przy pierwszym zapisie */
   number?: string;
   seq?: number;
+  /** Numer własny — oznaczenie używane w firmie albo numer zamówienia
+   *  od klienta. Wpisywany ręcznie, szuka się po nim na liście. */
+  ownNumber?: string;
   /** Data założenia (RRRR-MM-DD) */
   date: string;
   /** Termin realizacji całego zlecenia */

@@ -2717,189 +2717,287 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
   }
 }
 
+/* ============================================================================
+   Produkcja, konta i biblioteki — style dopisane razem z tymi ekranami.
+   Wszystko na tokenach motywu: te bloki wcześniej miały wpisane kolory
+   ciemnego motywu „na sztywno" i w jasnym motywie wyglądały jak obca wyspa.
+   ========================================================================= */
+
 /* ------------------------------------- szablony specyfikacji w ustawieniach */
 
 .spec-template {
-  margin-bottom: 14px;
-  padding: 10px 12px;
-  border: 1px solid var(--line, #2a2f36);
-  border-radius: var(--radius, 8px);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  transition: border-color var(--t-fast) var(--ease-out);
 }
+
+.spec-template:focus-within { border-color: var(--hairline-strong); }
 
 /* Nazwa produktu rządzi dopasowaniem, więc dostaje całą szerokość wiersza. */
 .spec-template-head {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
 }
 
-.spec-template .spec-row { font-size: var(--text-xs, 11px); }
+.spec-template .spec-row { font-size: var(--text-xs); }
 
 /* Strzałki i kosz w jednym wierszu specyfikacji — i w ofercie, i w szablonie. */
 .spec-row-actions {
   display: flex;
-  gap: 3px;
+  gap: var(--sp-1);
 }
 
-/* =========================================== Produkcja */
+/* ================================================== Zakładki (etapy, opcje) */
 
-/* Nagłówek ekranu z przyciskami w jednej linii — .view-head układa w kolumnę,
-   więc tu wracamy do wiersza. */
-.editor-head {
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
+/* Pasek zakładek. Treść pod nim wchodzi animacją — patrz .tab-panel. */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
 }
 
-.editor-head .page-title { margin: 0; }
+.tabs .chip { transition: background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out),
+    color var(--t-fast) var(--ease-out), transform var(--t-fast) var(--ease-out); }
+
+.tabs .chip:active { transform: scale(0.97); }
+
+/* Zmiana zakładki: ten sam ruch co przy zmianie ekranu, tylko krótszy —
+   oko ma złapać, że treść się wymieniła, a nie oglądać przejście. */
+@keyframes zakladka-wejscie {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  animation: zakladka-wejscie 160ms var(--ease-out) both;
+}
+
+/* =========================================================== Produkcja */
 
 .stage-dot-label {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-2);
   white-space: nowrap;
 }
 
 .stage-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-pill);
   flex: none;
 }
 
 .progress-wrap {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-2);
   white-space: nowrap;
 }
 
 .progress-bar {
-  width: 86px;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--line, #2a2f36);
+  width: 80px;
+  height: 5px;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
   overflow: hidden;
 }
 
 .progress-fill {
   display: block;
   height: 100%;
-  background: var(--accent, #f15a28);
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  /* Pasek dojeżdża, zamiast przeskakiwać — po przestawieniu etapu widać,
+     że coś się ruszyło, nawet gdy oko było w innym miejscu ekranu. */
+  transition: width var(--t-slow) var(--ease-out-expo);
 }
 
 /* ---- karta zlecenia ---- */
 
 .order-item {
-  padding: 10px 12px;
-  margin-bottom: 10px;
-  border: 1px solid var(--line, #2a2f36);
-  border-radius: var(--radius, 8px);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  transition: border-color var(--t-fast) var(--ease-out), opacity var(--t-mid) var(--ease-out);
 }
 
+.order-item:focus-within { border-color: var(--hairline-strong); }
+
 /* Zrobione pozycje przygasają, zamiast znikać: czasem trzeba do nich wrócić. */
-.order-item.done { opacity: 0.55; }
+.order-item.done { opacity: 0.5; }
+.order-item.done:focus-within,
+.order-item.done:hover { opacity: 1; }
+
+.order-item + .order-item { margin-top: var(--sp-3); }
 
 .order-item-head {
   display: grid;
-  grid-template-columns: 1fr 90px auto;
-  gap: 6px;
+  grid-template-columns: 1fr 88px auto;
+  gap: var(--sp-2);
 }
 
 .order-item-material {
-  margin: 6px 0 0;
-  font-size: var(--text-xs, 11px);
+  margin: var(--sp-2) 0 0;
+  font-size: var(--text-xs);
 }
 
-.order-item-spec {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr);
-  column-gap: 8px;
-  row-gap: 1px;
-  margin: 6px 0 0;
-  font-size: var(--text-xs, 11px);
-}
-
-.order-item-spec dt { color: var(--muted, #8b94a3); }
-.order-item-spec dt::after { content: ':'; }
-.order-item-spec dd { margin: 0; }
-.order-item-spec > div { display: contents; }
-
- /* Pasek etapu: cofnij, etap, dalej, notatka, rozbij. Elastyczny, a nie
-    siatka o stałej liczbie kolumn — przycisk cofania pojawia się i znika
-    zależnie od etapu, a siatka rozjeżdżałaby się przy każdym takim wariancie. */
+/* Pasek etapu: cofnij, etap, dalej, notatka, rozbij. Elastyczny, a nie siatka
+   o stałej liczbie kolumn — przycisk cofania pojawia się i znika zależnie od
+   etapu, a siatka rozjeżdżałaby się przy każdym takim wariancie. */
 .order-item-stage {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--sp-2);
   align-items: center;
-  margin-top: 8px;
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--hairline);
 }
 
-.order-item-stage select { flex: 0 1 160px; }
+.order-item-stage select { flex: 0 1 170px; }
 .order-item-stage .order-note { flex: 1 1 200px; min-width: 160px; }
 .order-item-stage .btn { flex: none; }
+
+/* ---- zdjęcie przy pozycji ---- */
+
+.order-item-photo {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+
+.order-photo-thumb {
+  max-width: 180px;
+  max-height: 140px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--hairline);
+  animation: zakladka-wejscie 180ms var(--ease-out) both;
+}
+
+/* Pole do wklejenia musi dać się kliknąć, żeby złapać ognisko — inaczej
+   Ctrl+V trafia gdzie indziej i nic się nie dzieje. */
+.photo-drop {
+  flex: 1;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px dashed var(--hairline-strong);
+  border-radius: var(--r-sm);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  text-align: center;
+  cursor: text;
+  transition: border-color var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out),
+    background var(--t-fast) var(--ease-out);
+}
+
+.photo-drop:focus {
+  outline: none;
+  border-color: var(--accent);
+  border-style: solid;
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.order-item .item-spec { margin-top: var(--sp-3); }
+
+/* ---- historia ---- */
 
 .order-log {
   list-style: none;
   margin: 0;
   padding: 0;
-  font-size: var(--text-xs, 11px);
+  font-size: var(--text-xs);
 }
 
 .order-log li {
   display: grid;
-  grid-template-columns: 140px 1fr auto;
-  gap: 8px;
-  padding: 4px 0;
-  border-bottom: 1px solid var(--line, #2a2f36);
+  grid-template-columns: 148px 1fr auto;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+  border-bottom: 1px solid var(--hairline);
 }
 
-.order-log-at { color: var(--muted, #8b94a3); }
-.order-log-by { color: var(--muted, #8b94a3); }
-.order-log-note { grid-column: 2 / -1; color: var(--muted, #8b94a3); }
+.order-log li:last-child { border-bottom: 0; }
+
+.order-log-at,
+.order-log-by { color: var(--muted); font-variant-numeric: tabular-nums; }
+.order-log-note { grid-column: 2 / -1; color: var(--muted); }
 
 /* ---- tablica ---- */
 
 .board {
   display: grid;
+  scroll-snap-type: x proximity;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(184px, 1fr);
-  gap: 10px;
+  /* Szerokość kolumny dobrana tak, żeby nazwa następnego etapu („Materiał na
+     stanie") mieściła się na przycisku obok strzałki cofania — ucięta nazwa
+     przestaje mówić warsztatowi, dokąd klika. */
+  grid-auto-columns: minmax(200px, 1fr);
+  gap: var(--sp-3);
   overflow-x: auto;
-  padding-bottom: 8px;
+  padding-bottom: var(--sp-2);
 }
 
 .board-col {
-  background: var(--card, #171b21);
-  border: 1px solid var(--line, #2a2f36);
-  border-radius: var(--radius, 8px);
-  padding: 8px;
+  scroll-snap-align: start;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  padding: var(--sp-3);
   min-height: 160px;
+  animation: zakladka-wejscie 180ms var(--ease-out) both;
 }
 
 .board-col-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
-  margin: -8px -8px 8px;
-  padding: 8px;
-  border-top: 3px solid var(--accent, #f15a28);
-  border-radius: var(--radius, 8px) var(--radius, 8px) 0 0;
-  font-weight: 600;
+  gap: var(--sp-2);
+  margin: calc(var(--sp-3) * -1) calc(var(--sp-3) * -1) var(--sp-3);
+  padding: var(--sp-3);
+  border-top: 3px solid var(--accent);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  font-weight: 560;
+  font-size: var(--text-sm);
 }
 
 .board-card {
-  border: 1px solid var(--line, #2a2f36);
-  border-radius: var(--radius, 8px);
-  padding: 8px;
-  margin-bottom: 8px;
+  min-width: 0;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  padding: var(--sp-3);
+  margin-bottom: var(--sp-2);
+  transition: border-color var(--t-fast) var(--ease-out), transform var(--t-fast) var(--ease-out),
+    box-shadow var(--t-fast) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .board-card:hover {
+    border-color: var(--hairline-strong);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-1);
+  }
 }
 
 /* Po terminie — czerwona krawędź z boku, czytelna z metra. */
-.board-card.late { border-left: 3px solid var(--danger, #d64545); }
+.board-card.late { border-left: 3px solid var(--danger); }
 
 .board-card-open {
   display: block;
@@ -2910,180 +3008,285 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
   color: inherit;
   cursor: pointer;
   padding: 0;
+  font: inherit;
 }
 
-.board-card-title { display: block; font-weight: 600; }
+.board-card-title {
+  display: block;
+  font-weight: 560;
+  font-size: var(--text-sm);
+}
+
 .board-card-meta,
 .board-card-note {
   display: block;
-  font-size: var(--text-xs, 11px);
-  color: var(--muted, #8b94a3);
-  margin-top: 2px;
+  font-size: var(--text-xs);
+  color: var(--muted);
+  margin-top: var(--sp-1);
 }
 
-.board-card-next { margin-top: 8px; width: 100%; }
-.board-empty { text-align: center; padding: 12px 0; }
+.board-card-moves {
+  display: flex;
+  gap: var(--sp-1);
+  margin-top: var(--sp-2);
+}
+
+ /* Nazwa następnego etapu bywa długa („Materiał na stanie"), a kolumna wąska.
+    Przycisk musi móc się skurczyć, inaczej wychodzi poza kafelek. */
+.board-card-moves .board-card-next {
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: center;
+}
+
+.board-next-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board-empty {
+  text-align: center;
+  padding: var(--sp-3) 0;
+  font-size: var(--text-xs);
+}
+
+/* Pasek przewijania tablicy — cienki i w kolorze motywu, zamiast szerokiej
+   szarej belki rysowanej przez system. */
+.board::-webkit-scrollbar { height: 10px; }
+.board::-webkit-scrollbar-track { background: transparent; }
+
+.board::-webkit-scrollbar-thumb {
+  background: var(--hairline-strong);
+  border-radius: var(--r-pill);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.board::-webkit-scrollbar-thumb:hover { background-clip: content-box; background-color: var(--muted); }
 
 /* ---- etapy w ustawieniach ---- */
 
 .stage-row {
   display: grid;
   grid-template-columns: 44px 1fr auto auto;
-  gap: 6px;
+  gap: var(--sp-2);
   align-items: center;
-  margin-bottom: 6px;
 }
 
 .stage-row input[type='color'] {
   padding: 2px;
   height: 32px;
+  cursor: pointer;
 }
 
-/* =========================================== Logowanie */
+/* =========================================================== Logowanie */
 
+ /* Ekran logowania stoi poza .app-shell, więc nie dziedziczy jego kolorów —
+    tutaj ustawiamy je wprost. Bez tego tekst potrafił wyjść czarny na ciemnym,
+    a pola zostawały białe, bo przeglądarka rysowała je po swojemu. */
 .login-screen {
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  background: var(--bg, #0f1216);
+  padding: var(--sp-6);
+  background: var(--canvas);
 }
 
 .login-box {
   width: 100%;
   max-width: 380px;
-  background: var(--card, #171b21);
-  border: 1px solid var(--line, #2a2f36);
-  border-radius: var(--radius-lg, 12px);
-  padding: 26px 24px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-1);
+  padding: var(--sp-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  animation: zakladka-wejscie 220ms var(--ease-out) both;
 }
 
-.login-brand { margin-bottom: 18px; }
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.login-mark {
+  width: 40px;
+  height: 40px;
+  flex: none;
+}
+
+.login-logo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-lg);
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.login-sub {
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+/* Pola i przyciski ekranu logowania — te same style co w programie, ale bez
+   zależności od .app-shell. */
+.login-box .field { display: flex; flex-direction: column; gap: var(--sp-1); }
+.login-box .field > span { font-size: var(--text-xs); color: var(--text-mid); }
+
+.login-box .input {
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--field-edge);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  transition: border-color var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out);
+}
+
+.login-box .input:focus {
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
 
 .login-title {
-  font-size: var(--text-lg, 18px);
-  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  color: var(--text);
+  margin: 0 0 var(--sp-1);
 }
 
-.login-note { margin: 0 0 14px; }
+.login-note { margin: 0; color: var(--muted); font-size: var(--text-xs); line-height: 1.5; }
 
 .login-error {
-  color: var(--danger, #d64545);
-  font-size: var(--text-sm, 13px);
-  margin: 10px 0 0;
+  color: var(--danger);
+  font-size: var(--text-sm);
+  margin: 0;
+  animation: zakladka-wejscie 160ms var(--ease-out) both;
 }
 
 .login-submit {
   width: 100%;
-  margin-top: 16px;
+  margin-top: var(--sp-2);
   justify-content: center;
 }
 
 .login-foot {
-  margin: 14px 0 0;
-  font-size: var(--text-xs, 11px);
+  margin: var(--sp-2) 0 0;
+  color: var(--muted);
+  font-size: var(--text-xs);
   line-height: 1.5;
 }
 
-.spin { animation: spin 1s linear infinite; }
+.spin { animation: obrot 1s linear infinite; }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* ------------------------------------- konta w ustawieniach */
+/* ------------------------------------------- konta w ustawieniach */
 
 .user-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 150px auto auto;
-  gap: 6px;
+  grid-template-columns: 1fr 140px 150px auto auto;
+  gap: var(--sp-2);
   align-items: center;
-  margin-bottom: 6px;
+  transition: opacity var(--t-fast) var(--ease-out);
 }
 
-.user-row.disabled { opacity: 0.5; }
+.user-row.disabled { opacity: 0.55; }
 
 .sidebar-user {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  font-size: var(--text-xs, 11px);
-  color: var(--muted, #8b94a3);
-  border-top: 1px solid var(--line, #2a2f36);
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  font-size: var(--text-xs);
+  color: var(--muted);
+  border-top: 1px solid var(--hairline);
 }
 
-.sidebar-user-name { color: var(--text, #e6e9ee); font-weight: 600; }
-
-/* ---- zdjęcie przy pozycji zlecenia ---- */
-
-.order-item-photo {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin-top: 8px;
+.sidebar-user-name {
+  color: var(--text);
+  font-weight: 560;
 }
 
-.order-photo-thumb {
-  max-width: 180px;
-  max-height: 140px;
-  border-radius: var(--radius, 8px);
-  border: 1px solid var(--line, #2a2f36);
-}
+/* ---------------------------------------- nagłówek ekranu z przyciskami */
 
-/* Pole do wklejenia musi dać się kliknąć, żeby złapać ognisko — inaczej
-   Ctrl+V trafia gdzie indziej i nic się nie dzieje. */
-.photo-drop {
-  flex: 1;
-  min-height: 40px;
-  display: flex;
+/* .view-head układa w kolumnę; tu wracamy do wiersza. */
+.editor-head {
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  padding: 8px 12px;
-  border: 1px dashed var(--line, #2a2f36);
-  border-radius: var(--radius, 8px);
-  color: var(--muted, #8b94a3);
-  font-size: var(--text-xs, 11px);
-  text-align: center;
-  cursor: text;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
 }
 
-.photo-drop:focus {
-  outline: none;
-  border-color: var(--accent, #f15a28);
-  border-style: solid;
-  color: var(--text, #e6e9ee);
+.editor-head .page-title { margin: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-panel,
+  .board-col,
+  .login-box,
+  .login-error,
+  .order-photo-thumb {
+    animation: none !important;
+  }
+
+  .progress-fill,
+  .board-card {
+    transition: none !important;
+  }
 }
 
-.order-item .item-spec { margin-top: 8px; }
+/* Rozwinięcie specyfikacji: wiersze wjeżdżają jak treść zakładki. Chromium
+   w tej wersji nie animuje jeszcze samego <details>, więc ruch dostaje to,
+   co w środku — i tylko przy otwarciu, bo zamknięcia i tak nikt nie ogląda. */
+.item-spec[open] > *:not(summary) {
+  animation: zakladka-wejscie 150ms var(--ease-out) both;
+}
 
-/* Zakładki etapów nad listą zleceń — ten sam język co filtry statusu ofert. */
-.stage-tabs {
+.item-spec summary {
+  display: list-item;
+  transition: color var(--t-fast) var(--ease-out);
+}
+
+.item-spec summary:hover { color: var(--text); }
+
+@media (prefers-reduced-motion: reduce) {
+  .item-spec[open] > *:not(summary) { animation: none !important; }
+}
+
+/* Oddziały pod wierszem konta — jedna osoba bywa w kilku. */
+.user-depts {
+  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 12px;
+  gap: var(--sp-3);
+  padding: 0 0 var(--sp-2) var(--sp-1);
+  font-size: var(--text-xs);
 }
 
-.stage-tabs .chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
+.user-row { row-gap: var(--sp-1); }
 
-.board-card-moves {
-  display: flex;
-  gap: 4px;
-  margin-top: 8px;
-}
+.order-item-stage .order-assignee { flex: 0 1 160px; }
 
-.board-card-moves .board-card-next { flex: 1; margin-top: 0; justify-content: center; }
-
-/* Zakładki w ustawieniach. */
-.settings-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 16px;
+/* Kto robi — na kafelku tablicy, od razu widać, czyja to pozycja. */
+.board-card-who {
+  display: inline-block;
+  margin-top: var(--sp-1);
+  padding: 1px var(--sp-2);
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--text-2xs);
+  font-weight: 560;
 }

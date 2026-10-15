@@ -16,6 +16,16 @@ export const DEFAULT_STATE: AppState = {
     emailCopyTo: 'lechrol@lechrol.pl',
     backupFolder: '',
     issuers: ['Sebastian Wajcht', 'Jacek Wajcht'],
+    // Wiersze, które widać w każdej nowej pozycji zlecenia. Puste wartości są
+    // celowe: to rubryki do uzupełnienia, a nie gotowe odpowiedzi. Firma
+    // zmienia tę listę w Ustawieniach → Produkcja.
+    defaultSpec: [
+      { label: 'Materiał', value: '' },
+      { label: 'Kolor', value: '' },
+      { label: 'Strona sterowania', value: '' },
+      { label: 'Szerokość całkowita', value: '' },
+      { label: 'Wysokość całkowita', value: '' }
+    ],
     offerDefaults: {
       deadlineDays: '21',
       validityDays: '30',

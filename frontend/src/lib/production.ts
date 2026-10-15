@@ -13,11 +13,13 @@ import type {
   OrderItem,
   OrderStatus,
   ProductionOrder,
+  Settings,
   Stage,
   StageEvent
 } from '../types';
 import { uid } from './storage';
 import { filledSpec } from './offers';
+import { autoSpecForOrder, domyslnaSpec } from './specTemplates';
 
 /** Etapy na start. Firma zmieni je w Ustawieniach; te są po to, żeby program
  *  działał od pierwszego uruchomienia, a nie witał pustą tablicą. */
@@ -73,7 +75,12 @@ export function czyKoncowy(stages: Stage[] | undefined, id: string): boolean {
 
 /** Zlecenie z zaakceptowanej oferty. Przenosi to, co trzeba wyprodukować —
  *  bez kwot, bo zlecenie nie jest dokumentem finansowym. */
-export function orderFromOffer(offer: Offer, stages: Stage[] | undefined, dzis: string): ProductionOrder {
+export function orderFromOffer(
+  offer: Offer,
+  settings: Pick<Settings, 'stages' | 'specTemplates' | 'defaultSpec'> | undefined,
+  dzis: string
+): ProductionOrder {
+  const stages = settings?.stages;
   const start = pierwszyEtap(stages);
   const items: OrderItem[] = [];
   for (const g of offer.groups || []) {
@@ -81,7 +88,7 @@ export function orderFromOffer(offer: Offer, stages: Stage[] | undefined, dzis: 
     if (g.variant) continue;
     for (const it of g.items || []) {
       if (!String(it.name || '').trim() && !String(it.material || '').trim()) continue;
-      items.push({
+      const pozycja: OrderItem = {
         id: uid(),
         // Podpis tabeli („Salon") mówi, gdzie to wisi — bez niego warsztat
         // dostaje osiem identycznych rolet bez wskazówki, która gdzie idzie
@@ -90,7 +97,10 @@ export function orderFromOffer(offer: Offer, stages: Stage[] | undefined, dzis: 
         spec: filledSpec(it.spec),
         qty: String(it.qty || '1').trim() || '1',
         stageId: start
-      });
+      };
+      // Pozycja bez własnej specyfikacji dostaje szablon produktu, a gdy go
+      // nie ma — domyślne wiersze. Warsztat widzi wtedy od razu, co uzupełnić.
+      items.push({ ...pozycja, spec: autoSpecForOrder(pozycja, settings) || pozycja.spec });
     }
   }
   return {
@@ -107,12 +117,24 @@ export function orderFromOffer(offer: Offer, stages: Stage[] | undefined, dzis: 
 }
 
 /** Puste zlecenie — gdy coś trzeba zrobić bez oferty (naprawa, reklamacja). */
-export function emptyOrder(stages: Stage[] | undefined, dzis: string): ProductionOrder {
+export function emptyOrder(
+  settings: Pick<Settings, 'stages' | 'specTemplates' | 'defaultSpec'> | undefined,
+  dzis: string
+): ProductionOrder {
   return {
     id: '',
     date: dzis,
     client: '',
-    items: [{ id: uid(), name: '', material: '', qty: '1', stageId: pierwszyEtap(stages) }],
+    items: [
+      {
+        id: uid(),
+        name: '',
+        material: '',
+        qty: '1',
+        stageId: pierwszyEtap(settings?.stages),
+        spec: domyslnaSpec(settings)
+      }
+    ],
     notes: '',
     createdAt: '',
     updatedAt: ''

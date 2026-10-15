@@ -66,8 +66,25 @@ export default function LoginView({ state, onLogin, onCreateOwner }: Props) {
     <div className="login-screen" data-testid="login-screen">
       <div className="login-box">
         <div className="login-brand">
-          <div className="brand-logo">LECHROL</div>
-          <div className="brand-sub">Oferty i produkcja</div>
+          <svg className="login-mark" viewBox="0 0 48 48" aria-hidden="true">
+            <rect x="0" y="0" width="48" height="48" rx="12" fill="var(--accent-solid)" />
+            <text
+              x="24"
+              y="32"
+              textAnchor="middle"
+              fontFamily="'Archivo Variable', sans-serif"
+              fontWeight="700"
+              fontSize="21"
+              letterSpacing="0.5"
+              fill="var(--accent-fg)"
+            >
+              LR
+            </text>
+          </svg>
+          <div>
+            <div className="login-logo">LECHROL</div>
+            <div className="login-sub">Oferty i produkcja</div>
+          </div>
         </div>
 
         {zakladanie ? (

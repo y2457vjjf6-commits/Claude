@@ -109,10 +109,11 @@ export interface Settings {
   productPhotos?: ProductPhoto[];
   /** Szablony specyfikacji przypisane do produktów — wstawiane do pozycji po nazwie */
   specTemplates?: SpecTemplate[];
+  /** Domyślna specyfikacja: wiersze dla produktu, który nie ma własnego
+   *  szablonu. Pozycja dostaje je od razu, żeby było wiadomo, co uzupełnić. */
+  defaultSpec?: OfferSpecRow[];
   /** Etapy produkcji; puste = program użyje domyślnych */
   stages?: Stage[];
-  /** Kto przestawia etapy — jego imię podpisuje wpisy w dzienniku */
-  currentUser?: string;
   /** Domyślne ustawienia nowej oferty */
   offerDefaults: {
     deadlineDays: string;
@@ -360,7 +361,8 @@ export interface OrderItem {
   qty: string;
   /** Etap, w którym pozycja jest teraz — wyliczany z dziennika */
   stageId: string;
-  /** Kto robi; puste = nieprzypisana */
+  /** Kto robi — login osoby z oddziału pasującego do produktu.
+   *  Puste = nieprzypisana. */
   assignee?: string;
   /** Notatka warsztatowa, np. „czekamy na poprawiony wymiar" */
   note?: string;
@@ -426,6 +428,9 @@ export interface ProductionOrder {
 /** Stanowisko decyduje, co widać i co wolno zmienić. */
 export type UserRole = 'wlasciciel' | 'biuro' | 'warsztat';
 
+/** Oddział warsztatu. Jedna osoba bywa w kilku — stąd lista, a nie pole. */
+export type Department = 'rolety' | 'zaluzje' | 'plisy' | 'moskitiery';
+
 /** Hasło zapisane tak, żeby nie dało się go odczytać z pliku danych.
  *  PBKDF2-SHA256: z hasła i soli liczy się skrót, a sprawdzenie polega
  *  na policzeniu go jeszcze raz. Liczbę obrotów trzymamy przy haśle, żeby
@@ -447,6 +452,9 @@ export interface UserAccount {
   name: string;
   role: UserRole;
   password: PasswordHash;
+  /** Oddziały, w których ta osoba pracuje. Po nich dobieramy, kto może wziąć
+   *  pozycję zlecenia: rolety robi kto inny niż moskitiery. */
+  departments?: Department[];
   /** Wyłączone konto zostaje w danych (podpisy w historii mają sens),
    *  ale nie da się na nie zalogować */
   disabled?: boolean;

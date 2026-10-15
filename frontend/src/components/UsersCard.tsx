@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Plus, KeyRound, Trash2, UserPlus } from 'lucide-react';
-import { AppState, AskConfirm, UserAccount, UserRole } from '../types';
+import { AppState, AskConfirm, Department, UserAccount, UserRole } from '../types';
 import { createUser, findUser, hashPassword, normalizujLogin, OPISY_STANOWISK, OPISY_UPRAWNIEN } from '../lib/auth';
+import { ODDZIALY, OPISY_ODDZIALOW } from '../lib/departments';
 
 interface Props {
   state: AppState;
@@ -140,6 +141,30 @@ export default function UsersCard({ state, currentUser, onPersist, toast, askCon
             >
               <Trash2 className="icon" />
             </button>
+          </div>
+          <div className="user-depts" data-testid={`user-depts-${u.login}`}>
+            {/* Oddziały decydują, komu program zaproponuje pozycję zlecenia —
+                nazwa produktu wskazuje oddział, a oddział wskazuje ludzi. */}
+            {ODDZIALY.map((d) => {
+              const ma = (u.departments || []).includes(d);
+              return (
+                <label className="checkbox-field" key={d}>
+                  <input
+                    type="checkbox"
+                    data-testid={`user-dept-${u.login}-${d}`}
+                    checked={ma}
+                    onChange={() =>
+                      void zmien(u, {
+                        departments: ma
+                          ? (u.departments || []).filter((x) => x !== d)
+                          : ([...(u.departments || []), d] as Department[])
+                      })
+                    }
+                  />
+                  <span>{OPISY_ODDZIALOW[d]}</span>
+                </label>
+              );
+            })}
           </div>
           {zmianaHasla?.id === u.id && (
             <div className="user-row" style={{ gridColumn: '1 / -1' }}>

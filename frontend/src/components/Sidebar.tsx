@@ -56,24 +56,15 @@ export default function Sidebar({
   // W zakładce ofert główny przycisk zakłada ofertę, nie WZ
   const wOfertach = view === 'offers' || view === 'offerEdit';
 
-  // która pozycja jest aktywna — po niej jedzie podświetlenie
-  const aktywnaPozycja = Math.max(
-    0,
-    ['list', 'offers', 'contractors', 'reports', 'settings'].indexOf(
-      view === 'edit' ? 'list' : view === 'offerEdit' ? 'offers' : view
-    )
-  );
-
   // Stanowisko decyduje, co w ogóle widać w menu: warsztatowi nie pokazujemy
   // zakładek, w które i tak nie wejdzie — pusta zakładka myli bardziej niż jej brak.
   const widoczna = (key: ViewName): boolean => {
     if (!user) return true;
     if (key === 'offers') return wolno(user, 'oferty');
-    if (key === 'list') return wolno(user, 'dokumenty');
+    if (key === 'list' || key === 'contractors') return wolno(user, 'dokumenty');
     if (key === 'prices') return wolno(user, 'cennik');
     if (key === 'reports') return wolno(user, 'zestawienia');
     if (key === 'settings') return wolno(user, 'ustawienia');
-    if (key === 'contractors') return wolno(user, 'dokumenty');
     return true;
   };
 
@@ -87,6 +78,18 @@ export default function Sidebar({
     { key: 'settings', label: 'Ustawienia', icon: <Settings2 className="icon" /> }
   ];
 
+  const widoczne = navItems.filter((i) => widoczna(i.key));
+
+  /** Ekran edycji należy do swojej listy — podświetlenie zostaje na zakładce,
+   *  z której się tam weszło. */
+  const rodzic = (v: ViewName): ViewName =>
+    v === 'edit' ? 'list' : v === 'offerEdit' ? 'offers' : v === 'orderEdit' || v === 'board' ? 'orders' : v;
+
+  // Podświetlenie jedzie po LIŚCIE WIDOCZNYCH pozycji, a nie po stałej liście
+  // nazw: inaczej po dołożeniu zakładki albo po ukryciu jej przed warsztatem
+  // wskazywałoby sąsiada zamiast właściwej.
+  const aktywnaPozycja = Math.max(0, widoczne.findIndex((i) => i.key === rodzic(view)));
+
   return (
     <aside className="sidebar" data-testid="sidebar">
       <div className="brand">
@@ -99,17 +102,10 @@ export default function Sidebar({
 
       <nav className="nav">
         <span className="nav-marker" aria-hidden="true" style={{ ['--nav-i' as string]: aktywnaPozycja }} />
-        {navItems.filter((i) => widoczna(i.key)).map((item) => (
+        {widoczne.map((item) => (
           <button
             key={item.key}
-            className={
-              'nav-btn' +
-              (view === item.key ||
-              (item.key === 'list' && view === 'edit') ||
-              (item.key === 'orders' && (view === 'orderEdit' || view === 'board'))
-                ? ' active'
-                : '')
-            }
+            className={'nav-btn' + (rodzic(view) === item.key ? ' active' : '')}
             data-testid={`nav-${item.key}`}
             onClick={() => onNavigate(item.key)}
           >

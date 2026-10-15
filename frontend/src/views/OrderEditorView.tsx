@@ -3,7 +3,7 @@ import {
   ArrowLeft, Plus, X, Printer, Split, PauseCircle, PlayCircle, Check, ChevronLeft, ChevronRight,
   ImagePlus, Trash2, ChevronUp, ChevronDown
 } from 'lucide-react';
-import { AppState, OrderItem, ProductionOrder, StageEvent } from '../types';
+import { AppState, OrderItem, ProductionOrder, StageEvent, UserAccount } from '../types';
 import {
   czyKoncowy,
   etapy,
@@ -16,8 +16,15 @@ import {
 } from '../lib/production';
 import { uid } from '../lib/storage';
 import { filledSpec, movedBy } from '../lib/offers';
+import { podpis } from '../lib/auth';
+import {
+  autoAssignee,
+  departmentForProduct,
+  OPISY_ODDZIALOW,
+  peopleForDepartment
+} from '../lib/departments';
 import { MAX_BOK_ZLECENIE, resizePhoto } from '../lib/photos';
-import { matchSpecTemplate, uzyteczneWiersze } from '../lib/specTemplates';
+import { autoSpecForOrder, domyslnaSpec, matchSpecTemplate, uzyteczneWiersze } from '../lib/specTemplates';
 
 interface Props {
   state: AppState;
@@ -28,6 +35,8 @@ interface Props {
   onBack: () => void;
   onPrint: (order: ProductionOrder) => void;
   toast: (msg: string, isError?: boolean) => void;
+  /** Kto jest zalogowany — jego imieniem podpisują się zmiany etapów */
+  user: UserAccount | null;
   /** Warsztat: etapy i notatki tak, reszta nie. Pola zostają widoczne —
    *  zablokowane, a nie ukryte, bo warsztat ma widzieć termin i adres. */
   readOnly?: boolean;
@@ -45,6 +54,7 @@ export default function OrderEditorView({
   onBack,
   onPrint,
   toast,
+  user,
   readOnly = false
 }: Props) {
   const [order, setOrder] = useState<ProductionOrder>(() => structuredClone(zrodlo));
@@ -67,7 +77,10 @@ export default function OrderEditorView({
   const kolejka = useRef<Promise<unknown>>(Promise.resolve());
 
   const lista = etapy(state.settings.stages);
-  const kto = state.settings.currentUser || state.settings.issuers?.[0] || '';
+  // Wpis w dzienniku podpisuje ZALOGOWANY, a nie pierwsza osoba z listy
+  // wystawiających. Historia odpowiada na pytanie „kto to zrobił" — podpis
+  // kogoś, kogo przy komputerze nie było, jest gorszy niż brak podpisu.
+  const kto = podpis(user, state.settings.issuers?.[0] || '');
   const historia = orderHistory(nadane.current.id, state.stageEvents);
   const postep = orderProgress(order, state.settings.stages);
 
@@ -114,7 +127,23 @@ export default function OrderEditorView({
 
   const set = (patch: Partial<ProductionOrder>) => setOrder((o) => ({ ...o, ...patch }));
   const setItem = (ii: number, patch: Partial<OrderItem>) =>
-    setOrder((o) => ({ ...o, items: o.items.map((it, i) => (i === ii ? { ...it, ...patch } : it)) }));
+    setOrder((o) => ({
+      ...o,
+      items: o.items.map((it, i) => {
+        if (i !== ii) return it;
+        const nowa = { ...it, ...patch };
+        // Po wpisaniu nazwy produktu pozycja bez własnej specyfikacji dostaje
+        // szablon tego produktu; gdy go nie ma — wiersze domyślne.
+        if (!('name' in patch) && !('material' in patch)) return nowa;
+        return {
+          ...nowa,
+          spec: autoSpecForOrder(nowa, state.settings) || nowa.spec,
+          // Jedna osoba w oddziale = oczywisty wybór, więc program robi go sam.
+          // Przy dwóch kandydatach decyzja zostaje przy człowieku.
+          assignee: nowa.assignee || autoAssignee(nowa, state.users) || undefined
+        };
+      })
+    }));
 
   /** Zmiana etapu zapisuje się od razu i zostawia ślad w dzienniku. */
   const przestaw = (ii: number, stageId: string) => {
@@ -504,6 +533,33 @@ export default function OrderEditorView({
                     <ChevronRight className="icon" />
                   </button>
                 )}
+                {(() => {
+                  const dzial = departmentForProduct(it);
+                  const ludzie = peopleForDepartment(state.users, dzial);
+                  if (!ludzie.length) return null;
+                  return (
+                    <select
+                      className="input order-assignee"
+                      data-testid={`order-item-assignee-${ii}`}
+                      aria-label="Kto robi"
+                      disabled={readOnly}
+                      title={
+                        dzial
+                          ? `Oddział: ${OPISY_ODDZIALOW[dzial]} — pokazujemy tylko tych, którzy w nim pracują`
+                          : 'Nie rozpoznaliśmy oddziału po nazwie produktu'
+                      }
+                      value={it.assignee || ''}
+                      onChange={(e) => setItem(ii, { assignee: e.target.value || undefined })}
+                    >
+                      <option value="">— kto robi —</option>
+                      {ludzie.map((u) => (
+                        <option key={u.login} value={u.login}>
+                          {u.name || u.login}
+                        </option>
+                      ))}
+                    </select>
+                  );
+                })()}
                 <input
                   type="text"
                   className="input order-note"
@@ -534,7 +590,17 @@ export default function OrderEditorView({
           onClick={() =>
             setOrder((o) => ({
               ...o,
-              items: [...o.items, { id: uid(), name: '', material: '', qty: '1', stageId: lista[0].id }]
+              items: [
+                ...o.items,
+                {
+                  id: uid(),
+                  name: '',
+                  material: '',
+                  qty: '1',
+                  stageId: lista[0].id,
+                  spec: domyslnaSpec(state.settings)
+                }
+              ]
             }))
           }
         >

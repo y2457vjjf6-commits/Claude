@@ -18,6 +18,7 @@ import OrderEditorView from './views/OrderEditorView';
 import BoardView from './views/BoardView';
 import { emptyOrder, etapy, orderFromOffer, overdueOrders, stageEvent } from './lib/production';
 import { printOrder } from './lib/orderActions';
+import { autoAssignee } from './lib/departments';
 import { computeOrderNumberFor } from './lib/numbering';
 import LoginView from './views/LoginView';
 import { podpis, wolno, wymagaLogowania } from './lib/auth';
@@ -222,7 +223,13 @@ export default function App() {
     (offer: Offer) => {
       const st = stateRef.current;
       if (!st) return;
-      openOrder(orderFromOffer(offer, st.settings.stages, todayStr()));
+      const zlecenie = orderFromOffer(offer, st.settings, todayStr());
+      // Pozycje od razu trafiają do właściwych ludzi, o ile w oddziale jest
+      // tylko jedna osoba — reszta zostaje do wskazania w karcie zlecenia.
+      openOrder({
+        ...zlecenie,
+        items: zlecenie.items.map((it) => ({ ...it, assignee: autoAssignee(it, st.users) || undefined }))
+      });
     },
     [openOrder]
   );
@@ -599,7 +606,7 @@ export default function App() {
             events={state.stageEvents || []}
             onEdit={openOrderById}
             canEdit={wolno(zalogowany, 'zlecenia-edycja')}
-            onNew={() => openOrder(emptyOrder(state.settings.stages, todayStr()))}
+            onNew={() => openOrder(emptyOrder(state.settings, todayStr()))}
             onBoard={() => setView('board')}
             onPrint={(o) => void printOrder(o, state.settings, toast)}
             onIssueWz={issueWzFromOrder}
@@ -627,6 +634,7 @@ export default function App() {
             onBack={() => setView('orders')}
             onPrint={(o) => void printOrder(o, state.settings, toast)}
             toast={toast}
+            user={zalogowany}
             readOnly={!wolno(zalogowany, 'zlecenia-edycja')}
           />
         )}
@@ -634,6 +642,7 @@ export default function App() {
           <BoardView
             orders={state.orders || []}
             stages={etapy(state.settings.stages)}
+            users={state.users || []}
             onBack={() => setView('orders')}
             onOpen={(id) => openOrderById(id)}
             onAdvance={(o, itemId, stageId) => void advanceOnBoard(o, itemId, stageId)}

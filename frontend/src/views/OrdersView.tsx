@@ -155,7 +155,7 @@ export default function OrdersView({
       )}
 
       {orders.length > 0 && (
-        <div className="chips stage-tabs" data-testid="stage-tabs" role="tablist">
+        <div className="chips tabs" data-testid="stage-tabs" role="tablist">
           <button
             type="button"
             role="tab"
@@ -185,6 +185,7 @@ export default function OrdersView({
         </div>
       )}
 
+      <div className="tab-panel" key={etapFiltr} data-testid="orders-panel">
       {orders.length === 0 ? (
         <div className="empty-state" data-testid="orders-empty">
           <p>Nie ma jeszcze żadnego zlecenia.</p>
@@ -301,6 +302,7 @@ export default function OrdersView({
           </tbody>
         </table>
       )}
+      </div>
       {events.length > 0 && <span hidden data-testid="orders-events-count">{events.length}</span>}
     </section>
   );

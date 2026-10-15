@@ -39,7 +39,33 @@ export function autoSpecFor(
 ): OfferSpecRow[] | null {
   if (filledSpec(item.spec).length > 0) return null;
   const szablon = matchSpecTemplate(item, settings?.specTemplates);
-  if (!szablon) return null;
-  const wiersze = uzyteczneWiersze(szablon);
+  const wiersze = szablon ? uzyteczneWiersze(szablon) : [];
   return wiersze.length ? wiersze : null;
+}
+
+/** To samo dla pozycji zlecenia, tyle że bez pasującego szablonu wstawiamy
+ *  wiersze domyślne.
+ *
+ *  Oferta ich nie dostaje celowo: ona idzie do klienta, a pusta rubryka
+ *  „Materiał: —" na dokumencie wygląda jak niedokończona robota. W zleceniu
+ *  jest odwrotnie — pusta rubryka przypomina warsztatowi, co trzeba uzupełnić.
+ */
+export function autoSpecForOrder(
+  item: Pick<OfferItem, 'name' | 'material' | 'spec'>,
+  settings: Pick<Settings, 'specTemplates' | 'defaultSpec'> | undefined
+): OfferSpecRow[] | null {
+  const zeSzablonu = autoSpecFor(item, settings);
+  if (zeSzablonu) return zeSzablonu;
+  if (filledSpec(item.spec).length > 0) return null;
+  const wiersze = domyslnaSpec(settings);
+  return wiersze.length ? wiersze : null;
+}
+
+/** Wiersze domyślne — dla produktu, który nie ma własnego szablonu. Lepiej
+ *  pokazać pustą listę parametrów do uzupełnienia niż nic: pusta rubryka
+ *  przypomina, że coś trzeba wpisać, a brak rubryki nie przypomina o niczym. */
+export function domyslnaSpec(
+  settings: Pick<Settings, 'defaultSpec'> | undefined
+): OfferSpecRow[] {
+  return uzyteczneWiersze({ name: '', rows: settings?.defaultSpec || [] });
 }

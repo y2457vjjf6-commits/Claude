@@ -1,12 +1,15 @@
 import { useMemo } from 'react';
 import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
-import { ProductionOrder, Stage, StageEvent } from '../types';
+import { ProductionOrder, Stage, StageEvent, UserAccount } from '../types';
 import { czyKoncowy, etapy, nastepnyEtap, poprzedniEtap } from '../lib/production';
+import { nazwaOsoby } from '../lib/departments';
 import { todayStr } from '../lib/dates';
 
 interface Props {
   orders: ProductionOrder[];
   stages: Stage[];
+  /** Potrzebne, żeby pokazać imię osoby przypisanej do pozycji */
+  users: UserAccount[];
   onBack: () => void;
   onOpen: (id: string) => void;
   onAdvance: (order: ProductionOrder, itemId: string, stageId: string) => void;
@@ -21,9 +24,10 @@ interface Karta {
   qty: string;
   note?: string;
   numerWlasny?: string;
+  kto?: string;
 }
 
-export default function BoardView({ orders, stages, onBack, onOpen, onAdvance }: Props) {
+export default function BoardView({ orders, stages, users, onBack, onOpen, onAdvance }: Props) {
   const lista = etapy(stages);
   const dzis = todayStr();
 
@@ -45,7 +49,8 @@ export default function BoardView({ orders, stages, onBack, onOpen, onAdvance }:
           termin: o.dueDate,
           qty: it.qty,
           note: it.note,
-          numerWlasny: o.ownNumber
+          numerWlasny: o.ownNumber,
+          kto: nazwaOsoby(users, it.assignee)
         });
       }
     }
@@ -54,7 +59,7 @@ export default function BoardView({ orders, stages, onBack, onOpen, onAdvance }:
       karty.sort((a, b) => (a.termin || '9999-12-31') < (b.termin || '9999-12-31') ? -1 : 1);
     }
     return mapa;
-  }, [orders, lista, stages]);
+  }, [orders, lista, stages, users]);
 
   return (
     <section className="view" data-testid="view-board">
@@ -100,6 +105,7 @@ export default function BoardView({ orders, stages, onBack, onOpen, onAdvance }:
                           {Number(k.qty) > 1 ? ` · ${k.qty} szt.` : ''}
                           {k.termin ? ` · ${k.termin}` : ''}
                         </span>
+                        {k.kto && <span className="board-card-who">{k.kto}</span>}
                         {k.note && <span className="board-card-note">{k.note}</span>}
                       </button>
                       <div className="board-card-moves">
@@ -121,7 +127,7 @@ export default function BoardView({ orders, stages, onBack, onOpen, onAdvance }:
                             title={`Przestaw na: ${dalej.name}`}
                             onClick={() => onAdvance(k.order, k.itemId, dalej.id)}
                           >
-                            {dalej.name}
+                            <span className="board-next-label">{dalej.name}</span>
                             <ChevronRight className="icon" />
                           </button>
                         )}

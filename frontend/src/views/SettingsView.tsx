@@ -45,6 +45,7 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
     })),
     photoRows: (st.productPhotos || []).map((z) => ({ ...z })),
     stageRows: etapy(st.stages).map((e) => ({ ...e })),
+    defaultSpecRows: (st.defaultSpec || []).map((w) => ({ ...w })),
     specRows: (st.specTemplates || []).map((t) => ({
       name: t.name,
       rows: (t.rows || []).map((w) => ({ ...w }))
@@ -107,6 +108,9 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
     next.settings.productPhotos = form.photoRows
       .map((z) => ({ name: z.name.trim(), dataUrl: z.dataUrl }))
       .filter((z) => z.name && z.dataUrl);
+    next.settings.defaultSpec = form.defaultSpecRows
+      .map((w) => ({ label: w.label.trim(), value: w.value.trim() }))
+      .filter((w) => w.label);
     next.settings.stages = form.stageRows
       .map((e) => ({ ...e, name: e.name.trim() }))
       .filter((e) => e.name);
@@ -226,7 +230,7 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
         <p className="view-meta">Firma, oferty, produkcja, konta i poczta — każde w swojej zakładce.</p>
       </header>
 
-      <div className="chips settings-tabs" role="tablist">
+      <div className="chips tabs" role="tablist">
         <button
           type="button"
           role="tab"
@@ -300,7 +304,7 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
       </div>
 
       {zakladka === 'firma' && (
-        <>
+        <div className="tab-panel" key="firma" data-testid="settings-panel-firma">
       <div className="card">
         <h3 className="card-title">Dane sprzedawcy / wydającego (nagłówek dokumentu)</h3>
         <div className="grid2">
@@ -330,11 +334,11 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
           </label>
         </div>
       </div>
-        </>
+        </div>
       )}
 
       {zakladka === 'oferty' && (
-        <>
+        <div className="tab-panel" key="oferty" data-testid="settings-panel-oferty">
       <div className="card">
         <h3 className="card-title">Oferty cenowe</h3>
         <p className="muted card-note">
@@ -500,11 +504,11 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
           </label>
         </div>
       </div>
-        </>
+        </div>
       )}
 
       {zakladka === 'produkcja' && (
-        <>
+        <div className="tab-panel" key="produkcja" data-testid="settings-panel-produkcja">
       <div className="card">
         <h3 className="card-title">Etapy produkcji</h3>
         <p className="muted card-note">
@@ -591,11 +595,96 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
           Dodaj etap
         </button>
       </div>
-        </>
+
+      <div className="card">
+        <h3 className="card-title">Domyślna specyfikacja</h3>
+        <p className="muted card-note">
+          Te wiersze dostaje każda nowa pozycja zlecenia, dla której nie ma szablonu przypisanego
+          do produktu. Wartości zostawia się puste — chodzi o to, żeby warsztat od razu widział,
+          co trzeba uzupełnić. Szablony dla konkretnych produktów ustawia się w zakładce Biblioteki
+          i mają pierwszeństwo przed tą listą.
+        </p>
+        {form.defaultSpecRows.map((w, i) => (
+          <div className="spec-row" key={i} data-testid={`default-spec-${i}`}>
+            <input
+              type="text"
+              className="input"
+              data-testid={`default-spec-label-${i}`}
+              aria-label="Co"
+              placeholder="np. Strona sterowania"
+              value={w.label}
+              onChange={(e) =>
+                set({
+                  defaultSpecRows: form.defaultSpecRows.map((r, j) =>
+                    j === i ? { ...r, label: e.target.value } : r
+                  )
+                })
+              }
+            />
+            <input
+              type="text"
+              className="input"
+              data-testid={`default-spec-value-${i}`}
+              aria-label="Jakie"
+              placeholder="zostaw puste, jeśli zależy od okna"
+              value={w.value}
+              onChange={(e) =>
+                set({
+                  defaultSpecRows: form.defaultSpecRows.map((r, j) =>
+                    j === i ? { ...r, value: e.target.value } : r
+                  )
+                })
+              }
+            />
+            <div className="spec-row-actions">
+              <button
+                className="btn btn-small btn-light item-remove"
+                data-testid={`default-spec-up-${i}`}
+                aria-label="Przesuń wyżej"
+                disabled={i === 0}
+                onClick={() => set({ defaultSpecRows: movedBy(form.defaultSpecRows, i, -1) })}
+              >
+                <ChevronUp className="icon" />
+              </button>
+              <button
+                className="btn btn-small btn-light item-remove"
+                data-testid={`default-spec-down-${i}`}
+                aria-label="Przesuń niżej"
+                disabled={i === form.defaultSpecRows.length - 1}
+                onClick={() => set({ defaultSpecRows: movedBy(form.defaultSpecRows, i, 1) })}
+              >
+                <ChevronDown className="icon" />
+              </button>
+              <button
+                className="btn btn-small btn-danger item-remove"
+                data-testid={`default-spec-remove-${i}`}
+                aria-label="Usuń wiersz"
+                onClick={() => set({ defaultSpecRows: form.defaultSpecRows.filter((_, j) => j !== i) })}
+              >
+                <X className="icon" />
+              </button>
+            </div>
+          </div>
+        ))}
+        {!form.defaultSpecRows.length && (
+          <p className="muted employees-empty" data-testid="default-spec-empty">
+            Brak domyślnych wierszy — nowa pozycja zlecenia zaczyna z pustą specyfikacją.
+          </p>
+        )}
+        <button
+          className="btn btn-light"
+          data-testid="add-default-spec"
+          onClick={() => set({ defaultSpecRows: [...form.defaultSpecRows, { label: '', value: '' }] })}
+        >
+          <Plus className="icon" />
+          Dodaj wiersz
+        </button>
+      </div>
+        </div>
       )}
 
       {zakladka === 'biblioteki' && (
-        <>
+        <div className="tab-panel" key="biblioteki" data-testid="settings-panel-biblioteki">
       <div className="card">
         <h3 className="card-title">Specyfikacje produktów</h3>
         <p className="muted card-note">
@@ -841,11 +930,11 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
             : 'Bez zdjęć oferta wygląda tak jak dotąd — to dodatek, nie wymóg.'}
         </p>
       </div>
-        </>
+        </div>
       )}
 
       {zakladka === 'konta' && (
-        <>
+        <div className="tab-panel" key="konta" data-testid="settings-panel-konta">
       {wolno(currentUser, 'konta') && (
         <UsersCard
           state={state}
@@ -855,11 +944,11 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
           askConfirm={askConfirm}
         />
       )}
-        </>
+        </div>
       )}
 
       {zakladka === 'poczta' && (
-        <>
+        <div className="tab-panel" key="poczta" data-testid="settings-panel-poczta">
       <div className="card">
         <h3 className="card-title">Poczta e-mail (wysyłka WZ jako PDF)</h3>
         <p className="muted card-note">
@@ -915,11 +1004,11 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
           <span className="muted">Sprawdza dane skrzynki bez wysyłania wiadomości.</span>
         </div>
       </div>
-        </>
+        </div>
       )}
 
       {zakladka === 'dane' && (
-        <>
+        <div className="tab-panel" key="dane" data-testid="settings-panel-dane">
       <div className="card">
         <h3 className="card-title">Kopia zapasowa danych</h3>
         <p className="muted card-note">
@@ -953,7 +1042,7 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
           </button>
         </div>
       </div>
-        </>
+        </div>
       )}
 
       <div className="actions-bar actions-sticky">

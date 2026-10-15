@@ -1,4 +1,4 @@
-import { autoSpecFor, matchSpecTemplate, uzyteczneWiersze } from './specTemplates';
+import { autoSpecFor, autoSpecForOrder, domyslnaSpec, matchSpecTemplate, uzyteczneWiersze } from './specTemplates';
 import { SpecTemplate } from '../types';
 
 const SZABLONY: SpecTemplate[] = [
@@ -95,4 +95,54 @@ test('podstawione wiersze są kopią, nie wspólnym obiektem z ustawieniami', ()
   const wiersze = autoSpecFor(poz('Żaluzje drewniane'), { specTemplates: SZABLONY })!;
   wiersze[0].value = 'Dąb';
   expect(SZABLONY[2].rows[0].value).toBe('Orzech 50 mm');
+});
+
+// --- domyślna specyfikacja ---
+
+const DOMYSLNE = [
+  { label: 'Materiał', value: '' },
+  { label: 'Strona sterowania', value: '' }
+];
+
+test('w zleceniu produkt bez szablonu dostaje wiersze domyślne', () => {
+  expect(autoSpecForOrder(poz('Markiza tarasowa'), { specTemplates: SZABLONY, defaultSpec: DOMYSLNE })).toEqual(
+    DOMYSLNE
+  );
+});
+
+test('oferta domyślnych nie dostaje — idzie do klienta, a puste rubryki wyglądają jak niedokończona robota', () => {
+  expect(autoSpecFor(poz('Markiza tarasowa'), { specTemplates: SZABLONY })).toBeNull();
+});
+
+test('szablon produktu ma pierwszeństwo przed domyślnym', () => {
+  expect(
+    autoSpecForOrder(poz('Roleta kasetowa UNI'), { specTemplates: SZABLONY, defaultSpec: DOMYSLNE })?.[0].label
+  ).toBe('Kolor kasety');
+});
+
+test('wypełniona specyfikacja jest nietykalna także wobec domyślnych', () => {
+  expect(
+    autoSpecForOrder(
+      { name: 'Markiza', material: '', spec: [{ label: 'Coś', value: 'swojego' }] },
+      { defaultSpec: DOMYSLNE }
+    )
+  ).toBeNull();
+});
+
+test('bez domyślnych i bez szablonu nic nie wstawiamy', () => {
+  expect(autoSpecForOrder(poz('Markiza'), { specTemplates: [], defaultSpec: [] })).toBeNull();
+  expect(autoSpecForOrder(poz('Markiza'), {})).toBeNull();
+});
+
+test('domyślne wiersze są kopią, nie wspólnym obiektem z ustawieniami', () => {
+  const ustawienia = { defaultSpec: DOMYSLNE };
+  const wiersze = autoSpecForOrder(poz('Markiza'), ustawienia)!;
+  wiersze[0].value = 'Drewno';
+  expect(ustawienia.defaultSpec[0].value).toBe('');
+});
+
+test('wiersz bez nazwy nie wchodzi do domyślnych', () => {
+  expect(domyslnaSpec({ defaultSpec: [{ label: '  ', value: 'x' }, { label: 'Kolor', value: '' }] })).toEqual([
+    { label: 'Kolor', value: '' }
+  ]);
 });

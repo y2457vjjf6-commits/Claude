@@ -20,6 +20,7 @@ import type {
 } from '../types';
 import { uid } from './storage';
 import { filledSpec } from './offers';
+import { selectedItems } from './offerOptions';
 import { autoSpecFor, domyslnaSpec } from './specTemplates';
 
 /** Etapy na start. Firma zmieni je w Ustawieniach; te są po to, żeby program
@@ -132,7 +133,9 @@ export function orderFromOffer(
   for (const g of offer.groups || []) {
     // Wariant alternatywny to propozycja dla klienta, a nie rzecz do zrobienia
     if (g.variant) continue;
-    for (const it of g.items || []) {
+    // Z grupy opcji do warsztatu idzie opcja zaznaczona w ofercie — reszta
+    // była propozycją i nie ma czego z niej robić
+    for (const it of selectedItems(g)) {
       if (!String(it.name || '').trim() && !String(it.material || '').trim()) continue;
       const pozycja: OrderItem = {
         id: uid(),

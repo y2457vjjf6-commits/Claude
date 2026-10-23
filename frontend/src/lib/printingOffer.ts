@@ -1,4 +1,4 @@
-import { Offer, OfferGroup, OfferItem, ProductPhoto, Settings } from '../types';
+import { Offer, OfferGroup, OfferItem, OfferOption, ProductPhoto, Settings } from '../types';
 import { LOGO_LECHROL } from '../assets/logo';
 import {
   columnHeaderLabel,
@@ -15,6 +15,15 @@ import {
   validUntil
 } from './offers';
 import { esc, formatDatePl } from './printing';
+import {
+  fullOptionItem,
+  isOptionGroup,
+  optionChosen,
+  optionCellFilled,
+  optionFilled,
+  optionLabel,
+  selectedOption
+} from './offerOptions';
 import { matchPhotoOrIcon } from './photos';
 
 /**
@@ -119,6 +128,170 @@ function naglowekTabeli(etykietaProduktu: string, u: UkladTabeli): string {
         </thead>`;
 }
 
+/* ---------------------------- Opcje do wyboru ---------------------------- */
+
+/** Opis opcji wspólny dla wszystkich jej wierszy — wtedy wystarczy raz,
+ *  w nagłówku kolumny, i tabela nie powtarza tego samego przy każdej cenie. */
+function wspolnyOpis(option: OfferOption, szkielet: OfferItem[]): string {
+  const opisy = option.items
+    .filter((it) => optionCellFilled(it))
+    .map((it) => String(it.material || '').trim());
+  if (!opisy.length) return '';
+  return opisy.every((o) => o === opisy[0]) ? opisy[0] : '';
+}
+
+/** Tabela porównawcza jednej grupy opcji.
+ *
+ *  Wiersze są wspólne — ten sam produkt, wymiar i ilość — a kolumny to
+ *  alternatywy. Dzięki temu klient czyta w poprzek: ten sam salon, trzy
+ *  materiały, trzy ceny. Pod kwotą opcji stoi cena całkowita całej oferty
+ *  policzona właśnie z nią, bo to ona jest decyzją, a nie sama pozycja.
+ */
+function tabelaOpcji(
+  g: OfferGroup,
+  u: UkladTabeli,
+  sumy: ReturnType<typeof offerTotals>,
+  podpis: string
+): string {
+  const opcje = (g.options || []).filter(optionFilled);
+  if (!opcje.length) return '';
+  // Wiersz pokazujemy, gdy jest produktem (szkielet coś niesie) albo gdy
+  // którakolwiek opcja ma dla niego cenę — reszta to puste wiersze z edytora.
+  const wiersze = g.items
+    .map((it, i) => ({ it, i }))
+    .filter(({ it, i }) => !isItemEmpty(it) || opcje.some((o) => optionCellFilled(o.items[i])));
+  if (!wiersze.length) return '';
+
+  const wyceny = sumy.optionGroups.find((x) => x.groupId === g.id);
+  const kwota = (id: string) => wyceny?.options.find((o) => o.id === id);
+  const wybrana = optionChosen(g) ? selectedOption(g) : null;
+  const klasaOpcji = (o: OfferOption) => (wybrana && o.id === wybrana.id ? ' of-opt-chosen' : '');
+  const opisy = opcje.map((o) => wspolnyOpis(o, g.items));
+
+  const naglowek = `
+        <thead>
+          <tr>
+            <th class="of-lp">Lp.</th>
+            ${u.zeZdjeciem ? '<th class="of-pic"></th>' : ''}
+            <th class="of-name">${esc(columnHeaderLabel(g.header))}</th>
+            ${opcje
+              .map(
+                (o, oi) =>
+                  `<th class="of-opt${klasaOpcji(o)}">` +
+                  `<span class="of-opt-name">${esc(optionLabel(o, oi))}</span>` +
+                  (opisy[oi] ? `<span class="of-opt-sub">${esc(opisy[oi])}</span>` : '') +
+                  (wybrana && o.id === wybrana.id ? '<span class="of-opt-tag">wybrana</span>' : '') +
+                  '</th>'
+              )
+              .join('')}
+          </tr>
+        </thead>`;
+
+  const tresc = wiersze
+    .map(({ it, i }) => {
+      const zdjecie = u.zdjecia ? matchPhotoOrIcon(it, u.zdjecia) : null;
+      const sztuk = String(it.qty || '').trim();
+      const opis = [String(it.material || '').trim(), sztuk ? `${sztuk} szt.` : '']
+        .filter(Boolean)
+        .join(' · ');
+      return `
+          <tr class="of-item">
+            <td class="of-lp">${esc(u.numery[i])}</td>
+            ${
+              u.zeZdjeciem
+                ? `<td class="of-pic">${
+                    zdjecie
+                      ? `<img class="of-photo${
+                          zdjecie.dataUrl.startsWith('data:image/svg') ? ' of-icon' : ''
+                        }" src="${zdjecie.dataUrl}" alt="">`
+                      : ''
+                  }</td>`
+                : ''
+            }
+            <td class="of-name">
+              <span class="of-name-main">${esc(it.name)}</span>
+              ${opis ? `<span class="of-material">${esc(opis)}</span>` : ''}
+            </td>
+            ${opcje
+              .map((o, oi) => {
+                const poz = o.items[i];
+                const pusta = !optionCellFilled(poz);
+                // „—” zamiast pustej komórki: puste miejsce w tabeli
+                // porównawczej czyta się jak niedokończona robota
+                if (pusta) return `<td class="of-opt of-opt-none${klasaOpcji(o)}">—</td>`;
+                const wlasny = opisy[oi] ? '' : String(poz.material || '').trim();
+                return (
+                  `<td class="of-opt${klasaOpcji(o)}">` +
+                  `<span class="of-opt-price">${formatMoney(itemTotal(poz))}</span>` +
+                  (wlasny ? `<span class="of-opt-sub">${esc(wlasny)}</span>` : '') +
+                  '</td>'
+                );
+              })
+              .join('')}
+          </tr>`;
+    })
+    .join('');
+
+  const stopka =
+    `<tr class="of-opt-sum">` +
+    `<th colspan="${u.zeZdjeciem ? 3 : 2}">Razem za opcję</th>` +
+    opcje
+      .map((o) => `<td class="of-opt${klasaOpcji(o)}">${formatMoney(kwota(o.id)?.sum ?? 0)}</td>`)
+      .join('') +
+    '</tr>' +
+    `<tr class="of-opt-total">` +
+    `<th colspan="${u.zeZdjeciem ? 3 : 2}">Cena całkowita oferty</th>` +
+    opcje
+      .map((o) => `<td class="of-opt${klasaOpcji(o)}">${formatMoney(kwota(o.id)?.total ?? 0)}</td>`)
+      .join('') +
+    '</tr>';
+
+  return `
+       <section class="of-options">
+         <h2 class="of-section-title">Opcje do wyboru${podpis ? ` — ${esc(podpis)}` : ''}</h2>
+         <p class="of-section-note">
+           Opcje się nie sumują — przy każdej stoi cena całkowita całej oferty, policzona
+           właśnie z nią. Pozostałe pozycje zamówienia zostają bez zmian.
+         </p>
+         <table class="of-items of-compare">
+           ${naglowek}
+           <tbody>${tresc}${stopka}</tbody>
+         </table>
+       </section>`;
+}
+
+/** Pełna specyfikacja każdej opcji — pod tabelą, bo w wąskiej kolumnie
+ *  z ceną nie ma na nią miejsca, a klient chce wiedzieć, czym się różnią. */
+function specyfikacjeOpcji(g: OfferGroup, numery: string[]): string {
+  const opcje = (g.options || []).filter(optionFilled);
+  const bloki = opcje
+    .map((o, oi) => {
+      const pozycje = o.items
+        .map((poz, i) => {
+          if (!optionCellFilled(poz)) return '';
+          const pelna = fullOptionItem(g.items[i] || poz, poz);
+          const spec = specyfikacja(pelna);
+          if (!spec) return '';
+          const opis = String(pelna.material || '').trim();
+          return (
+            '<div class="of-opt-spec-item">' +
+            `<span class="of-opt-spec-name">${esc(numery[i])}. ${esc(pelna.name)}` +
+            (opis ? ` <span class="of-material">${esc(opis)}</span>` : '') +
+            '</span>' +
+            spec +
+            '</div>'
+          );
+        })
+        .join('');
+      if (!pozycje) return '';
+      return `<div class="of-opt-spec"><h3 class="of-opt-spec-title">${esc(
+        optionLabel(o, oi)
+      )}</h3>${pozycje}</div>`;
+    })
+    .join('');
+  return bloki ? `<section class="of-opt-specs">${bloki}</section>` : '';
+}
+
 /** Telefon pod podpisem — pomijany, gdy to ten sam numer co firmowy. */
 function telefonPodpisu(offer: Offer, s: Settings['seller']): string {
   const cyfry = (x: string) => String(x || '').replace(/\D/g, '');
@@ -152,13 +325,26 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
   const numery = groupLpNumbers(grupy, offer.continuousNumbering);
   const sumy = offerTotals(offer);
 
-  const podstawowe = grupy.map((g, i) => ({ g, i })).filter(({ g }) => !g.variant);
+  // Trzy rodzaje tabel, bo trzy różne role na dokumencie: pozycje zamówienia,
+  // alternatywy do wyboru i stare warianty wyceniane obok ceny całkowitej.
+  const podstawowe = grupy
+    .map((g, i) => ({ g, i }))
+    .filter(({ g }) => !g.variant && !isOptionGroup(g));
+  const zOpcjami = grupy.map((g, i) => ({ g, i })).filter(({ g }) => !g.variant && isOptionGroup(g));
   const warianty = grupy.map((g, i) => ({ g, i })).filter(({ g }) => g.variant);
   const niepuste = (x: { g: OfferGroup }) => x.g.items.some((it) => !isItemEmpty(it));
 
   // Kolumna na zdjęcia pojawia się tylko wtedy, gdy którakolwiek pozycja
   // faktycznie je dostanie — pusta kolumna zabierałaby miejsce za darmo.
-  const wszystkiePozycje = grupy.flatMap((g) => g.items).filter((it) => !isItemEmpty(it));
+  const wszystkiePozycje = grupy
+    .flatMap((g) =>
+      isOptionGroup(g)
+        ? // w grupie opcji zdjęcie i specyfikacja siedzą przy szkielecie,
+          // a pełny opis pozycji składa się dopiero ze szkieletu i opcji
+          g.items.map((it, i) => fullOptionItem(it, (selectedOption(g)?.items || [])[i] || it))
+        : g.items
+    )
+    .filter((it) => !isItemEmpty(it));
   const zeZdjeciem = !!zdjecia && wszystkiePozycje.some((it) => matchPhotoOrIcon(it, zdjecia));
   const zeSpecyfikacja = !!offer.showSpecs && wszystkiePozycje.some((it) => (it.spec || []).length > 0);
   const kolumn = ileKolumn(zeZdjeciem);
@@ -193,6 +379,15 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
 
   // Warianty to alternatywy, nie dodatkowe pozycje — stąd osobna tabela
   // z własnym podpisem, żeby nikt nie doliczył ich do ceny całkowitej.
+  const tabeleOpcji = zOpcjami
+    .map(({ g, i }) => tabelaOpcji(g, uklad(i), sumy, groupLabel(grupy, i)))
+    .join('');
+
+  const specOpcji =
+    offer.showSpecs && zOpcjami.length
+      ? zOpcjami.map(({ g, i }) => specyfikacjeOpcji(g, numery[i])).join('')
+      : '';
+
   const tabelaWariantow = warianty.filter(niepuste).length
     ? `<section class="of-variants">
          <h2 class="of-section-title">Warianty do wyboru</h2>
@@ -216,7 +411,17 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
     : '';
 
   const vat = offerVat(sumy.total, offerVatRate(offer));
-  const etykietaCeny = warianty.length ? 'Cena całkowita oferty podstawowej' : 'Cena całkowita';
+  // Kwota bez wskazania opcji wprowadzałaby w błąd: identyczna liczba wyjdzie
+  // przy innej opcji z innej grupy, a klient ma wiedzieć, co kupuje za tę cenę.
+  const zOpcja =
+    sumy.optionGroups.length === 1
+      ? `Cena całkowita z opcją ${sumy.optionGroups[0].options.find((o) => o.selected)?.label || 'A'}`
+      : 'Cena całkowita z wybranymi opcjami';
+  const etykietaCeny = warianty.length
+    ? 'Cena całkowita oferty podstawowej'
+    : sumy.optionGroups.length
+      ? zOpcja
+      : 'Cena całkowita';
   const linia = (opis: string, kwota: string, klasa = '') =>
     `<tr${klasa ? ` class="${klasa}"` : ''}><th>${esc(opis)}</th><td>${kwota}</td></tr>`;
 
@@ -318,6 +523,8 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
     </section>
 
     ${tabelaPodstawowa}
+    ${tabeleOpcji}
+    ${specOpcji}
     ${tabelaWariantow}
     ${podsumowanie}
 

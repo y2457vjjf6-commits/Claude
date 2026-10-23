@@ -312,6 +312,10 @@ export default function EditorView({ state, editingDocId, onPersist, onSaved, on
           <p className="muted" style={{ margin: 0 }}>
             Pozycje i odbiorcę wypełniliśmy z oferty — sprawdź ilości i jednostki przed zapisem.
             {prefill.hadVariants && ' Oferta miała warianty alternatywne, więc dopisz ręcznie ten, który klient wybrał.'}
+            {/* Przy opcjach mamy co przenieść, ale nie wiemy, czy to właściwa
+                rzecz — wydanie nie tego towaru wraca jako reklamacja. */}
+            {prefill.uncheckedOptions &&
+              ' W ofercie są opcje do wyboru, ale żadnej nie zaznaczono jako wybranej — przenieśliśmy pierwszą. Sprawdź, czy to ta, którą klient zamówił.'}
           </p>
         </div>
       )}

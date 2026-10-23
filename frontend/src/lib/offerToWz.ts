@@ -1,5 +1,6 @@
 import { Contractor, DocContractor, Item, Offer, ProductionOrder } from '../types';
 import { formatDatePl } from './printing';
+import { isOptionGroup, optionChosen, selectedItems } from './offerOptions';
 
 /** Dane, którymi wypełniamy nową WZ wystawianą na podstawie oferty. */
 export interface WzPrefill {
@@ -10,6 +11,9 @@ export interface WzPrefill {
   notes: string;
   /** Oferta zawierała warianty alternatywne — nie przenosimy ich automatycznie */
   hadVariants: boolean;
+  /** Oferta ma grupy opcji, w których nikt nie wskazał wybranej — przenieśliśmy
+   *  pierwszą, więc trzeba to sprawdzić przed wydaniem towaru */
+  uncheckedOptions: boolean;
 }
 
 /** Nazwa pozycji na WZ: produkt z oferty wraz z materiałem lub wymiarem. */
@@ -21,8 +25,13 @@ function itemName(name: string, material: string): string {
 }
 
 /** Przepisanie zaakceptowanej oferty na pozycje dokumentu WZ.
- *  Warianty alternatywne pomijamy — o tym, który z nich klient wybrał,
- *  decyduje człowiek, więc dopisuje je ręcznie. */
+ *
+ *  Z grupy opcji bierzemy tę opcję, którą zaznaczono w ofercie — po to się ją
+ *  zaznacza. Gdy nikt nie zaznaczył, idzie pierwsza, ale mówimy o tym wprost
+ *  (`uncheckedOptions`), bo wydanie nie tego towaru wraca jako reklamacja.
+ *
+ *  Stare warianty alternatywne dalej pomijamy: nie da się odgadnąć, który
+ *  z nich klient wybrał, więc dopisuje je człowiek. */
 export function wzPrefillFromOffer(offer: Offer, contractors: Contractor[]): WzPrefill {
   const klient = (offer.client || '').trim();
   const zBazy =
@@ -41,7 +50,7 @@ export function wzPrefillFromOffer(offer: Offer, contractors: Contractor[]): WzP
   const podstawowe = (offer.groups || []).filter((g) => !g.variant);
   const items: Item[] = [];
   for (const g of podstawowe) {
-    for (const it of g.items || []) {
+    for (const it of selectedItems(g)) {
       const nazwa = itemName(it.name, it.material);
       if (!nazwa) continue;
       items.push({ name: nazwa, unit: 'szt.', qty: String(it.qty || '').trim(), order: '' });
@@ -54,7 +63,8 @@ export function wzPrefillFromOffer(offer: Offer, contractors: Contractor[]): WzP
     contractor,
     items,
     notes: `Na podstawie oferty cenowej z dnia ${formatDatePl(offer.date)}.`,
-    hadVariants: (offer.groups || []).some((g) => g.variant)
+    hadVariants: (offer.groups || []).some((g) => g.variant),
+    uncheckedOptions: (offer.groups || []).some((g) => isOptionGroup(g) && !optionChosen(g))
   };
 }
 
@@ -99,6 +109,7 @@ export function wzPrefillFromOrder(order: ProductionOrder, contractors: Contract
     contractor,
     items: Array.from(scalone.values()),
     notes: skad ? `Na podstawie zlecenia ${skad}.` : 'Na podstawie zlecenia produkcyjnego.',
-    hadVariants: false
+    hadVariants: false,
+    uncheckedOptions: false
   };
 }

@@ -1,4 +1,13 @@
 import { Offer, OfferColumnHeader, OfferGroup, OfferItem, OfferSpecRow } from '../types';
+import {
+  groupEffectiveSum,
+  isOptionGroup,
+  optionChosen,
+  optionLabel,
+  optionSum,
+  selectedOption,
+  selectedItems
+} from './offerOptions';
 
 /** Liczba z pola tekstowego — przecinek i spacje jak w polskim zapisie kwot. */
 export function parseNumber(value: unknown): number {
@@ -93,15 +102,43 @@ export interface OfferVariantTotal {
   total: number;
 }
 
+/** Wycena jednej opcji: kwota jej pozycji i cena całkowita całej oferty,
+ *  gdyby klient wziął właśnie ją. */
+export interface OfferOptionTotal {
+  id: string;
+  label: string;
+  /** Suma pozycji tej opcji, przed rabatem */
+  sum: number;
+  /** Cena całkowita oferty z tą opcją — pozycje wspólne plus ta opcja, po rabacie */
+  total: number;
+  /** O ile drożej niż najtańsza opcja w tej grupie */
+  diff: number;
+  /** Czy to ta opcja jest teraz wliczona w cenę całkowitą oferty */
+  selected: boolean;
+}
+
+export interface OfferOptionGroupTotals {
+  groupId: string;
+  label: string;
+  /** Czy ktoś świadomie wskazał opcję, czy liczymy domyślnie pierwszą */
+  chosen: boolean;
+  options: OfferOptionTotal[];
+}
+
 export interface OfferTotals {
-  /** Suma pozycji podstawowych (bez wariantów), przed rabatem */
+  /** Suma pozycji podstawowych (bez wariantów), przed rabatem.
+   *  Grupa opcji wchodzi tu kwotą swojej wybranej opcji — opcje są
+   *  alternatywami, więc nigdy nie sumują się ze sobą. */
   itemsSum: number;
   discountAmount: number;
   /** Po odjęciu rabatu — kwota pokazywana jako „Cena całkowita” */
   total: number;
   deliveryAmount: number;
-  /** Wyceny wariantów alternatywnych — każda osobno, poza ceną całkowitą */
+  /** Wyceny wariantów alternatywnych — każda osobno, poza ceną całkowitą.
+   *  Stary mechanizm; nowe oferty używają `optionGroups`. */
   variants: OfferVariantTotal[];
+  /** Grupy opcji z pełną ceną oferty policzoną dla każdej opcji */
+  optionGroups: OfferOptionGroupTotals[];
 }
 
 /** Rabat liczony tym samym procentem dla ceny całkowitej i dla wariantów. */
@@ -113,7 +150,9 @@ function poRabacie(kwota: number, offer: Offer): { discount: number; net: number
 
 export function offerTotals(offer: Offer): OfferTotals {
   const grupy = offer.groups || [];
-  const itemsSum = grupy.filter((g) => !g.variant).reduce((suma, g) => suma + groupSum(g), 0);
+  const itemsSum = grupy
+    .filter((g) => !g.variant)
+    .reduce((suma, g) => suma + groupEffectiveSum(g), 0);
   const { discount: discountAmount, net: total } = poRabacie(itemsSum, offer);
   const variants = grupy
     .map((g, i) => ({ g, i }))
@@ -123,8 +162,38 @@ export function offerTotals(offer: Offer): OfferTotals {
       label: groupLabel(grupy, i),
       total: poRabacie(groupSum(g), offer).net
     }));
+
+  // Cena przy opcji to cena całej oferty, a nie samej opcji: pozycje wspólne
+  // zostają, zmienia się tylko ta jedna grupa. Klient porównuje kwoty końcowe
+  // i nie musi niczego dodawać w głowie.
+  const optionGroups: OfferOptionGroupTotals[] = grupy
+    .map((g, i) => ({ g, i }))
+    .filter(({ g }) => !g.variant && isOptionGroup(g))
+    .map(({ g, i }) => {
+      const bezTejGrupy = itemsSum - groupEffectiveSum(g);
+      const wybrana = selectedOption(g);
+      const wyceny = (g.options || []).map((o, oi) => {
+        const sum = optionSum(o);
+        return {
+          id: o.id,
+          label: optionLabel(o, oi),
+          sum,
+          total: poRabacie(bezTejGrupy + sum, offer).net,
+          diff: 0,
+          selected: !!wybrana && o.id === wybrana.id
+        };
+      });
+      const najtansza = wyceny.length ? Math.min(...wyceny.map((w) => w.total)) : 0;
+      return {
+        groupId: g.id,
+        label: groupLabel(grupy, i),
+        chosen: optionChosen(g),
+        options: wyceny.map((w) => ({ ...w, diff: w.total - najtansza }))
+      };
+    });
+
   const deliveryAmount = offer.deliveryEnabled ? parseNumber(offer.deliveryPrice) : 0;
-  return { itemsSum, discountAmount, total, deliveryAmount, variants };
+  return { itemsSum, discountAmount, total, deliveryAmount, variants, optionGroups };
 }
 
 /* ------------------------------ VAT ------------------------------ */
@@ -177,9 +246,13 @@ export interface OfferCosts {
 }
 
 export function offerCosts(offer: Offer): OfferCosts {
-  const podstawowe = (offer.groups || []).filter((g) => !g.variant);
-  const costSum = podstawowe.reduce((suma, g) => suma + g.items.reduce((s, it) => s + itemCost(it), 0), 0);
-  const hasCosts = podstawowe.some((g) => g.items.some((it) => String(it.cost ?? '').trim() !== ''));
+  // Marża ma odpowiadać cenie całkowitej, więc z grupy opcji liczymy koszt tej
+  // opcji, która jest w tej cenie — nie wszystkich naraz.
+  const podstawowe = (offer.groups || [])
+    .filter((g) => !g.variant)
+    .map((g) => selectedItems(g));
+  const costSum = podstawowe.reduce((suma, items) => suma + items.reduce((s, it) => s + itemCost(it), 0), 0);
+  const hasCosts = podstawowe.some((items) => items.some((it) => String(it.cost ?? '').trim() !== ''));
   const { total } = offerTotals(offer);
   const margin = total - costSum;
   const marginPercent = total ? (margin / total) * 100 : 0;

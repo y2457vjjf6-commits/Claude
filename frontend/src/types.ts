@@ -295,13 +295,35 @@ export interface OfferItem {
   spec?: OfferSpecRow[];
 }
 
+/** Jedna alternatywa w grupie opcji — „Opcja A", „Opcja B"…
+ *
+ *  Pozycje opcji biegną równolegle do szkieletu grupy: tyle samo wierszy
+ *  i w tej samej kolejności, bo kolumny tabeli porównawczej muszą się zgadzać.
+ *  Wspólne pola (nazwa, ilość, Lp.) trzyma szkielet i rozsyła do opcji;
+ *  opcja wnosi to, czym się różni — materiał i cenę. */
+export interface OfferOption {
+  id: string;
+  /** Nazwa opcji, np. „materiał dzień-noc". Puste = automatyczne „Opcja A". */
+  title?: string;
+  items: OfferItem[];
+}
+
 export interface OfferGroup {
   id: string;
   header: OfferColumnHeader;
   /** Podpis nad tabelą, np. „Wariant A — materiał zaciemniający” */
   title?: string;
-  /** Wariant alternatywny: wyceniany osobno, poza ceną całkowitą oferty */
+  /** Wariant alternatywny: wyceniany osobno, poza ceną całkowitą oferty.
+   *  Mechanizm zastąpiony przez `options`; zostaje, żeby oferty wystawione
+   *  starszą wersją programu drukowały się dokładnie tak, jak je wysłano. */
   variant?: boolean;
+  /** Grupa opcji: `items` są wtedy szkieletem (nazwa, wymiar, ilość), a każda
+   *  opcja podstawia własny materiał i cenę. Klient dostaje tabelę
+   *  porównawczą i cenę całkowitą oferty policzoną dla każdej opcji. */
+  options?: OfferOption[];
+  /** Opcja wliczona w cenę całkowitą i przenoszona do produkcji i na WZ.
+   *  Brak wartości = liczymy pierwszą, ale nikt jeszcze nie wybrał. */
+  selectedOptionId?: string;
   items: OfferItem[];
 }
 

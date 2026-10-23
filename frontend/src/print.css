@@ -510,6 +510,134 @@
 
 .of-variants .of-items { margin-top: 5pt; }
 
+/* ---------- Opcje do wyboru ---------- */
+/* Tabela porównawcza: wiersze to produkty, kolumny to alternatywy. Klient ma
+   czytać w poprzek, więc kolumny opcji dostają wspólną szerokość i wyrównanie
+   do prawej — kwoty układają się w pion i dają się porównać wzrokiem. */
+
+.of-options {
+  margin-top: 14pt;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.of-options .of-items { margin-top: 5pt; }
+
+.of-compare thead th.of-opt {
+  text-align: right;
+  width: 30mm;
+}
+
+.of-opt-name {
+  display: block;
+  font-weight: 600;
+}
+
+.of-opt-sub {
+  display: block;
+  font-weight: 400;
+  color: var(--of-mid);
+  font-size: 7.5pt;
+  line-height: 1.25;
+}
+
+.of-opt-tag {
+  display: inline-block;
+  margin-top: 1.5pt;
+  padding: 0.5pt 3pt;
+  border-radius: 6pt;
+  background: var(--of-accent);
+  color: #fff;
+  font-size: 6.5pt;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.of-compare td.of-opt {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.of-opt-price {
+  display: block;
+  font-weight: 500;
+}
+
+.of-compare td.of-opt-none {
+  color: var(--of-mid);
+}
+
+/* Wybrana opcja jest decyzją klienta, nie ozdobą — zaznaczamy ją delikatnym
+   tłem na całej kolumnie, żeby dało się ją prześledzić od nagłówka do ceny. */
+.of-compare .of-opt-chosen {
+  background: var(--of-tint);
+}
+
+.of-compare .of-opt-sum th,
+.of-compare .of-opt-sum td {
+  border-top: 0.75pt solid var(--of-rule);
+  padding-top: 4pt;
+  font-size: 8.5pt;
+  font-weight: 600;
+}
+
+.of-compare .of-opt-sum th,
+.of-compare .of-opt-total th {
+  text-align: left;
+  color: var(--of-mid);
+  font-weight: 400;
+}
+
+.of-compare .of-opt-total th,
+.of-compare .of-opt-total td {
+  border-top: 1.5pt solid var(--of-ink-rule);
+  border-bottom: 0.75pt solid var(--of-ink-rule);
+  padding-top: 4pt;
+  padding-bottom: 4pt;
+  font-size: 10.5pt;
+  font-weight: 600;
+  color: var(--of-ink);
+}
+
+/* ---------- Specyfikacja opcji ---------- */
+/* Pod tabelą, bo w kolumnie z ceną nie ma na nią miejsca — a to właśnie
+   w parametrach siedzi różnica, za którą klient dopłaca. */
+
+.of-opt-specs {
+  margin-top: 10pt;
+}
+
+.of-opt-spec {
+  margin-top: 8pt;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.of-opt-spec-title {
+  margin: 0 0 3pt;
+  font-size: 9pt;
+  font-weight: 600;
+  color: var(--of-ink);
+  padding-bottom: 1.5pt;
+  border-bottom: 0.5pt solid var(--of-rule);
+}
+
+.of-opt-spec-item {
+  margin-top: 4pt;
+}
+
+.of-opt-spec-name {
+  display: block;
+  font-size: 8.5pt;
+  font-weight: 500;
+}
+
+.of-opt-spec-item .of-spec {
+  margin-top: 2pt;
+  border-top: none;
+  padding-top: 0;
+}
+
 /* ---------- Podsumowanie ---------- */
 /* Tabela dosunięta do prawej, pod kolumną kwot — tam klient i tak patrzy.
    Cena całkowita wyróżnia się grubością i kreską, nie rozmiarem. */

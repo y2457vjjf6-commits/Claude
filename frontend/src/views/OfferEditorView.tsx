@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Plus, X, Save, Printer, FileDown, Mail, Trash2, ArrowLeft, Layers, GitCompareArrows, Wallet, FileOutput,
-  Check, Loader2, Table2, Copy, ClipboardPaste, FileText, ChevronUp, ChevronDown, Factory
+  Check, Loader2, Table2, Copy, ClipboardPaste, FileText, ChevronUp, ChevronDown, Factory,
+  Columns3, CheckCircle2
 } from 'lucide-react';
 import { AppState, AskConfirm, Offer, OfferColumnHeader, OfferGroup, OfferItem, OfferSpecRow } from '../types';
 import { uid } from '../lib/storage';
@@ -27,6 +28,18 @@ import {
   parseNumber,
   wierszyOdmiana
 } from '../lib/offers';
+import {
+  applyOptionSpec,
+  fullOptionItem,
+  isOptionGroup,
+  newOption,
+  optionLabel,
+  optionsFromVariants,
+  selectedOption,
+  syncOptions,
+  toOptionGroup,
+  toPlainGroup
+} from '../lib/offerOptions';
 import { itemNameSuggestions } from '../lib/suggestions';
 import { printOffer, savePdfOffer, emailOffer } from '../lib/offerActions';
 import { computeOfferNumberFor } from '../lib/numbering';
@@ -185,7 +198,24 @@ export default function OfferEditorView({
 
   // --- grupy i pozycje ---
   const setGroup = (gi: number, patch: Partial<OfferGroup>) =>
-    setOffer((o) => ({ ...o, groups: o.groups.map((g, i) => (i === gi ? { ...g, ...patch } : g)) }));
+    setOffer((o) => ({
+      ...o,
+      groups: o.groups.map((g, i) => (i === gi ? syncOptions({ ...g, ...patch }) : g))
+    }));
+
+  // Która opcja jest otwarta w której grupie. Trzymane poza ofertą — to stan
+  // patrzenia, nie treść dokumentu, i nie ma po co trafiać na dysk.
+  const [otwartaOpcja, setOtwartaOpcja] = useState<Record<string, string>>({});
+
+  /** Opcja aktualnie edytowana w tej grupie. */
+  const biezacaOpcja = (g: OfferGroup) => {
+    const opcje = g.options || [];
+    return opcje.find((o) => o.id === otwartaOpcja[g.id]) || opcje[0] || null;
+  };
+
+  /** Pozycje pokazywane w tabeli grupy: szkielet albo wiersze otwartej opcji. */
+  const pozycjeGrupy = (g: OfferGroup): OfferItem[] =>
+    isOptionGroup(g) ? biezacaOpcja(g)?.items || [] : g.items;
 
   // Która pozycja ma otwarte okno wyboru ceny z cennika
   const [wybieraczka, setWybieraczka] = useState<{ gi: number; ii: number } | null>(null);
@@ -233,38 +263,90 @@ export default function OfferEditorView({
     return { ...it, unitPrice: String(wycena.cost), priceSource: 'cennik', surcharges: doplaty };
   };
 
+  /** Jedna pozycja po naniesieniu poprawki — razem z przeliczeniem z cennika.
+   *  `opis` podaje, czym pozycja jest naprawdę: w grupie opcji wymiar siedzi
+   *  w szkielecie, a materiał w opcji, i cena liczy się dopiero z obu. */
+  const poPoprawce = (it: OfferItem, patch: Partial<OfferItem>, opis?: OfferItem): OfferItem => {
+    // ręczna zmiana ceny odbiera cennikowi prawo do jej nadpisywania
+    const zrodlo = 'unitPrice' in patch ? { priceSource: undefined } : {};
+    const nowa = { ...it, ...patch, ...zrodlo };
+    // wymiar bierze się także z pól specyfikacji, więc ich zmiana
+    // musi przeliczyć cenę tak samo jak poprawka opisu pozycji
+    const zmianaOpisu = 'name' in patch || 'material' in patch || 'spec' in patch;
+    if (!zmianaOpisu) return nowa;
+    if (opis) {
+      // W grupie opcji szablon zakłada się na szkielecie, bo rubryki produktu
+      // są wspólne dla wszystkich opcji. Tu liczymy już tylko cenę — z pełnego
+      // opisu (wymiar ze szkieletu, materiał z opcji), ale zapisujemy wyłącznie
+      // to, co do opcji należy.
+      const wyceniona = przelicz({ ...nowa, material: fullOptionItem(opis, nowa).material, spec: opis.spec });
+      return {
+        ...nowa,
+        unitPrice: wyceniona.unitPrice,
+        priceSource: wyceniona.priceSource,
+        surcharges: wyceniona.surcharges
+      };
+    }
+    // Szablon przypisany do produktu wchodzi przed wyceną: jego wiersze
+    // mogą nieść wymiar, a wtedy cena ma się policzyć od razu z nich.
+    // Pozycję z własną specyfikacją zostawia w spokoju.
+    const zSzablonu = 'name' in patch || 'material' in patch ? autoSpecFor(nowa, state.settings) : null;
+    return przelicz(zSzablonu ? { ...nowa, spec: zSzablonu } : nowa);
+  };
+
+  /** Pola, które w grupie opcji należą do wszystkich alternatyw naraz. */
+  const WSPOLNE_POLA: (keyof OfferItem)[] = ['name', 'qty', 'lpOverride'];
+
+  /** Poprawka w grupie opcji. Nazwa, ilość i Lp. opisują jedno i to samo okno,
+   *  więc idą do szkieletu i rozchodzą się na wszystkie opcje. Materiał, cena
+   *  i koszt są tym, czym opcje się różnią, więc zostają przy otwartej opcji.
+   *  Specyfikacja dzieli się po wierszach — rozstrzyga o tym `applyOptionSpec`. */
+  const zmienWGrupieOpcji = (g: OfferGroup, ii: number, patch: Partial<OfferItem>): OfferGroup => {
+    const biezaca = biezacaOpcja(g);
+    if (!biezaca) return g;
+
+    const doSzkieletu: Partial<OfferItem> = {};
+    const doOpcji: Partial<OfferItem> = {};
+    for (const klucz of Object.keys(patch) as (keyof OfferItem)[]) {
+      if (WSPOLNE_POLA.includes(klucz)) (doSzkieletu as Record<string, unknown>)[klucz] = patch[klucz];
+      else (doOpcji as Record<string, unknown>)[klucz] = patch[klucz];
+    }
+    if ('spec' in patch) doSzkieletu.spec = applyOptionSpec(g.items[ii], patch.spec || []);
+
+    // Nazwa produktu jest wspólna, więc i szablon jego parametrów zakłada się
+    // na szkielecie — inaczej rubryki („Kolor kasety”) pojawiłyby się tylko
+    // w tej opcji, w której ktoś akurat wpisał nazwę.
+    if ('name' in patch) {
+      const zeSzkieletu = { ...g.items[ii], ...doSzkieletu };
+      const szablon = autoSpecFor(zeSzkieletu, state.settings);
+      if (szablon) doSzkieletu.spec = szablon;
+    }
+
+    const items = g.items.map((it, j) => (j === ii ? { ...it, ...doSzkieletu } : it));
+    const options = (g.options || []).map((o) =>
+      o.id !== biezaca.id
+        ? o
+        : { ...o, items: o.items.map((it, j) => (j === ii ? poPoprawce(it, doOpcji, items[ii]) : it)) }
+    );
+    return syncOptions({ ...g, items, options });
+  };
+
   const setItem = (gi: number, ii: number, patch: Partial<OfferItem>) =>
     setOffer((o) => ({
       ...o,
-      groups: o.groups.map((g, i) =>
-        i === gi
-          ? {
-              ...g,
-              items: g.items.map((it, j) => {
-                if (j !== ii) return it;
-                // ręczna zmiana ceny odbiera cennikowi prawo do jej nadpisywania
-                const zrodlo = 'unitPrice' in patch ? { priceSource: undefined } : {};
-                const nowa = { ...it, ...patch, ...zrodlo };
-                // wymiar bierze się także z pól specyfikacji, więc ich zmiana
-                // musi przeliczyć cenę tak samo jak poprawka opisu pozycji
-                const zmianaOpisu = 'name' in patch || 'material' in patch || 'spec' in patch;
-                if (!zmianaOpisu) return nowa;
-                // Szablon przypisany do produktu wchodzi przed wyceną: jego wiersze
-                // mogą nieść wymiar, a wtedy cena ma się policzyć od razu z nich.
-                // Pozycję z własną specyfikacją zostawia w spokoju.
-                const zSzablonu =
-                  'name' in patch || 'material' in patch ? autoSpecFor(nowa, state.settings) : null;
-                return przelicz(zSzablonu ? { ...nowa, spec: zSzablonu } : nowa);
-              })
-            }
-          : g
-      )
+      groups: o.groups.map((g, i) => {
+        if (i !== gi) return g;
+        if (isOptionGroup(g)) return zmienWGrupieOpcji(g, ii, patch);
+        return { ...g, items: g.items.map((it, j) => (j === ii ? poPoprawce(it, patch) : it)) };
+      })
     }));
 
+  // Wiersz dodany albo usunięty musi wejść do każdej opcji naraz — tabela
+  // porównawcza bez zgodnych wierszy porównywałaby salon z sypialnią.
   const addItem = (gi: number) =>
     setOffer((o) => ({
       ...o,
-      groups: o.groups.map((g, i) => (i === gi ? { ...g, items: [...g.items, EMPTY_ITEM()] } : g))
+      groups: o.groups.map((g, i) => (i === gi ? syncOptions({ ...g, items: [...g.items, EMPTY_ITEM()] }) : g))
     }));
 
   const removeItem = (gi: number, ii: number) =>
@@ -273,13 +355,90 @@ export default function OfferEditorView({
       groups: o.groups.map((g, i) => {
         if (i !== gi) return g;
         const items = g.items.filter((_, j) => j !== ii);
-        return { ...g, items: items.length ? items : [EMPTY_ITEM()] };
+        return syncOptions({ ...g, items: items.length ? items : [EMPTY_ITEM()] });
       })
     }));
 
   const addGroup = () => setOffer((o) => ({ ...o, groups: [...o.groups, NEW_GROUP()] }));
-  const addVariant = () =>
-    setOffer((o) => ({ ...o, groups: [...o.groups, NEW_GROUP(o.groups[o.groups.length - 1]?.header || 'material', true)] }));
+
+  /* ------------------------------- opcje ------------------------------- */
+
+  const addOptionGroup = () =>
+    setOffer((o) => {
+      const nowa = toOptionGroup(NEW_GROUP(o.groups[o.groups.length - 1]?.header || 'material'));
+      return { ...o, groups: [...o.groups, nowa] };
+    });
+
+  /** Zamiana zwykłej tabeli w grupę opcji i z powrotem. Przy zwijaniu zostaje
+   *  wybrana opcja — reszta była propozycją, nie zamówieniem. */
+  const przelaczOpcje = (gi: number) =>
+    setOffer((o) => ({
+      ...o,
+      groups: o.groups.map((g, i) => (i === gi ? (isOptionGroup(g) ? toPlainGroup(g) : toOptionGroup(g)) : g))
+    }));
+
+  const addOption = (gi: number) =>
+    setOffer((o) => ({
+      ...o,
+      groups: o.groups.map((g, i) => {
+        if (i !== gi || !isOptionGroup(g)) return g;
+        const dodana = newOption(g);
+        setOtwartaOpcja((x) => ({ ...x, [g.id]: dodana.id }));
+        return syncOptions({ ...g, options: [...(g.options || []), dodana] });
+      })
+    }));
+
+  const removeOption = (gi: number, id: string) =>
+    setOffer((o) => ({
+      ...o,
+      groups: o.groups.map((g, i) => {
+        if (i !== gi || !isOptionGroup(g)) return g;
+        const zostaja = (g.options || []).filter((x) => x.id !== id);
+        // ostatnia opcja znika razem z całą grupą opcji — zostaje zwykła tabela
+        if (!zostaja.length) return toPlainGroup(g);
+        return syncOptions({
+          ...g,
+          options: zostaja,
+          selectedOptionId: g.selectedOptionId === id ? undefined : g.selectedOptionId
+        });
+      })
+    }));
+
+  const setOption = (gi: number, id: string, patch: { title?: string }) =>
+    setOffer((o) => ({
+      ...o,
+      groups: o.groups.map((g, i) =>
+        i === gi && isOptionGroup(g)
+          ? { ...g, options: (g.options || []).map((x) => (x.id === id ? { ...x, ...patch } : x)) }
+          : g
+      )
+    }));
+
+  /** Wskazanie opcji, którą klient wybrał: wchodzi do ceny całkowitej i idzie
+   *  dalej do produkcji oraz na WZ. Ponowne kliknięcie cofa wybór. */
+  const wybierzOpcje = (gi: number, id: string) =>
+    setOffer((o) => ({
+      ...o,
+      groups: o.groups.map((g, i) =>
+        i === gi ? { ...g, selectedOptionId: g.selectedOptionId === id ? undefined : id } : g
+      )
+    }));
+
+  const maWarianty = offer.groups.some((g) => g.variant);
+  const konwertujWarianty = async () => {
+    if (
+      !(await askConfirm(
+        'Zamienić warianty alternatywne na grupę opcji? Każdy wariant stanie się opcją, ' +
+          'a przy każdej stanie pełna cena oferty. Oferty już wysłanych to nie dotyczy — ' +
+          'zmiana obejmuje tylko tę, którą masz otwartą, i zapisze się dopiero przy zapisie.',
+        { confirmLabel: 'Zamień na opcje' }
+      ))
+    ) {
+      return;
+    }
+    setOffer((o) => optionsFromVariants(o));
+    toast('Warianty zamienione na grupę opcji. Sprawdź nazwy i ceny przed wysłaniem.');
+  };
   const removeGroup = (gi: number) =>
     setOffer((o) => {
       const groups = o.groups.filter((_, i) => i !== gi);
@@ -550,15 +709,35 @@ export default function OfferEditorView({
         ))}
       </datalist>
 
-      {offer.groups.map((g, gi) => (
-        <div className="card" key={g.id} data-testid={`offer-group-${gi}`}>
+      {offer.groups.map((g, gi) => {
+        const opcyjna = isOptionGroup(g);
+        const opcje = g.options || [];
+        const biezaca = opcyjna ? biezacaOpcja(g) : null;
+        const pozycje = pozycjeGrupy(g);
+        const wyceny = sumy.optionGroups.find((x) => x.groupId === g.id);
+        return (
+        <div className={`card${opcyjna ? ' group-options' : ''}`} key={g.id} data-testid={`offer-group-${gi}`}>
           <div className="group-head">
             <div className="group-head-top">
               <h3 className="card-title">
-                {g.variant ? variantLetter(offer.groups, gi) : `Tabela ${gi + 1}`}
+                {g.variant ? variantLetter(offer.groups, gi) : opcyjna ? `Opcje — tabela ${gi + 1}` : `Tabela ${gi + 1}`}
                 {g.variant && <span className="group-tag">wyceniany osobno</span>}
+                {opcyjna && <span className="group-tag">do wyboru, nie sumują się</span>}
               </h3>
               <span className="spacer" />
+              <button
+                className="btn btn-small btn-light"
+                data-testid={`offer-group-options-${gi}`}
+                title={
+                  opcyjna
+                    ? 'Zostanie wybrana opcja, reszta zniknie'
+                    : 'Zamień tę tabelę w zestaw alternatyw do porównania'
+                }
+                onClick={() => przelaczOpcje(gi)}
+              >
+                <Columns3 className="icon" />
+                {opcyjna ? 'Zwiń do zwykłej tabeli' : 'Zamień na opcje'}
+              </button>
               {offer.groups.length > 1 && (
                 <button className="btn btn-small btn-danger" data-testid={`offer-group-remove-${gi}`} onClick={() => removeGroup(gi)}>
                   <Trash2 className="icon" />
@@ -593,17 +772,101 @@ export default function OfferEditorView({
                 ))}
               </select>
             </label>
-            <label className="checkbox-field group-variant-check">
-              <input
-                type="checkbox"
-                data-testid={`offer-group-variant-${gi}`}
-                checked={!!g.variant}
-                onChange={(e) => setGroup(gi, { variant: e.target.checked })}
-              />
-              <span>Wariant alternatywny (poza ceną całkowitą)</span>
-            </label>
+            {/* Stary mechanizm wariantów: pokazujemy go tylko tam, gdzie już
+                działa, żeby nowe oferty nie miały dwóch podobnych funkcji obok
+                siebie. Wyłączyć wolno zawsze, włączyć — już nie. */}
+            {g.variant && (
+              <label className="checkbox-field group-variant-check">
+                <input
+                  type="checkbox"
+                  data-testid={`offer-group-variant-${gi}`}
+                  checked
+                  onChange={() => setGroup(gi, { variant: false })}
+                />
+                <span>Wariant alternatywny (poza ceną całkowitą)</span>
+              </label>
+            )}
             </div>
           </div>
+
+          {opcyjna && (
+            <div className="options-bar" data-testid={`offer-options-bar-${gi}`}>
+              <div className="options-tabs" role="tablist" aria-label="Opcje do wyboru">
+                {opcje.map((o, oi) => {
+                  const kwota = wyceny?.options.find((x) => x.id === o.id);
+                  return (
+                    <button
+                      key={o.id}
+                      role="tab"
+                      aria-selected={o.id === biezaca?.id}
+                      className={`option-tab${o.id === biezaca?.id ? ' is-active' : ''}${
+                        o.id === g.selectedOptionId ? ' is-chosen' : ''
+                      }`}
+                      data-testid={`offer-option-tab-${gi}-${oi}`}
+                      onClick={() => setOtwartaOpcja((x) => ({ ...x, [g.id]: o.id }))}
+                    >
+                      <span className="option-tab-name">{optionLabel(o, oi)}</span>
+                      <span className="option-tab-sum">{kwota ? formatMoney(kwota.total) : '—'}</span>
+                    </button>
+                  );
+                })}
+                <button
+                  className="btn btn-small btn-light option-add"
+                  data-testid={`offer-option-add-${gi}`}
+                  onClick={() => addOption(gi)}
+                >
+                  <Plus className="icon" />
+                  Dodaj opcję
+                </button>
+              </div>
+
+              {biezaca && (
+                <div className="option-head">
+                  <label className="field option-title-field">
+                    <span>Nazwa opcji</span>
+                    <input
+                      type="text"
+                      className="input"
+                      data-testid={`offer-option-title-${gi}`}
+                      placeholder={optionLabel({ ...biezaca, title: '' }, opcje.indexOf(biezaca))}
+                      value={biezaca.title || ''}
+                      onChange={(e) => setOption(gi, biezaca.id, { title: e.target.value })}
+                    />
+                    <span className="muted field-hint">
+                      Trafia do nagłówka kolumny na ofercie, np. „materiał zaciemniający”.
+                    </span>
+                  </label>
+                  <div className="option-head-actions">
+                    <button
+                      className={`btn btn-small${g.selectedOptionId === biezaca.id ? '' : ' btn-light'}`}
+                      data-testid={`offer-option-choose-${gi}`}
+                      title={
+                        g.selectedOptionId === biezaca.id
+                          ? 'Cofnij wybór — wróci do porównania bez wskazanej opcji'
+                          : 'Ta opcja wejdzie do ceny całkowitej i pójdzie do produkcji oraz na WZ'
+                      }
+                      onClick={() => wybierzOpcje(gi, biezaca.id)}
+                    >
+                      <CheckCircle2 className="icon" />
+                      {g.selectedOptionId === biezaca.id ? 'Wybrana przez klienta' : 'Zaznacz jako wybraną'}
+                    </button>
+                    <button
+                      className="btn btn-small btn-danger"
+                      data-testid={`offer-option-remove-${gi}`}
+                      onClick={() => removeOption(gi, biezaca.id)}
+                    >
+                      <X className="icon" />
+                      Usuń opcję
+                    </button>
+                  </div>
+                </div>
+              )}
+              <p className="muted card-note options-note">
+                Nazwa produktu, ilość i wymiar są wspólne dla wszystkich opcji — wpisujesz je raz.
+                Materiał, cena i pozostałe parametry należą do otwartej opcji.
+              </p>
+            </div>
+          )}
 
           <table className="table items-table offer-items-table">
             <thead>
@@ -622,7 +885,7 @@ export default function OfferEditorView({
               </tr>
             </thead>
             <tbody>
-              {g.items.map((it, ii) => (
+              {pozycje.map((it, ii) => (
                 <tr key={ii}>
                   <td>
                     <input
@@ -914,17 +1177,36 @@ export default function OfferEditorView({
             Dodaj pozycję
           </button>
         </div>
-      ))}
+        );
+      })}
 
       <div className="actions-bar" style={{ marginBottom: 4 }}>
         <button className="btn" data-testid="offer-add-group" onClick={addGroup}>
           <Layers className="icon" />
           Dodaj tabelę
         </button>
-        <button className="btn" data-testid="offer-add-variant" onClick={addVariant} title="Druga wersja wyceny, np. inny materiał — na tej samej ofercie">
-          <GitCompareArrows className="icon" />
-          Dodaj wariant
+        <button
+          className="btn"
+          data-testid="offer-add-options"
+          onClick={addOptionGroup}
+          title="Kilka wersji tej samej pozycji obok siebie — klient porównuje ceny całkowite"
+        >
+          <Columns3 className="icon" />
+          Dodaj opcje do wyboru
         </button>
+        {/* Stare warianty da się przenieść na nowy mechanizm, ale tylko ręcznie:
+            oferta już wysłana ma drukować się dokładnie tak, jak ją wysłano. */}
+        {maWarianty && (
+          <button
+            className="btn btn-light"
+            data-testid="offer-convert-variants"
+            onClick={() => void konwertujWarianty()}
+            title="Każdy wariant stanie się opcją z pełną ceną oferty"
+          >
+            <GitCompareArrows className="icon" />
+            Zamień warianty na opcje
+          </button>
+        )}
         <label className="checkbox-field">
           <input
             type="checkbox"
@@ -989,12 +1271,45 @@ export default function OfferEditorView({
             </div>
           )}
           <div className="offer-summary-total">
-            {sumy.variants.length ? 'Cena całkowita oferty podstawowej' : 'Cena całkowita'}:{' '}
-            <strong>{formatMoney(sumy.total)}</strong>
+            {sumy.variants.length
+              ? 'Cena całkowita oferty podstawowej'
+              : sumy.optionGroups.length
+                ? 'Cena całkowita z zaznaczonymi opcjami'
+                : 'Cena całkowita'}
+            : <strong>{formatMoney(sumy.total)}</strong>
           </div>
           {sumy.variants.map((w) => (
             <div key={w.id} data-testid={`offer-variant-total-${w.id}`}>
               {w.label}: <strong>{formatMoney(w.total)}</strong>
+            </div>
+          ))}
+          {/* Przy każdej opcji stoi cena całej oferty, bo to ona jest decyzją —
+              kwota samej opcji nic klientowi nie mówi o tym, ile zapłaci. */}
+          {sumy.optionGroups.map((grupa) => (
+            <div className="offer-option-totals" key={grupa.groupId} data-testid={`offer-option-totals-${grupa.groupId}`}>
+              <div className="muted">{grupa.label || 'Opcje do wyboru'}:</div>
+              {grupa.options.map((w) => (
+                <div
+                  key={w.id}
+                  className={w.selected && grupa.chosen ? 'offer-option-row is-chosen' : 'offer-option-row'}
+                  data-testid={`offer-option-total-${w.id}`}
+                >
+                  <span>{w.label}</span>
+                  <strong>{formatMoney(w.total)}</strong>
+                  {w.diff > 0 && <span className="muted offer-option-diff">+{formatMoney(w.diff)}</span>}
+                  {w.selected && grupa.chosen && (
+                    <span className="internal-badge">
+                      <CheckCircle2 className="icon" />
+                      wybrana
+                    </span>
+                  )}
+                </div>
+              ))}
+              {!grupa.chosen && (
+                <div className="muted offer-option-hint">
+                  Nikt jeszcze nie wskazał opcji — liczymy pierwszą i nie zaznaczamy jej na dokumencie.
+                </div>
+              )}
             </div>
           ))}
           {offer.deliveryEnabled && (
@@ -1178,8 +1493,13 @@ export default function OfferEditorView({
         </button>
       </div>
       {wybieraczka && (() => {
-        const poz = offer.groups[wybieraczka.gi]?.items[wybieraczka.ii];
-        if (!poz) return null;
+        const grupa = offer.groups[wybieraczka.gi];
+        const szkielet = grupa?.items[wybieraczka.ii];
+        if (!szkielet) return null;
+        // W grupie opcji tabelę cennika wybiera się po pełnym opisie: wymiar
+        // siedzi w szkielecie, a materiał w otwartej opcji.
+        const wOpcji = isOptionGroup(grupa) ? biezacaOpcja(grupa)?.items[wybieraczka.ii] : null;
+        const poz = wOpcji ? fullOptionItem(szkielet, wOpcji) : szkielet;
         return (
           <PricePicker
             item={poz}

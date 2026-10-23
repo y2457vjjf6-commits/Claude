@@ -1696,6 +1696,121 @@ kbd {
   line-height: 1.3;
 }
 
+/* --------------------------------------------------- opcje w ofercie */
+/* Grupa opcji to zestaw alternatyw, nie kolejne pozycje zamówienia — dostaje
+   własną ramkę i pasek zakładek, żeby nie dało się jej pomylić z tabelą
+   pozycji, za które klient zapłaci łącznie. */
+
+.card.group-options {
+  border-color: var(--accent-soft);
+}
+
+.options-bar {
+  margin: var(--sp-3) 0 var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.options-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  align-items: stretch;
+}
+
+.option-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 132px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text-mid);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out),
+    background var(--t-fast) var(--ease-out);
+}
+
+.option-tab:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.option-tab.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+/* Wybór klienta pokazujemy kreską z boku, a nie kolorem całej zakładki —
+   inaczej myliłby się z tym, którą opcję akurat edytujesz. */
+.option-tab.is-chosen {
+  box-shadow: inset 3px 0 0 var(--success);
+}
+
+.option-tab-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.option-tab-sum {
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.option-add {
+  align-self: center;
+}
+
+.option-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  align-items: flex-end;
+  margin-top: var(--sp-3);
+}
+
+.option-title-field {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.option-head-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.options-note {
+  margin-top: var(--sp-3);
+  margin-bottom: 0;
+}
+
+.offer-option-totals {
+  margin-top: var(--sp-2);
+}
+
+.offer-option-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.offer-option-row.is-chosen strong {
+  color: var(--success);
+}
+
+.offer-option-diff,
+.offer-option-hint {
+  font-size: var(--text-xs);
+}
+
 /* ----------------------------------------------------------- powiadomienie */
 
 .toast {

@@ -1,4 +1,4 @@
-import { IKONY_PRODUKTOW, RYSUNKI_PRODUKTOW } from '../assets/productIcons';
+import { IKONY_PRODUKTOW, ProductIcon, RYSUNKI_PRODUKTOW } from '../assets/productIcons';
 import { matchPhotoOrIcon } from './photos';
 
 /** Rozpakowuje rysunek z dataurl, żeby dało się zajrzeć do samego SVG. */
@@ -33,8 +33,9 @@ describe('wbudowane ikony produktów', () => {
   });
 
   it('pozycja oferty dostaje rysunek swojego produktu', () => {
+    // biblioteka firmy jest pusta, więc dopasowanie może oddać tylko ikonę
     const dobierz = (name: string, material = '') =>
-      matchPhotoOrIcon({ name, material }, [])?.key;
+      (matchPhotoOrIcon({ name, material }, []) as ProductIcon | null)?.key;
 
     expect(dobierz('Roleta dzień-noc', '186 x 202 cm')).toBe('roleta-dzien-noc');
     expect(dobierz('Rolety kasetowe System UNI')).toBe('roleta-kasetowa');
@@ -52,10 +53,11 @@ describe('wbudowane ikony produktów', () => {
   it('nazwa ogólna też coś łapie, a dokładniejsza wygrywa', () => {
     // „roleta" bez dalszego opisu ma dostać rysunek rolety materiałowej,
     // ale „roleta rzymska" już swój własny
-    expect(matchPhotoOrIcon({ name: 'Roleta', material: '' }, [])?.key).toBe('roleta-materialowa');
-    expect(matchPhotoOrIcon({ name: 'Roleta rzymska', material: '' }, [])?.key).toBe('roleta-rzymska');
-    expect(matchPhotoOrIcon({ name: 'Żaluzja', material: '' }, [])?.key).toBe('zaluzja-aluminiowa');
-    expect(matchPhotoOrIcon({ name: 'Moskitiera', material: '' }, [])?.key).toBe('moskitiera-ramkowa');
+    const dobierz = (name: string) => (matchPhotoOrIcon({ name, material: '' }, []) as ProductIcon | null)?.key;
+    expect(dobierz('Roleta')).toBe('roleta-materialowa');
+    expect(dobierz('Roleta rzymska')).toBe('roleta-rzymska');
+    expect(dobierz('Żaluzja')).toBe('zaluzja-aluminiowa');
+    expect(dobierz('Moskitiera')).toBe('moskitiera-ramkowa');
   });
 
   it('pozycja spoza asortymentu nie dostaje przypadkowego rysunku', () => {

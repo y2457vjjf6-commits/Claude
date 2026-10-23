@@ -81,6 +81,14 @@ const WYSOKOSC = ['wysokosc calkowita', 'wysokosc', 'wys'];
 
 const SAMA_LICZBA = new RegExp('^' + L + '\\s*(mm|cm|m)?$', 'i');
 
+/** Czy ten wiersz specyfikacji niesie wymiar całej osłony.
+ *  Potrzebne poza wyceną: w grupie opcji wymiar musi być wspólny dla
+ *  wszystkich alternatyw, bo inaczej druga opcja zostaje bez ceny. */
+export function isDimensionField(label: string): boolean {
+  const nazwa = nazwaParametru(label);
+  return SZEROKOSC.includes(nazwa) || WYSOKOSC.includes(nazwa);
+}
+
 /** Wymiar wpisany wprost w specyfikacji pozycji. Zwraca tylko to, co
  *  rzeczywiście podano — brakującą stronę uzupełnia potem opis pozycji. */
 export function specDimensions(spec?: OfferSpecRow[]): { width?: number; height?: number } {

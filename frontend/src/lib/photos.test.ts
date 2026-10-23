@@ -78,10 +78,28 @@ describe('matchPhoto', () => {
 });
 
 describe('photoFor', () => {
-  it('oddaje sam dataurl albo pusty napis', () => {
+  it('oddaje zdjęcie firmy, gdy pasuje do pozycji', () => {
     const settings = { productPhotos: [z('roleta', 'data:image/jpeg;base64,AAA')] };
     expect(photoFor({ name: 'Roleta mini', material: '' }, settings)).toBe('data:image/jpeg;base64,AAA');
-    expect(photoFor({ name: 'Plisa', material: '' }, settings)).toBe('');
-    expect(photoFor({ name: 'Roleta', material: '' }, undefined)).toBe('');
+  });
+
+  it('nierozpoznana pozycja zostaje bez rysunku', () => {
+    expect(photoFor({ name: 'Parapet dębowy', material: '' }, undefined)).toBe('');
+    expect(photoFor({ name: '', material: '' }, undefined)).toBe('');
+  });
+
+  it('bez własnego zdjęcia pozycja dostaje wbudowaną ikonę produktu', () => {
+    // ikony są wektorowe i przezroczyste, żeby siadały na białej ofercie
+    expect(photoFor({ name: 'Plisa', material: '' }, undefined)).toMatch(/^data:image\/svg\+xml;base64,/);
+    expect(photoFor({ name: 'Moskitiera drzwiowa', material: '' }, { productPhotos: [] }))
+      .toMatch(/^data:image\/svg\+xml;base64,/);
+  });
+
+  it('własne zdjęcie wygrywa z ikoną, nawet gdy ikona ma dokładniejszą nazwę', () => {
+    // wbudowana „roleta kasetowa" ma dwa słowa, wgrana „roleta" jedno — i mimo
+    // to na dokument ma iść zdjęcie firmy, bo po to je wgrali
+    const settings = { productPhotos: [z('roleta', 'data:image/jpeg;base64,AAA')] };
+    expect(photoFor({ name: 'Roleta kasetowa UNI', material: '' }, settings))
+      .toBe('data:image/jpeg;base64,AAA');
   });
 });

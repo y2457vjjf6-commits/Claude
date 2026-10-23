@@ -119,9 +119,9 @@ export default function OfferEditorView({
           notes: '',
           issuedBy: availableIssuers(state)[0] || '',
           issuedByPhone: issuerPhone(state, availableIssuers(state)[0] || ''),
-          // Skoro firma wgrała zdjęcia, to po to, żeby trafiały na oferty —
-          // włączamy je z góry, zamiast kazać klikać przy każdej nowej.
-          showPhotos: (state.settings.productPhotos || []).length > 0,
+          // Rysunek produktu ma każda nowa oferta: program niesie wbudowane
+          // ikony, więc nie ma już czego czekać na wgranie zdjęć.
+          showPhotos: true,
           status: 'szkic',
           createdAt: '',
           updatedAt: ''

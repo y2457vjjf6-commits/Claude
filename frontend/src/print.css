@@ -410,6 +410,14 @@
   background: #fff;
 }
 
+/* Wbudowany rysunek produktu — schemat, nie zdjęcie. Mniejszy, bo niesie
+   mniej treści, a przy dwunastu pozycjach oszczędza całą stronę. */
+.of-photo.of-icon {
+  width: 14mm;
+  max-height: 15mm;
+  background: none;
+}
+
 .of-name-main {
   display: block;
   font-weight: 500;

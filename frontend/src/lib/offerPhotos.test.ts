@@ -72,10 +72,20 @@ test('brak przełącznika na starej ofercie to dokument bez zdjęć', () => {
   expect(html).not.toContain('of-photo');
 });
 
-test('pusta biblioteka nie psuje dokumentu mimo włączonego przełącznika', () => {
+test('bez wgranych zdjęć pozycja dostaje wbudowaną ikonę produktu', () => {
   const html = buildOfferHtml(oferta({ showPhotos: true }), DEFAULT_STATE.settings);
-  expect(html).not.toContain('of-photo');
+  // rysunek dostaje własną klasę, bo na wydruku jest mniejszy niż fotografia
+  expect(html).toContain('<img class="of-photo of-icon" src="data:image/svg+xml;base64,');
   expect(html).toContain('Roleta kasetowa UNI, biała');
+});
+
+test('pozycja spoza asortymentu zostaje bez rysunku i nie psuje tabeli', () => {
+  const html = buildOfferHtml(
+    oferta({ showPhotos: true, groups: [grupa('g1', [poz('Parapet dębowy')])] }),
+    DEFAULT_STATE.settings
+  );
+  expect(html).not.toContain('of-photo');
+  expect(html).toContain('Parapet dębowy');
 });
 
 test('numer pozycji zostaje na miejscu także ze zdjęciem', () => {
@@ -85,11 +95,13 @@ test('numer pozycji zostaje na miejscu także ze zdjęciem', () => {
 
 test('pozycja bez dopasowania nie dostaje cudzego zdjęcia', () => {
   const html = buildOfferHtml(
-    oferta({ showPhotos: true, groups: [grupa('g1', [poz('Roleta kasetowa UNI'), poz('Plisa')])] }),
+    oferta({ showPhotos: true, groups: [grupa('g1', [poz('Roleta kasetowa UNI'), poz('Parapet dębowy')])] }),
     BIBLIOTEKA
   );
-  // jedno zdjęcie na dwie pozycje — druga zostaje bez
+  // zdjęcie firmy idzie tylko do swojej pozycji; parapet nie jest naszym
+  // produktem, więc nie ma dla niego ani zdjęcia, ani wbudowanej ikony
   expect(html.match(/of-photo/g)).toHaveLength(1);
+  expect(html).toContain(ZDJECIE);
 });
 
 test('każda pozycja dostaje swoje zdjęcie', () => {

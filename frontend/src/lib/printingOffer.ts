@@ -15,7 +15,7 @@ import {
   validUntil
 } from './offers';
 import { esc, formatDatePl } from './printing';
-import { matchPhoto } from './photos';
+import { matchPhotoOrIcon } from './photos';
 
 /**
  * Oferta cenowa w układzie dokumentu handlowego: sprzedawca i identyfikacja
@@ -63,7 +63,7 @@ function wierszeGrupy(g: OfferGroup, u: UkladTabeli): string {
       const material = String(it.material || '').trim();
       const sztuk = parseFloat(String(it.qty).replace(',', '.')) || 0;
       const zaSztuke = sztuk ? itemTotal(it) / sztuk : itemTotal(it);
-      const zdjecie = u.zdjecia ? matchPhoto(it, u.zdjecia) : null;
+      const zdjecie = u.zdjecia ? matchPhotoOrIcon(it, u.zdjecia) : null;
       const spec = u.zeSpecyfikacja ? specyfikacja(it) : '';
       return `
           <tr class="of-item">
@@ -71,7 +71,13 @@ function wierszeGrupy(g: OfferGroup, u: UkladTabeli): string {
             ${
               u.zeZdjeciem
                 ? `<td class="of-pic">${
-                    zdjecie ? `<img class="of-photo" src="${zdjecie.dataUrl}" alt="">` : ''
+                    zdjecie
+                      ? `<img class="of-photo${
+                          // rysunek jest schematem, nie fotografią — wystarczy mu
+                          // mniej miejsca, a dokument nie rośnie o stronę
+                          zdjecie.dataUrl.startsWith('data:image/svg') ? ' of-icon' : ''
+                        }" src="${zdjecie.dataUrl}" alt="">`
+                      : ''
                   }</td>`
                 : ''
             }
@@ -139,7 +145,9 @@ function para(etykieta: string, wartosc: string): string {
 
 export function buildOfferHtml(offer: Offer, settings: Settings): string {
   const s = settings.seller;
-  const zdjecia = offer.showPhotos ? settings.productPhotos || null : null;
+  // null = zdjęcia wyłączone na tej ofercie. Pusta lista to co innego: firma
+  // nie wgrała własnych zdjęć, ale pozycje i tak dostaną wbudowane ikony.
+  const zdjecia = offer.showPhotos ? settings.productPhotos || [] : null;
   const grupy = offer.groups || [];
   const numery = groupLpNumbers(grupy, offer.continuousNumbering);
   const sumy = offerTotals(offer);
@@ -151,7 +159,7 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
   // Kolumna na zdjęcia pojawia się tylko wtedy, gdy którakolwiek pozycja
   // faktycznie je dostanie — pusta kolumna zabierałaby miejsce za darmo.
   const wszystkiePozycje = grupy.flatMap((g) => g.items).filter((it) => !isItemEmpty(it));
-  const zeZdjeciem = !!zdjecia && wszystkiePozycje.some((it) => matchPhoto(it, zdjecia));
+  const zeZdjeciem = !!zdjecia && wszystkiePozycje.some((it) => matchPhotoOrIcon(it, zdjecia));
   const zeSpecyfikacja = !!offer.showSpecs && wszystkiePozycje.some((it) => (it.spec || []).length > 0);
   const kolumn = ileKolumn(zeZdjeciem);
 

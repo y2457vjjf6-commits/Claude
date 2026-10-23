@@ -1659,6 +1659,43 @@ kbd {
   cursor: pointer;
 }
 
+/* Wbudowane rysunki produktów. Kafel jest biały niezależnie od motywu, bo
+   pokazuje, jak rysunek wyjdzie na kartce — a nie jak wygląda w programie. */
+.builtin-icons {
+  margin-top: var(--sp-4);
+}
+
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+}
+
+.icon-tile {
+  margin: 0;
+  text-align: center;
+  padding: var(--sp-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.icon-tile-img {
+  display: block;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto var(--sp-2);
+  background: #fff;
+  border-radius: var(--r-sm);
+}
+
+.icon-tile figcaption {
+  font-size: var(--text-2xs);
+  color: var(--text-mid);
+  line-height: 1.3;
+}
+
 /* ----------------------------------------------------------- powiadomienie */
 
 .toast {

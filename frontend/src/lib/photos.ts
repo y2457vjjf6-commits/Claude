@@ -5,6 +5,7 @@
  *  każdym razem. Pozycja dobiera zdjęcie po nazwie.
  */
 import type { OfferItem, ProductPhoto, Settings } from '../types';
+import { IKONY_PRODUKTOW } from '../assets/productIcons';
 
 /** Dłuższa krawędź miniatury. Na dokumencie zdjęcie ma ok. 22 mm,
  *  więc 360 px daje ponad 400 dpi — ostro na wydruku i wciąż lekko w pliku. */
@@ -99,12 +100,27 @@ export function matchPhoto(
   return matchByName(item, photos, (z) => !!z.dataUrl);
 }
 
+/** Zdjęcie pozycji z biblioteki firmy, a gdy nic nie pasuje — wbudowana ikona
+ *  produktu.
+ *
+ *  Kolejność nie jest przypadkowa i nie wolno jej zamienić na jedno wspólne
+ *  szukanie: wygrywa wpis o największej liczbie słów, więc wbudowana
+ *  „roleta kasetowa” pobiłaby wgrane przez firmę zdjęcie podpisane „roleta”.
+ *  Własne zdjęcie ma pierwszeństwo zawsze — ikona jest tylko wypełniaczem na
+ *  czas, zanim firma wgra swoje. */
+export function matchPhotoOrIcon(
+  item: Pick<OfferItem, 'name' | 'material'>,
+  photos: ProductPhoto[] | undefined
+): ProductPhoto | null {
+  return matchPhoto(item, photos) || matchPhoto(item, IKONY_PRODUKTOW);
+}
+
 /** Zdjęcie dla pozycji albo pusty napis, gdy nic nie pasuje. */
 export function photoFor(
   item: Pick<OfferItem, 'name' | 'material'>,
   settings: Pick<Settings, 'productPhotos'> | undefined
 ): string {
-  return matchPhoto(item, settings?.productPhotos)?.dataUrl || '';
+  return matchPhotoOrIcon(item, settings?.productPhotos)?.dataUrl || '';
 }
 
 /** Zmniejsza wgrane zdjęcie, zanim trafi do pliku z danymi. Zdjęcie z telefonu

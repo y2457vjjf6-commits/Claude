@@ -13,6 +13,7 @@ import { AppState, UserAccount } from '../types';
 import { dataLocation, hasApi } from '../lib/storage';
 import { backupNow, chooseBackupFolder, restoreBackup } from '../lib/backup';
 import { MAX_BOK, resizePhoto } from '../lib/photos';
+import { RYSUNKI_PRODUKTOW } from '../assets/productIcons';
 import { AskConfirm } from '../types';
 
 interface Props {
@@ -1114,6 +1115,28 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
           </table>
         )}
         {!form.photoRows.length && <p className="muted employees-empty">Nie dodano jeszcze żadnego zdjęcia.</p>}
+
+        {/* Wbudowane rysunki wypełniają ofertę, zanim firma wgra własne zdjęcia.
+            Pokazujemy je wprost, żeby nikt nie szukał, skąd się wzięły na dokumencie. */}
+        <details className="item-spec builtin-icons" data-testid="builtin-icons">
+          <summary>
+            <span className="spec-title">Wbudowane rysunki produktów ({RYSUNKI_PRODUKTOW.length})</span>
+          </summary>
+          <p className="muted card-note">
+            Pozycja, dla której nie wgrano zdjęcia, dostaje na ofercie taki rysunek — czarny
+            kontur na przezroczystym tle, więc siada na białej kartce i nie pikseluje się przy
+            żadnym rozmiarze. Żeby go zastąpić, wgraj wyżej własne zdjęcie i podpisz je nazwą
+            produktu: biblioteka firmy jest sprawdzana pierwsza i zawsze wygrywa.
+          </p>
+          <div className="icon-grid">
+            {RYSUNKI_PRODUKTOW.map((ikona) => (
+              <figure className="icon-tile" key={ikona.key} data-testid={`builtin-icon-${ikona.key}`}>
+                <img src={ikona.dataUrl} alt="" className="icon-tile-img" />
+                <figcaption>{ikona.label}</figcaption>
+              </figure>
+            ))}
+          </div>
+        </details>
         <label className="btn btn-light photo-add" data-testid="add-photo-label">
           <Plus className="icon" />
           Dodaj zdjęcia
@@ -1135,7 +1158,7 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
             ? `W bibliotece ${form.photoRows.length} zdjęć, razem około ${Math.round(
                 form.photoRows.reduce((s, z) => s + z.dataUrl.length, 0) / 1024
               )} kB.`
-            : 'Bez zdjęć oferta wygląda tak jak dotąd — to dodatek, nie wymóg.'}
+            : 'Bez wgranych zdjęć oferta i tak dostaje wbudowane rysunki produktów.'}
         </p>
       </div>
         </div>

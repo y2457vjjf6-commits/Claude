@@ -1,9 +1,11 @@
 import { Offer, OfferColumnHeader, OfferGroup, OfferItem, OfferSpecRow } from '../types';
+import { DiscountLine, discountLines, discountTotal } from './discounts';
 import {
   groupEffectiveSum,
   isOptionGroup,
   optionChosen,
   optionLabel,
+  fullOptionItem,
   optionSum,
   selectedOption,
   selectedItems
@@ -139,28 +141,35 @@ export interface OfferTotals {
   variants: OfferVariantTotal[];
   /** Grupy opcji z pełną ceną oferty policzoną dla każdej opcji */
   optionGroups: OfferOptionGroupTotals[];
+  /** Rabat w rozbiciu na stawki — jedna linia na każdy użyty procent.
+   *  Przy jednym rabacie na całość jest to jedna linia i dokument wygląda
+   *  tak jak dotąd. */
+  discounts: DiscountLine[];
 }
 
-/** Rabat liczony tym samym procentem dla ceny całkowitej i dla wariantów. */
-function poRabacie(kwota: number, offer: Offer): { discount: number; net: number } {
-  const procent = offer.discountEnabled ? parseNumber(offer.discountPercent) : 0;
-  const discount = Math.round(kwota * procent) / 100;
+/** Rabat liczony od pozycji: każdy produkt swoją stawką. Pozycje podajemy
+ *  wprost, bo przy opcjach kwota zależy od tego, którą z nich liczymy. */
+function poRabacie(items: OfferItem[], offer: Offer): { discount: number; net: number } {
+  const kwota = items.reduce((s, it) => s + itemTotal(it), 0);
+  const discount = discountTotal(items, offer);
   return { discount, net: kwota - discount };
 }
 
 export function offerTotals(offer: Offer): OfferTotals {
   const grupy = offer.groups || [];
-  const itemsSum = grupy
-    .filter((g) => !g.variant)
-    .reduce((suma, g) => suma + groupEffectiveSum(g), 0);
-  const { discount: discountAmount, net: total } = poRabacie(itemsSum, offer);
+  const podstawowe = grupy.filter((g) => !g.variant);
+  const liczone = podstawowe.flatMap((g) => selectedItems(g));
+  const itemsSum = podstawowe.reduce((suma, g) => suma + groupEffectiveSum(g), 0);
+  const discounts = discountLines(liczone, offer);
+  const discountAmount = discounts.reduce((s, l) => s + l.amount, 0);
+  const total = itemsSum - discountAmount;
   const variants = grupy
     .map((g, i) => ({ g, i }))
     .filter(({ g }) => g.variant)
     .map(({ g, i }) => ({
       id: g.id,
       label: groupLabel(grupy, i),
-      total: poRabacie(groupSum(g), offer).net
+      total: poRabacie(g.items, offer).net
     }));
 
   // Cena przy opcji to cena całej oferty, a nie samej opcji: pozycje wspólne
@@ -170,15 +179,20 @@ export function offerTotals(offer: Offer): OfferTotals {
     .map((g, i) => ({ g, i }))
     .filter(({ g }) => !g.variant && isOptionGroup(g))
     .map(({ g, i }) => {
-      const bezTejGrupy = itemsSum - groupEffectiveSum(g);
+      // Pozostałe pozycje oferty zostają bez zmian — podmieniamy tylko tę
+      // jedną grupę, żeby kwota odpowiadała na pytanie „ile wyjdzie, jeśli
+      // wezmę tę opcję”. Rabat liczy się od nowa, bo każdy produkt ma swoją
+      // stawkę i inna opcja może oznaczać inny rabat.
+      const bezTejGrupy = podstawowe.filter((x) => x.id !== g.id).flatMap((x) => selectedItems(x));
       const wybrana = selectedOption(g);
       const wyceny = (g.options || []).map((o, oi) => {
         const sum = optionSum(o);
+        const zTaOpcja = [...bezTejGrupy, ...o.items.map((it, j) => fullOptionItem(g.items[j] || it, it))];
         return {
           id: o.id,
           label: optionLabel(o, oi),
           sum,
-          total: poRabacie(bezTejGrupy + sum, offer).net,
+          total: poRabacie(zTaOpcja, offer).net,
           diff: 0,
           selected: !!wybrana && o.id === wybrana.id
         };
@@ -193,7 +207,7 @@ export function offerTotals(offer: Offer): OfferTotals {
     });
 
   const deliveryAmount = offer.deliveryEnabled ? parseNumber(offer.deliveryPrice) : 0;
-  return { itemsSum, discountAmount, total, deliveryAmount, variants, optionGroups };
+  return { itemsSum, discountAmount, total, deliveryAmount, variants, optionGroups, discounts };
 }
 
 /* ------------------------------ VAT ------------------------------ */

@@ -1811,6 +1811,30 @@ kbd {
   font-size: var(--text-xs);
 }
 
+/* Pole wspólne dla wszystkich opcji. Kreska u góry mówi „zmiana tutaj
+   przestawi to we wszystkich zakładkach" bez dopisku przy każdym polu. */
+.input.pole-wspolne {
+  border-top-color: var(--accent);
+  border-top-width: 2px;
+}
+
+/* --------------------------------------------------------------- rabaty */
+
+.discount-base {
+  max-width: 220px;
+  margin-top: var(--sp-3);
+}
+
+.discount-product {
+  display: block;
+  font-weight: 500;
+}
+
+.discount-where {
+  display: block;
+  font-size: var(--text-xs);
+}
+
 /* ----------------------------------------------------------- powiadomienie */
 
 .toast {

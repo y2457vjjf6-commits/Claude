@@ -159,3 +159,10 @@ test('oferta bez opcji wygląda dokładnie jak dotąd', () => {
   expect(doc).toContain('Cena całkowita');
   expect(doc).not.toContain('Cena całkowita z opcją');
 });
+
+test('opcja bez własnej nazwy nie daje „z opcją Opcja A"', () => {
+  const bezNazw = { ...SZKIELET, selectedOptionId: 'a', options: SZKIELET.options!.map((o) => ({ ...o, title: '' })) };
+  const doc = html([bezNazw]);
+  expect(doc).toContain('Cena całkowita — Opcja A');
+  expect(doc).not.toContain('z opcją Opcja');
+});

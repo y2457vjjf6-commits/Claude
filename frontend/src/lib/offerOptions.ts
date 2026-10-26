@@ -75,16 +75,31 @@ function scalSpec(szkielet: OfferSpecRow[], wlasne: OfferSpecRow[]): OfferSpecRo
   return [...zeSzkieletu, ...dodatkowe.map((w) => ({ ...w }))];
 }
 
-/** Pozycja opcji doprowadzona do zgody ze szkieletem. */
+/** Pozycja opcji doprowadzona do zgody ze szkieletem.
+ *
+ *  Nazwa produktu należy do opcji, nie do szkieletu: opcje bywają różnymi
+ *  produktami („moskitiera przesuwna” kontra „plisowana”), a nie tylko tym
+ *  samym w innym materiale. Opcja bez własnej nazwy bierze nazwę wspólną —
+ *  dzięki temu wpisanie jej raz wystarcza, dopóki ktoś jej nie zmieni. */
 function zgodnaPozycja(szkielet: OfferItem, wlasna: OfferItem | undefined): OfferItem {
   const baza = wlasna || { ...szkielet, material: '', unitPrice: '', priceSource: undefined };
   return {
     ...baza,
-    name: szkielet.name,
+    name: String(baza.name || '').trim() ? baza.name : szkielet.name,
     qty: szkielet.qty,
     lpOverride: szkielet.lpOverride,
     spec: scalSpec(szkielet.spec || [], baza.spec || [])
   };
+}
+
+/** Nazwa wspólna wiersza: ta, którą noszą wszystkie opcje. Gdy się różnią —
+ *  pusta, bo wtedy nazwa przestaje opisywać wiersz i przenosi się do kolumn. */
+export function commonName(g: OfferGroup, i: number): string {
+  const nazwy = (g.options || [])
+    .map((o) => String(o.items[i]?.name || '').trim())
+    .filter(Boolean);
+  if (!nazwy.length) return String(g.items[i]?.name || '').trim();
+  return nazwy.every((n) => n === nazwy[0]) ? nazwy[0] : '';
 }
 
 /** Grupa opcji z pozycjami równoległymi do szkieletu: tyle samo wierszy,
@@ -152,11 +167,18 @@ export function applyOptionSpec(szkielet: OfferItem, nowa: OfferSpecRow[]): Offe
 export function syncOptions(g: OfferGroup): OfferGroup {
   if (!isOptionGroup(g)) return g;
   g = podniesWymiary(g);
+  // Szkielet nosi nazwę tylko wtedy, gdy opcje są zgodne co do produktu.
+  // Gdy się różnią, nazwa schodzi do kolumn i wiersz opisuje sam wymiar.
+  const items = g.items.map((it, i) => {
+    const wspolna = commonName(g, i);
+    return String(it.name || '') === wspolna ? it : { ...it, name: wspolna };
+  });
   return {
     ...g,
+    items,
     options: (g.options || []).map((o) => ({
       ...o,
-      items: g.items.map((szkielet, i) => zgodnaPozycja(szkielet, o.items[i]))
+      items: items.map((szkielet, i) => zgodnaPozycja(szkielet, o.items[i]))
     }))
   };
 }

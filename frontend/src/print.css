@@ -558,6 +558,16 @@
   white-space: nowrap;
 }
 
+/* Przy różnych produktach nazwa stoi nad ceną w kolumnie — to ona jest
+   wtedy wyborem klienta, a nie sam materiał. */
+.of-opt-product {
+  display: block;
+  font-weight: 600;
+  font-size: 8.5pt;
+  line-height: 1.25;
+  margin-bottom: 1pt;
+}
+
 .of-opt-price {
   display: block;
   font-weight: 500;

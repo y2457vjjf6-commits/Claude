@@ -16,6 +16,7 @@ import {
 } from './offers';
 import { esc, formatDatePl } from './printing';
 import {
+  commonName,
   fullOptionItem,
   isOptionGroup,
   optionChosen,
@@ -32,6 +33,11 @@ import { matchPhotoOrIcon } from './photos';
  * szerokość. Struktura niesie znaczenie — ramka i pasek oddzielają role,
  * a nie zdobią. Pomarańcz firmowy pojawia się wyłącznie jako akcent.
  */
+
+/** Procent po polsku: 10 zostaje „10”, 7,5 nie gubi części ułamkowej. */
+function procentPl(wartosc: number): string {
+  return wartosc.toLocaleString('pl-PL', { maximumFractionDigits: 2 });
+}
 
 /** Ile kolumn ma tabela pozycji przy danym układzie. */
 function ileKolumn(zeZdjeciem: boolean): number {
@@ -189,7 +195,11 @@ function tabelaOpcji(
 
   const tresc = wiersze
     .map(({ it, i }) => {
-      const zdjecie = u.zdjecia ? matchPhotoOrIcon(it, u.zdjecia) : null;
+      const wspolnaNazwa = commonName(g, i);
+      // Rysunek dobieramy do tego, co wiersz naprawdę pokazuje: przy wspólnym
+      // produkcie jeden na całym wierszu, przy różnych — żadnego, bo nie
+      // byłoby wiadomo, którą opcję przedstawia.
+      const zdjecie = u.zdjecia && wspolnaNazwa ? matchPhotoOrIcon(it, u.zdjecia) : null;
       const sztuk = String(it.qty || '').trim();
       const opis = [String(it.material || '').trim(), sztuk ? `${sztuk} szt.` : '']
         .filter(Boolean)
@@ -209,7 +219,7 @@ function tabelaOpcji(
                 : ''
             }
             <td class="of-name">
-              <span class="of-name-main">${esc(it.name)}</span>
+              ${wspolnaNazwa ? `<span class="of-name-main">${esc(wspolnaNazwa)}</span>` : ''}
               ${opis ? `<span class="of-material">${esc(opis)}</span>` : ''}
             </td>
             ${opcje
@@ -220,8 +230,12 @@ function tabelaOpcji(
                 // porównawczej czyta się jak niedokończona robota
                 if (pusta) return `<td class="of-opt of-opt-none${klasaOpcji(o)}">—</td>`;
                 const wlasny = opisy[oi] ? '' : String(poz.material || '').trim();
+                // Gdy opcje to różne produkty, nazwa stoi w kolumnie, a nie
+                // w opisie wiersza — bo wtedy to ona jest wyborem klienta.
+                const wlasnaNazwa = wspolnaNazwa ? '' : String(poz.name || '').trim();
                 return (
                   `<td class="of-opt${klasaOpcji(o)}">` +
+                  (wlasnaNazwa ? `<span class="of-opt-product">${esc(wlasnaNazwa)}</span>` : '') +
                   `<span class="of-opt-price">${formatMoney(itemTotal(poz))}</span>` +
                   (wlasny ? `<span class="of-opt-sub">${esc(wlasny)}</span>` : '') +
                   '</td>'
@@ -413,9 +427,13 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
   const vat = offerVat(sumy.total, offerVatRate(offer));
   // Kwota bez wskazania opcji wprowadzałaby w błąd: identyczna liczba wyjdzie
   // przy innej opcji z innej grupy, a klient ma wiedzieć, co kupuje za tę cenę.
+  const nazwaOpcji = sumy.optionGroups[0]?.options.find((o) => o.selected)?.label || 'Opcja A';
   const zOpcja =
     sumy.optionGroups.length === 1
-      ? `Cena całkowita z opcją ${sumy.optionGroups[0].options.find((o) => o.selected)?.label || 'A'}`
+      ? // „z opcją Opcja A" zgrzyta — opcja bez własnej nazwy dostaje myślnik
+        /^Opcja [A-Z]$/.test(nazwaOpcji)
+        ? `Cena całkowita — ${nazwaOpcji}`
+        : `Cena całkowita z opcją ${nazwaOpcji}`
       : 'Cena całkowita z wybranymi opcjami';
   const etykietaCeny = warianty.length
     ? 'Cena całkowita oferty podstawowej'
@@ -429,9 +447,23 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
     sumy.itemsSum > 0 || !warianty.length
       ? `<table class="of-sum">
            ${
-             offer.discountEnabled && sumy.discountAmount
+             // Jedna linia na każdą użytą stawkę. Przy rabacie „na wszystko"
+             // linia jest jedna i podsumowanie wygląda jak dotąd; przy
+             // stawkach produktowych klient widzi, co po ile dostał.
+             sumy.discounts.length
                ? linia('Wartość pozycji', formatMoney(sumy.itemsSum)) +
-                 linia(`Rabat ${esc(offer.discountPercent)}%`, `−${formatMoney(sumy.discountAmount)}`)
+                 sumy.discounts
+                   .map((l) =>
+                     linia(
+                       // Przy jednej stawce wiadomo, od czego liczona; przy kilku
+                       // trzeba podać podstawę, inaczej klient nie sprawdzi rachunku.
+                       sumy.discounts.length > 1
+                         ? `Rabat ${procentPl(l.percent)}% od ${formatMoney(l.base)}`
+                         : `Rabat ${procentPl(l.percent)}%`,
+                       `−${formatMoney(l.amount)}`
+                     )
+                   )
+                   .join('')
                : ''
            }
            ${linia(etykietaCeny, formatMoney(sumy.total), 'of-grand')}

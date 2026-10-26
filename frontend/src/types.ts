@@ -295,6 +295,20 @@ export interface OfferItem {
   spec?: OfferSpecRow[];
 }
 
+/** Stawka rabatu przypisana produktowi w tej jednej ofercie.
+ *
+ *  Nazwa dopasowuje się tak samo jak w bibliotece zdjęć: wszystkie jej słowa
+ *  muszą stać w nazwie pozycji, w dowolnej odmianie. Dzięki temu „rolety
+ *  materiałowe” łapią też „Roleta materiałowa Mini 19”, a reguła zostaje
+ *  czytelna, gdy ktoś otworzy ofertę za rok. */
+export interface OfferDiscountRule {
+  id: string;
+  /** Nazwa produktu albo jej fragment, np. „żaluzje drewniane” */
+  name: string;
+  /** Rabat w procentach; „0" znaczy „ten produkt bez rabatu" */
+  percent: string;
+}
+
 /** Jedna alternatywa w grupie opcji — „Opcja A", „Opcja B"…
  *
  *  Pozycje opcji biegną równolegle do szkieletu grupy: tyle samo wierszy
@@ -349,8 +363,11 @@ export interface Offer {
   /** true = Lp. biegnie przez wszystkie tabele; false = każda tabela od 1 */
   continuousNumbering: boolean;
   discountEnabled: boolean;
-  /** Rabat w procentach */
+  /** Rabat podstawowy w procentach — dla produktów bez własnej stawki */
   discountPercent: string;
+  /** Własne stawki dla produktów z tej wyceny. Puste = cała oferta po rabacie
+   *  podstawowym, czyli tak, jak działały oferty przed tą zmianą. */
+  discountRules?: OfferDiscountRule[];
   deliveryEnabled: boolean;
   /** Kwota dostawy; puste pole drukuje się jako „nie dotyczy” */
   deliveryPrice: string;

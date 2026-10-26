@@ -1,5 +1,6 @@
 import {
   applyOptionSpec,
+  commonName,
   fullOptionItem,
   isOptionGroup,
   newOption,
@@ -68,12 +69,18 @@ const zOpcjami = (p: Partial<OfferGroup> = {}): OfferGroup =>
         {
           id: 'a',
           title: 'dzień-noc',
-          items: [poz({ material: 'DN14', unitPrice: '400' }), poz({ material: 'DN14', unitPrice: '300' })]
+          items: [
+            poz({ name: '', material: 'DN14', unitPrice: '400' }),
+            poz({ name: '', material: 'DN14', unitPrice: '300' })
+          ]
         },
         {
           id: 'b',
           title: 'zaciemniający',
-          items: [poz({ material: 'BL22', unitPrice: '500' }), poz({ material: 'BL22', unitPrice: '350' })]
+          items: [
+            poz({ name: '', material: 'BL22', unitPrice: '500' }),
+            poz({ name: '', material: 'BL22', unitPrice: '350' })
+          ]
         }
       ],
       ...p
@@ -107,19 +114,66 @@ describe('rozpoznanie grupy opcji', () => {
 });
 
 describe('zgodność opcji ze szkieletem', () => {
-  it('opcja przejmuje ze szkieletu nazwę, ilość i Lp.', () => {
+  it('opcja przejmuje ze szkieletu ilość i Lp.', () => {
     const g = syncOptions(
       grupa({
         items: [poz({ name: 'Salon', qty: '3', lpOverride: '7' })],
-        options: [{ id: 'a', items: [poz({ name: 'co innego', qty: '9', unitPrice: '100' })] }]
+        options: [{ id: 'a', items: [poz({ name: '', qty: '9', unitPrice: '100' })] }]
       })
     );
     const it = g.options![0].items[0];
-    expect(it.name).toBe('Salon');
     expect(it.qty).toBe('3');
     expect(it.lpOverride).toBe('7');
     // materiał i cena są tym, czym opcja się różni — zostają jej
     expect(it.unitPrice).toBe('100');
+  });
+
+  it('opcja bez własnej nazwy bierze nazwę wspólną', () => {
+    // wpisanie nazwy produktu raz ma wystarczyć, dopóki ktoś jej nie zmieni
+    const g = syncOptions(
+      grupa({
+        items: [poz({ name: 'Roleta rzymska' })],
+        options: [
+          { id: 'a', items: [poz({ name: '', unitPrice: '100' })] },
+          { id: 'b', items: [poz({ name: '', unitPrice: '200' })] }
+        ]
+      })
+    );
+    expect(g.options!.map((o) => o.items[0].name)).toEqual(['Roleta rzymska', 'Roleta rzymska']);
+  });
+
+  it('własna nazwa opcji nie jest nadpisywana nazwą innej opcji', () => {
+    // opcje bywają różnymi produktami, a nie tym samym w innym materiale
+    const g = syncOptions(
+      grupa({
+        items: [poz({ name: 'Moskitiera przesuwna' })],
+        options: [
+          { id: 'a', items: [poz({ name: 'Moskitiera przesuwna', unitPrice: '100' })] },
+          { id: 'b', items: [poz({ name: 'Moskitiera plisowana', unitPrice: '200' })] }
+        ]
+      })
+    );
+    expect(g.options!.map((o) => o.items[0].name)).toEqual([
+      'Moskitiera przesuwna',
+      'Moskitiera plisowana'
+    ]);
+    // skoro produkty się różnią, nazwa przestaje opisywać wiersz
+    expect(commonName(g, 0)).toBe('');
+    expect(g.items[0].name).toBe('');
+  });
+
+  it('zgodne nazwy opcji wracają do opisu wiersza', () => {
+    const g = syncOptions(
+      grupa({
+        items: [poz({ name: '' })],
+        options: [
+          { id: 'a', items: [poz({ name: 'Plisa Duette', unitPrice: '100' })] },
+          { id: 'b', items: [poz({ name: 'Plisa Duette', unitPrice: '200' })] }
+        ]
+      })
+    );
+    expect(commonName(g, 0)).toBe('Plisa Duette');
+    expect(g.items[0].name).toBe('Plisa Duette');
   });
 
   it('dodany wiersz szkieletu dopisuje się do każdej opcji', () => {

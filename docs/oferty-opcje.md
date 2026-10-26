@@ -74,3 +74,23 @@ zapisie.
 - Nie pokazuje zakresu cen („od … do …”) — oferta ma podawać konkretne kwoty.
 - Nie przelicza kombinacji między grupami opcji: każda grupa jest niezależna.
 - Nie wyróżnia opcji „polecanej” — wyróżniona jest ta, którą wybrał klient.
+
+## Opcje różnymi produktami
+
+Opcja nie musi być tym samym produktem w innym materiale — bywa zupełnie
+innym wyrobem: moskitiera przesuwna obok plisowanej. Dlatego **nazwa produktu
+należy do opcji**, nie do szkieletu.
+
+Opcja, której nie nadano własnej nazwy, bierze nazwę pozostałych — wpisujesz
+ją raz i rozchodzi się na wszystkie. Gdy w którejś ją zmienisz, zostaje przy
+niej i nie przestawia sąsiednich.
+
+Na dokumencie zmienia to układ tabeli porównawczej:
+
+- **wszystkie opcje to ten sam produkt** → nazwa stoi w kolumnie „Produkt”
+  razem z rysunkiem, a w kolumnach opcji są materiał i cena;
+- **opcje to różne produkty** → nazwa schodzi do kolumn, nad cenę, bo to ona
+  jest wtedy wyborem klienta. Wiersz po lewej opisuje sam wymiar i ilość.
+
+W edytorze pola wspólne dla wszystkich opcji — ilość i numer pozycji —
+mają pomarańczową kreskę u góry.

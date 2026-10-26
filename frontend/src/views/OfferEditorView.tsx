@@ -4,7 +4,7 @@ import {
   Check, Loader2, Table2, Copy, ClipboardPaste, FileText, ChevronUp, ChevronDown, Factory,
   Columns3, CheckCircle2
 } from 'lucide-react';
-import { AppState, AskConfirm, Offer, OfferColumnHeader, OfferGroup, OfferItem, OfferSpecRow } from '../types';
+import { AppState, AskConfirm, Offer, OfferColumnHeader, OfferDiscountRule, OfferGroup, OfferItem, OfferSpecRow } from '../types';
 import { uid } from '../lib/storage';
 import { todayStr } from '../lib/dates';
 import {
@@ -30,6 +30,7 @@ import {
 } from '../lib/offers';
 import {
   applyOptionSpec,
+  commonName,
   fullOptionItem,
   isOptionGroup,
   newOption,
@@ -40,6 +41,8 @@ import {
   toOptionGroup,
   toPlainGroup
 } from '../lib/offerOptions';
+import { discountSource, itemDiscountPercent, offerProducts } from '../lib/discounts';
+import { normalizujNazwe } from '../lib/photos';
 import { itemNameSuggestions } from '../lib/suggestions';
 import { printOffer, savePdfOffer, emailOffer } from '../lib/offerActions';
 import { computeOfferNumberFor } from '../lib/numbering';
@@ -294,8 +297,10 @@ export default function OfferEditorView({
     return przelicz(zSzablonu ? { ...nowa, spec: zSzablonu } : nowa);
   };
 
-  /** Pola, które w grupie opcji należą do wszystkich alternatyw naraz. */
-  const WSPOLNE_POLA: (keyof OfferItem)[] = ['name', 'qty', 'lpOverride'];
+  /** Pola, które w grupie opcji należą do wszystkich alternatyw naraz.
+   *  Nazwy produktu tu nie ma: opcje bywają różnymi produktami i wpisanie
+   *  jednej nazwy nie może przestawiać pozostałym. */
+  const WSPOLNE_POLA: (keyof OfferItem)[] = ['qty', 'lpOverride'];
 
   /** Poprawka w grupie opcji. Nazwa, ilość i Lp. opisują jedno i to samo okno,
    *  więc idą do szkieletu i rozchodzą się na wszystkie opcje. Materiał, cena
@@ -313,22 +318,39 @@ export default function OfferEditorView({
     }
     if ('spec' in patch) doSzkieletu.spec = applyOptionSpec(g.items[ii], patch.spec || []);
 
-    // Nazwa produktu jest wspólna, więc i szablon jego parametrów zakłada się
-    // na szkielecie — inaczej rubryki („Kolor kasety”) pojawiłyby się tylko
-    // w tej opcji, w której ktoś akurat wpisał nazwę.
-    if ('name' in patch) {
-      const zeSzkieletu = { ...g.items[ii], ...doSzkieletu };
-      const szablon = autoSpecFor(zeSzkieletu, state.settings);
-      if (szablon) doSzkieletu.spec = szablon;
-    }
-
     const items = g.items.map((it, j) => (j === ii ? { ...it, ...doSzkieletu } : it));
     const options = (g.options || []).map((o) =>
       o.id !== biezaca.id
         ? o
         : { ...o, items: o.items.map((it, j) => (j === ii ? poPoprawce(it, doOpcji, items[ii]) : it)) }
     );
-    return syncOptions({ ...g, items, options });
+    const zmieniona = syncOptions({ ...g, items, options });
+    if (!('name' in patch)) return zmieniona;
+
+    // Szablon parametrów produktu zakładamy tam, gdzie produkt faktycznie
+    // mieszka: przy wspólnej nazwie na szkielecie, żeby rubryki („Kolor
+    // kasety”) miały wszystkie opcje; przy różnych produktach — tylko przy
+    // tej opcji, bo to jej produkt.
+    const wspolna = commonName(zmieniona, ii);
+    const wzorzec = wspolna
+      ? { ...zmieniona.items[ii], name: wspolna }
+      : zmieniona.options!.find((o) => o.id === biezaca.id)!.items[ii];
+    const szablon = autoSpecFor(wzorzec, state.settings);
+    if (!szablon) return zmieniona;
+    if (wspolna) {
+      return syncOptions({
+        ...zmieniona,
+        items: zmieniona.items.map((it, j) => (j === ii ? { ...it, spec: szablon } : it))
+      });
+    }
+    return syncOptions({
+      ...zmieniona,
+      options: zmieniona.options!.map((o) =>
+        o.id !== biezaca.id
+          ? o
+          : { ...o, items: o.items.map((it, j) => (j === ii ? { ...it, spec: szablon } : it)) }
+      )
+    });
   };
 
   const setItem = (gi: number, ii: number, patch: Partial<OfferItem>) =>
@@ -423,6 +445,29 @@ export default function OfferEditorView({
         i === gi ? { ...g, selectedOptionId: g.selectedOptionId === id ? undefined : id } : g
       )
     }));
+
+  /* ------------------------------- rabaty ------------------------------- */
+
+  // Produkty, które faktycznie stoją w tej wycenie — po nich ustawia się
+  // stawki, zamiast wpisywać nazwy z pamięci.
+  const produktyWyceny = offerProducts(offer);
+
+  /** Stawka wpisana wprost dla tej nazwy produktu, albo nic. */
+  const stawkaProduktu = (nazwa: string): OfferDiscountRule | undefined =>
+    (offer.discountRules || []).find((r) => normalizujNazwe(r.name) === normalizujNazwe(nazwa));
+
+  /** Ustawia albo zdejmuje stawkę produktu. `null` oddaje go rabatowi
+   *  podstawowemu — to co innego niż stawka „0”, która rabat wyłącza. */
+  const ustawStawke = (nazwa: string, procent: string | null) =>
+    setOffer((o) => {
+      const reszta = (o.discountRules || []).filter(
+        (r) => normalizujNazwe(r.name) !== normalizujNazwe(nazwa)
+      );
+      return {
+        ...o,
+        discountRules: procent === null ? reszta : [...reszta, { id: uid(), name: nazwa, percent: procent }]
+      };
+    });
 
   const maWarianty = offer.groups.some((g) => g.variant);
   const konwertujWarianty = async () => {
@@ -862,8 +907,10 @@ export default function OfferEditorView({
                 </div>
               )}
               <p className="muted card-note options-note">
-                Nazwa produktu, ilość i wymiar są wspólne dla wszystkich opcji — wpisujesz je raz.
-                Materiał, cena i pozostałe parametry należą do otwartej opcji.
+                <strong>Wspólne dla wszystkich opcji:</strong> ilość, numer pozycji i wymiar —
+                wpisujesz je raz, w dowolnej zakładce.{' '}
+                <strong>Własne dla tej opcji:</strong> nazwa produktu, materiał i cena. Dzięki temu
+                opcje mogą być różnymi produktami, np. moskitiera przesuwna obok plisowanej.
               </p>
             </div>
           )}
@@ -890,8 +937,9 @@ export default function OfferEditorView({
                   <td>
                     <input
                       type="text"
-                      className="input item-lp-input num"
+                      className={`input item-lp-input num${opcyjna ? ' pole-wspolne' : ''}`}
                       data-testid={`offer-lp-${gi}-${ii}`} inputMode="numeric"
+                      title={opcyjna ? 'Wspólny dla wszystkich opcji' : undefined}
                       aria-label="Numer pozycji"
                       placeholder={numery[gi][ii]}
                       value={it.lpOverride || ''}
@@ -903,9 +951,11 @@ export default function OfferEditorView({
                       type="text"
                       className="input item-name"
                       data-testid={`offer-name-${gi}-${ii}`}
-                      aria-label="Nazwa produktu"
+                      aria-label={opcyjna ? 'Nazwa produktu w tej opcji' : 'Nazwa produktu'}
                       list="podpowiedzi-produktow"
-                      placeholder="np. Rolety wolnowiszące FI32"
+                      placeholder={
+                        opcyjna ? 'produkt w tej opcji, np. Moskitiera przesuwna' : 'np. Rolety wolnowiszące FI32'
+                      }
                       value={it.name}
                       onChange={(e) => setItem(gi, ii, { name: e.target.value })}
                     />
@@ -1116,7 +1166,18 @@ export default function OfferEditorView({
                     })()}
                   </td>
                   <td>
-                    <input type="text" className="input num" data-testid={`offer-qty-${gi}-${ii}`} inputMode="decimal" aria-label="Ilość" value={it.qty} onChange={(e) => setItem(gi, ii, { qty: e.target.value })} />
+                    {/* Ilość jest wspólna dla opcji — kreska u góry pola mówi
+                        o tym bez czytania podpowiedzi nad tabelą. */}
+                    <input
+                      type="text"
+                      className={`input num${opcyjna ? ' pole-wspolne' : ''}`}
+                      data-testid={`offer-qty-${gi}-${ii}`}
+                      inputMode="decimal"
+                      aria-label={opcyjna ? 'Ilość — wspólna dla wszystkich opcji' : 'Ilość'}
+                      title={opcyjna ? 'Wspólna dla wszystkich opcji' : undefined}
+                      value={it.qty}
+                      onChange={(e) => setItem(gi, ii, { qty: e.target.value })}
+                    />
                   </td>
                   <td>
                     <SuffixField
@@ -1224,24 +1285,6 @@ export default function OfferEditorView({
         <div className="grid2">
           <div>
             <label className="checkbox-field">
-              <input type="checkbox" data-testid="offer-discount-enabled" checked={offer.discountEnabled} onChange={(e) => set({ discountEnabled: e.target.checked })} />
-              <span>Rabat procentowy</span>
-            </label>
-            {offer.discountEnabled && (
-              <label className="field" style={{ marginTop: 8 }}>
-                <span>Wysokość rabatu</span>
-                <SuffixField
-                  suffix="%"
-                  testId="offer-discount-percent"
-                  ariaLabel="Wysokość rabatu w procentach"
-                  value={offer.discountPercent}
-                  onChange={(v) => set({ discountPercent: v })}
-                />
-              </label>
-            )}
-          </div>
-          <div>
-            <label className="checkbox-field">
               <input type="checkbox" data-testid="offer-delivery-enabled" checked={offer.deliveryEnabled} onChange={(e) => set({ deliveryEnabled: e.target.checked })} />
               <span>Dostawa kurierem</span>
             </label>
@@ -1265,11 +1308,13 @@ export default function OfferEditorView({
           <div>
             Suma pozycji: <strong>{formatMoney(sumy.itemsSum)}</strong>
           </div>
-          {offer.discountEnabled && sumy.discountAmount > 0 && (
-            <div>
-              Rabat {offer.discountPercent}%: <strong>−{formatMoney(sumy.discountAmount)}</strong>
+          {sumy.discounts.map((l) => (
+            <div key={l.percent} data-testid={`offer-discount-line-${l.percent}`}>
+              Rabat {l.percent.toLocaleString('pl-PL')}%{' '}
+              {sumy.discounts.length > 1 && <span className="muted">od {formatMoney(l.base)}</span>}:{' '}
+              <strong>−{formatMoney(l.amount)}</strong>
             </div>
-          )}
+          ))}
           <div className="offer-summary-total">
             {sumy.variants.length
               ? 'Cena całkowita oferty podstawowej'
@@ -1440,6 +1485,121 @@ export default function OfferEditorView({
           <span>Uwagi na ofercie</span>
           <textarea className="input" data-testid="offer-notes" rows={3} value={offer.notes} onChange={(e) => set({ notes: e.target.value })} />
         </label>
+      </div>
+
+      {/* ---------- Rabaty ---------- */}
+      <div className="card" data-testid="offer-discounts">
+        <h3 className="card-title">Rabaty</h3>
+        <p className="muted card-note">
+          Stawkę ustawiasz przy produkcie, który stoi w tej wycenie — rolety mogą zejść o 10%,
+          żaluzje drewniane o 5%, a moskitiery wcale. Produkt bez własnej stawki dostaje rabat
+          podstawowy. Na dokumencie rabaty nie stoją przy pozycjach: w podsumowaniu jest osobna
+          linia dla każdej stawki, więc klient widzi, co po ile dostał.
+        </p>
+
+        <label className="checkbox-field">
+          <input
+            type="checkbox"
+            data-testid="offer-discount-enabled"
+            checked={offer.discountEnabled}
+            onChange={(e) => set({ discountEnabled: e.target.checked })}
+          />
+          <span>Udzielam rabatu na tej ofercie</span>
+        </label>
+
+        {offer.discountEnabled && (
+          <>
+            <label className="field discount-base">
+              <span>Rabat podstawowy</span>
+              <SuffixField
+                suffix="%"
+                testId="offer-discount-percent"
+                ariaLabel="Rabat podstawowy w procentach"
+                value={offer.discountPercent}
+                onChange={(v) => set({ discountPercent: v })}
+              />
+              <span className="muted field-hint">
+                Dla produktów, którym nie ustawisz własnej stawki niżej.
+              </span>
+            </label>
+
+            {produktyWyceny.length === 0 ? (
+              <p className="muted employees-empty" data-testid="discount-products-empty">
+                Wpisz najpierw pozycje z cenami — wtedy pojawią się tu produkty do ustawienia stawek.
+              </p>
+            ) : (
+              <table className="table items-table" data-testid="discount-products">
+                <thead>
+                  <tr>
+                    <th>Produkt w tej wycenie</th>
+                    <th style={{ width: 120 }} className="th-num">Wartość</th>
+                    <th style={{ width: 150 }}>Podlega rabatowi</th>
+                    <th style={{ width: 130 }} className="th-num">Stawka</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {produktyWyceny.map((prod, i) => {
+                    const wlasna = stawkaProduktu(prod.name);
+                    const wzorzec = { name: prod.name, material: '', qty: '1', unitPrice: '' } as OfferItem;
+                    const stawka = itemDiscountPercent(wzorzec, offer);
+                    const skad = discountSource(wzorzec, offer);
+                    return (
+                      <tr key={prod.name} data-testid={`discount-row-${i}`}>
+                        <td>
+                          <span className="discount-product">{prod.name}</span>
+                          <span className="muted discount-where">
+                            {prod.count > 1 ? `${prod.count} pozycje · ` : ''}
+                            {prod.where.join(' · ')}
+                          </span>
+                        </td>
+                        <td className="num">{formatMoney(prod.sum)}</td>
+                        <td>
+                          <label className="checkbox-field">
+                            <input
+                              type="checkbox"
+                              data-testid={`discount-on-${i}`}
+                              checked={stawka > 0}
+                              onChange={(e) =>
+                                ustawStawke(prod.name, e.target.checked ? null : '0')
+                              }
+                            />
+                            <span>{stawka > 0 ? 'tak' : 'bez rabatu'}</span>
+                          </label>
+                        </td>
+                        <td>
+                          <SuffixField
+                            suffix="%"
+                            testId={`discount-percent-${i}`}
+                            ariaLabel={`Rabat dla produktu ${prod.name}`}
+                            placeholder={skad === 'produkt' ? '' : String(stawka)}
+                            value={wlasna ? wlasna.percent : ''}
+                            onChange={(v) => ustawStawke(prod.name, v.trim() === '' ? null : v)}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+
+            <div className="offer-summary-box" data-testid="discount-summary">
+              {sumy.discounts.length === 0 ? (
+                <div className="muted">Przy obecnych stawkach rabat nie zmniejsza ceny.</div>
+              ) : (
+                sumy.discounts.map((l) => (
+                  <div key={l.percent}>
+                    Rabat {l.percent.toLocaleString('pl-PL')}% od {formatMoney(l.base)}:{' '}
+                    <strong>−{formatMoney(l.amount)}</strong>
+                  </div>
+                ))
+              )}
+              <div className="offer-summary-total">
+                Rabat razem: <strong>−{formatMoney(sumy.discountAmount)}</strong>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="actions-bar actions-sticky">

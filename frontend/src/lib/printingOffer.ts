@@ -47,6 +47,12 @@ function ileKolumn(zeZdjeciem: boolean): number {
 /** Specyfikacja pozycji: siatka dwóch par na wiersz. Lista opisowa, a nie
  *  zbiór divów, bo to dokładnie para nazwa–wartość; etykiety trzymają wspólną
  *  kolumnę, więc wartości układają się w pion i dają się porównywać wzrokiem. */
+/** Ile znaków mieści się w jednej kolumnie parametrów, zanim zacznie się
+ *  zawijanie. Wartość z pomiaru na gotowym PDF-ie: przy 8 pt i dwóch
+ *  kolumnach na szerokość kolumny „Produkt" wychodzi około trzydziestu
+ *  znaków na parę „nazwa: wartość". Para dłuższa dostaje cały wiersz. */
+const ZNAKOW_W_KOLUMNIE = 30;
+
 function specyfikacja(it: OfferItem): string {
   // Na dokumencie dla klienta pokazujemy tylko uzupełnione parametry: rubryka
   // „Kolor kasety: —" nic mu nie mówi, a wygląda na niedokończoną robotę.
@@ -54,11 +60,18 @@ function specyfikacja(it: OfferItem): string {
   const pary = filledSpec(it.spec).filter((p) => p.value);
   if (!pary.length) return '';
   const komorki = pary
-    .map(
-      (p) =>
+    .map((p) => {
+      // Para dłuższa niż kolumna zabiera cały wiersz zamiast wciskać się
+      // w połowę szerokości — inaczej „Nieprzezwyciężalny" wychodzi na
+      // sąsiedni parametr albo łamie się na pięć linijek po dwa znaki.
+      const szeroka = p.label.length + p.value.length > ZNAKOW_W_KOLUMNIE;
+      return (
+        `<div class="of-spec-pair${szeroka ? ' of-spec-wide' : ''}">` +
         `<dt class="of-spec-label">${esc(p.label)}</dt>` +
-        `<dd class="of-spec-value">${esc(p.value)}</dd>`
-    )
+        `<dd class="of-spec-value">${esc(p.value)}</dd>` +
+        '</div>'
+      );
+    })
     .join('');
   return `<dl class="of-spec">${komorki}</dl>`;
 }

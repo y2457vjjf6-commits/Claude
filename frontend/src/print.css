@@ -465,11 +465,17 @@
 /* ---------- Specyfikacja pozycji ---------- */
 /* Dwie kolumny, bo pozycja potrafi mieć kilkanaście parametrów, a jedna para
    na wiersz rozciągnęłaby ofertę na dodatkową stronę. */
+/* Każda para „nazwa: wartość" jest osobnym pudełkiem, a kolumn jest tyle,
+   ile się zmieści — stąd `auto-fit`. Wcześniej siatka miała na sztywno dwie
+   kolumny etykiet i dwie wartości, przez co etykiety w rodzaju „Szerokość
+   całkowita" zabierały 60% miejsca i na wartość zostawało 9 znaków:
+   „Madagaskar" wychodził na sąsiedni parametr. Teraz para nie może nachodzić
+   na inną, bo nie wychodzi poza własne pudełko. */
 .of-spec {
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr);
-  column-gap: 6pt;
-  row-gap: 0.5pt;
+  grid-template-columns: repeat(auto-fit, minmax(38mm, 1fr));
+  column-gap: 7pt;
+  row-gap: 1pt;
   margin: 4pt 0 0;
   padding-top: 3pt;
   border-top: 0.4pt dotted var(--of-hair);
@@ -477,9 +483,23 @@
   line-height: 1.35;
 }
 
+.of-spec-pair {
+  display: flex;
+  align-items: baseline;
+  gap: 4pt;
+  min-width: 0;
+}
+
+/* Para dłuższa niż kolumna dostaje cały wiersz — wtedy wartość rozkłada się
+   wszerz zamiast schodzić wąskim słupkiem na pół strony. */
+.of-spec-wide {
+  grid-column: 1 / -1;
+}
+
 .of-spec-label {
   color: var(--of-mid);
   white-space: nowrap;
+  flex: none;
 }
 
 .of-spec-label::after { content: ':'; }
@@ -487,6 +507,11 @@
 .of-spec-value {
   margin: 0;
   color: var(--of-ink);
+  min-width: 0;
+  /* ostatnia deska ratunku: kod sam niczego nie dzieli w środku słowa,
+     ale gdyby trafił się nierozdzielny ciąg dłuższy niż kolumna, ma się
+     złamać, a nie wyjść na sąsiada */
+  overflow-wrap: break-word;
 }
 
 /* ---------- Warianty ---------- */
@@ -642,10 +667,14 @@
   font-weight: 500;
 }
 
+/* Pod tabelą opcji blok ma całą szerokość strony, a nie wąską kolumnę
+   w tabeli — przy tej samej mierze kolumny wyszłoby ich pięć po 38 mm
+   i „186 cm" łamałoby się na dwie linijki. Tu mieszczą się szersze. */
 .of-opt-spec-item .of-spec {
   margin-top: 2pt;
   border-top: none;
   padding-top: 0;
+  grid-template-columns: repeat(auto-fit, minmax(52mm, 1fr));
 }
 
 /* ---------- Podsumowanie ---------- */
@@ -847,7 +876,8 @@
 }
 
 .zl-spec dt { color: #5a6069; white-space: nowrap; }
-.zl-spec dd { font-weight: 500; }
+/* nierozdzielny kod tkaniny ma się złamać, a nie wyjść poza kartkę */
+.zl-spec dd { font-weight: 500; overflow-wrap: break-word; }
 .zl-spec dt::after { content: ':'; }
 .zl-spec dd { margin: 0; }
 

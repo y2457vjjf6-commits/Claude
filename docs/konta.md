@@ -91,6 +91,24 @@ Pozostałe dane (oferty, zlecenia, historia etapów) zostają nietknięte.
 Wpisy w historii zleceń są podpisane imieniem, a nie odnośnikiem do konta,
 więc po skasowaniu kont dalej widać, kto co robił.
 
+## Zapamiętany login
+
+Pole loginu wypełnia się samo nazwą ostatniej osoby, która logowała się **na
+tym komputerze**, a kursor staje od razu w haśle. Nie ma do tego żadnego
+przełącznika — działa zawsze.
+
+**Hasła nie zapamiętujemy i jest to decyzja, nie przeoczenie.** Przy jednym
+komputerze w warsztacie staje kilka osób, a dziennik etapów ma pokazywać, kto
+naprawdę wykonał robotę. Gdyby program wpuszczał bez hasła, pierwszy
+zalogowany podpisywałby pracę wszystkich następnych.
+
+Zapamiętany login mieszka w pamięci przeglądarki tego komputera, a nie w pliku
+z danymi. Plik bywa wspólny dla biura i warsztatu — login zapisany w nim
+wędrowałby między stanowiskami i każdy zastawałby w polu cudze nazwisko.
+
+Podpowiedź znika sama, gdy konto zostanie wyłączone albo usunięte, i przestawia
+się na kolejną osobę po jej zalogowaniu.
+
 ## Wylogowanie
 
 Przycisk przy imieniu na dole menu bocznego. Zamknięcie programu też wylogowuje

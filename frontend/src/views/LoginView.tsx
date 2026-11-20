@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { LogIn, Loader2, ShieldCheck } from 'lucide-react';
 import { AppState, UserAccount } from '../types';
-import { createUser, login as sprawdzLogowanie } from '../lib/auth';
+import { createUser, login as sprawdzLogowanie, podpowiadanyLogin } from '../lib/auth';
 
 interface Props {
   state: AppState;
@@ -15,7 +15,11 @@ export default function LoginView({ state, onLogin, onCreateOwner }: Props) {
   const konta = (state.users || []).filter((u) => !u.disabled);
   const zakladanie = konta.length === 0;
 
-  const [log, setLog] = useState('');
+  // Login ostatniej osoby na tym komputerze. Hasło zostaje do wpisania —
+  // dziennik etapów ma pokazywać, kto naprawdę pracował, a nie kto siedział
+  // tu poprzednio.
+  const [log, setLog] = useState(() => podpowiadanyLogin(state.users));
+  const zapamietany = log !== '';
   const [haslo, setHaslo] = useState('');
   const [haslo2, setHaslo2] = useState('');
   const [imie, setImie] = useState('');
@@ -163,7 +167,7 @@ export default function LoginView({ state, onLogin, onCreateOwner }: Props) {
                 type="text"
                 className="input"
                 data-testid="login-login"
-                autoFocus
+                autoFocus={!zapamietany}
                 autoComplete="username"
                 value={log}
                 onChange={(e) => setLog(e.target.value)}
@@ -176,6 +180,7 @@ export default function LoginView({ state, onLogin, onCreateOwner }: Props) {
                 type="password"
                 className="input"
                 data-testid="login-password"
+                autoFocus={zapamietany}
                 autoComplete="current-password"
                 value={haslo}
                 onChange={(e) => setHaslo(e.target.value)}

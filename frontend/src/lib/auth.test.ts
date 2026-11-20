@@ -5,10 +5,13 @@ import {
   login,
   normalizujLogin,
   OBROTY,
+  ostatniLogin,
   podpis,
+  podpowiadanyLogin,
   verifyPassword,
   wolno,
-  wymagaLogowania
+  wymagaLogowania,
+  zapamietajLogin
 } from './auth';
 import { UserAccount } from '../types';
 
@@ -118,4 +121,71 @@ test('wpisy w dzienniku podpisuje imię zalogowanego', async () => {
   expect(podpis(u, 'zapasowy')).toBe('Jacek Wajcht');
   expect(podpis(null, 'Sebastian Wajcht')).toBe('Sebastian Wajcht');
   expect(podpis({ ...u, name: '' }, 'zapas')).toBe('jacek');
+});
+
+describe('zapamiętany login na tym komputerze', () => {
+  const konto = (login: string, p: Partial<UserAccount> = {}): UserAccount =>
+    ({
+      id: login,
+      login,
+      name: login,
+      role: 'warsztat',
+      password: { algo: 'pbkdf2-sha256', iterations: 1, salt: 'x', hash: 'y' },
+      createdAt: '',
+      ...p
+    } as UserAccount);
+
+  beforeEach(() => window.localStorage.clear());
+
+  it('bez wcześniejszego logowania pole zostaje puste', () => {
+    expect(ostatniLogin()).toBe('');
+    expect(podpowiadanyLogin([konto('czarek')])).toBe('');
+  });
+
+  it('zapamiętany login wraca przy następnym uruchomieniu', () => {
+    zapamietajLogin('czarek');
+    expect(ostatniLogin()).toBe('czarek');
+    expect(podpowiadanyLogin([konto('czarek'), konto('sebastian')])).toBe('czarek');
+  });
+
+  it('oddaje pisownię z konta, nie z pamięci', () => {
+    zapamietajLogin('  CZAREK ');
+    expect(podpowiadanyLogin([konto('Czarek')])).toBe('Czarek');
+  });
+
+  it('konto wyłączone albo usunięte nie podpowiada się', () => {
+    zapamietajLogin('czarek');
+    expect(podpowiadanyLogin([konto('czarek', { disabled: true })])).toBe('');
+    expect(podpowiadanyLogin([konto('sebastian')])).toBe('');
+    expect(podpowiadanyLogin([])).toBe('');
+    expect(podpowiadanyLogin(undefined)).toBe('');
+  });
+
+  it('pusty login czyści pamięć', () => {
+    zapamietajLogin('czarek');
+    zapamietajLogin('   ');
+    expect(ostatniLogin()).toBe('');
+  });
+
+  it('hasła nie zapamiętujemy — w pamięci stoi sam login', () => {
+    zapamietajLogin('czarek');
+    const wszystko = JSON.stringify(window.localStorage);
+    expect(wszystko).toContain('czarek');
+    expect(wszystko.toLowerCase()).not.toContain('haslo');
+    expect(wszystko.toLowerCase()).not.toContain('password');
+  });
+
+  it('niedostępna pamięć nie wywraca logowania', () => {
+    const pierwotny = window.localStorage.getItem;
+    // tryb prywatny albo zablokowane dane stron potrafią rzucić wyjątkiem
+    Object.defineProperty(window.localStorage, 'getItem', {
+      configurable: true,
+      value: () => {
+        throw new Error('zablokowane');
+      }
+    });
+    expect(ostatniLogin()).toBe('');
+    expect(() => zapamietajLogin('czarek')).not.toThrow();
+    Object.defineProperty(window.localStorage, 'getItem', { configurable: true, value: pierwotny });
+  });
 });

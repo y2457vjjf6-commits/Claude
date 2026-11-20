@@ -167,3 +167,45 @@ export function wolno(user: UserAccount | null, co: Uprawnienie): boolean {
 export function podpis(user: UserAccount | null, zapas: string): string {
   return (user?.name || user?.login || zapas || '').trim();
 }
+
+/* ------------------ Ostatni login na tym komputerze ------------------ */
+
+/** Zapamiętany login trzymamy w pamięci przeglądarki, a nie w danych
+ *  programu.
+ *
+ *  Plik z danymi bywa wspólny dla biura i warsztatu — login zapisany tam
+ *  wędrowałby między stanowiskami i każdy zastawałby cudze nazwisko w polu.
+ *  To ustawienie jednego komputera, więc i mieszka przy tym komputerze.
+ *
+ *  Hasła nie zapamiętujemy świadomie: przy jednym komputerze w warsztacie
+ *  staje kilka osób, a dziennik etapów ma pokazywać, kto naprawdę pracował.
+ */
+const KLUCZ_OSTATNI_LOGIN = 'lechrol-ostatni-login';
+
+export function zapamietajLogin(login: string): void {
+  try {
+    const czysty = String(login || '').trim();
+    if (czysty) window.localStorage.setItem(KLUCZ_OSTATNI_LOGIN, czysty);
+    else window.localStorage.removeItem(KLUCZ_OSTATNI_LOGIN);
+  } catch {
+    // Pamięć bywa niedostępna (zablokowane dane stron). Podpowiedź loginu to
+    // wygoda, nie warunek pracy — program ma działać dalej.
+  }
+}
+
+export function ostatniLogin(): string {
+  try {
+    return window.localStorage.getItem(KLUCZ_OSTATNI_LOGIN) || '';
+  } catch {
+    return '';
+  }
+}
+
+/** Login do podstawienia w formularzu: zapamiętany, o ile takie konto wciąż
+ *  istnieje i nie jest wyłączone. Oddajemy pisownię z konta, nie z pamięci. */
+export function podpowiadanyLogin(users: UserAccount[] | undefined): string {
+  const zapisany = ostatniLogin().trim().toLowerCase();
+  if (!zapisany) return '';
+  const konto = (users || []).find((u) => !u.disabled && u.login.trim().toLowerCase() === zapisany);
+  return konto ? konto.login : '';
+}

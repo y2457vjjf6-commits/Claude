@@ -21,7 +21,7 @@ import { printOrder } from './lib/orderActions';
 import { autoAssignee, mojaPozycja, powodBlokady } from './lib/departments';
 import { computeOrderNumberFor } from './lib/numbering';
 import LoginView from './views/LoginView';
-import { podpis, wolno, wymagaLogowania } from './lib/auth';
+import { podpis, wolno, wymagaLogowania, zapamietajLogin } from './lib/auth';
 import { backupInBackground } from './lib/backup';
 import ReportsView from './views/ReportsView';
 import Sidebar from './components/Sidebar';
@@ -314,6 +314,9 @@ export default function App() {
           state={state}
           onLogin={(u) => {
             setZalogowany(u);
+            // Login zostaje przy tym komputerze, żeby nie przepisywać go
+            // przy każdym uruchomieniu. Hasło — nie.
+            zapamietajLogin(u.login);
             // Ostatnie logowanie zapisujemy, żeby było widać konta nieużywane
             void persist({
               ...state,
@@ -325,6 +328,7 @@ export default function App() {
           }}
           onCreateOwner={async (u) => {
             await persist({ ...state, users: [...(state.users || []), u] });
+            zapamietajLogin(u.login);
             setZalogowany(u);
           }}
         />

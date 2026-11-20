@@ -110,17 +110,48 @@ describe('stawka rabatu dla pozycji', () => {
 describe('rozbicie rabatu na stawki', () => {
   it('jedna stawka to jedna linia — jak dotąd', () => {
     const o = oferta([tabela(ASORTYMENT)]);
-    expect(discountLines(ASORTYMENT, o)).toEqual([{ percent: 10, base: 3500, amount: 350 }]);
+    expect(discountLines(ASORTYMENT, o)).toMatchObject([{ percent: 10, base: 3500, amount: 350 }]);
   });
 
   it('różne stawki rozchodzą się na osobne linie, od najwyższej', () => {
     const o = oferta([tabela(ASORTYMENT)], { discountRules: STAWKI });
-    expect(discountLines(ASORTYMENT, o)).toEqual([
+    expect(discountLines(ASORTYMENT, o)).toMatchObject([
       { percent: 10, base: 1000, amount: 100 },
       { percent: 5, base: 2000, amount: 100 }
     ]);
     // moskitiery nie mają linii, bo nie mają rabatu
     expect(discountTotal(ASORTYMENT, o)).toBe(200);
+  });
+
+  it('przy każdej stawce stoją produkty, których dotyczy', () => {
+    const o = oferta([tabela(ASORTYMENT)], { discountRules: STAWKI });
+    expect(discountLines(ASORTYMENT, o).map((l) => l.products)).toEqual([
+      ['Rolety materiałowe Mini 19'],
+      ['Żaluzje drewniane 50 mm']
+    ]);
+  });
+
+  it('kilka produktów po tej samej stawce trafia do jednej linii', () => {
+    const o = oferta([tabela(ASORTYMENT)], { discountRules: [regula('moskitiery plisowane', '0')] });
+    const linia = discountLines(ASORTYMENT, o)[0];
+    expect(linia.products).toEqual(['Rolety materiałowe Mini 19', 'Żaluzje drewniane 50 mm']);
+    expect(linia.coversAll).toBe(false);
+  });
+
+  it('rabat obejmujący całą wycenę nie wylicza nazw', () => {
+    // inaczej podsumowanie przepisywałoby całą ofertę jeszcze raz
+    const o = oferta([tabela(ASORTYMENT)]);
+    expect(discountLines(ASORTYMENT, o)[0].coversAll).toBe(true);
+  });
+
+  it('powtórzona nazwa produktu liczy się raz', () => {
+    const o = oferta([tabela([poz('Roleta', '100'), poz('Rolety', '200'), poz('Żaluzja', '300')])]);
+    // „Roleta" i „Rolety" to dwa osobne wpisy — nie zgadujemy odmiany
+    const linia = discountLines(
+      [poz('Roleta', '100'), poz('Roleta', '200'), poz('Żaluzja', '300')],
+      o
+    )[0];
+    expect(linia.products).toEqual(['Roleta', 'Żaluzja']);
   });
 
   it('brak rabatu to brak linii', () => {
@@ -231,5 +262,29 @@ describe('rabaty na dokumencie', () => {
 
   it('wyłączony rabat nie drukuje żadnej linii', () => {
     expect(html({ discountEnabled: false })).not.toContain('Rabat');
+  });
+
+  it('przy stawce dla części produktów dokument podaje ich nazwy', () => {
+    const doc = html({ discountRules: STAWKI });
+    expect(doc).toContain('Rolety materiałowe Mini 19');
+    expect(doc).toContain('Żaluzje drewniane 50 mm');
+    expect(doc).toContain('of-sum-sub');
+  });
+
+  it('rabat na całą wycenę nie wylicza nazw w podsumowaniu', () => {
+    const doc = html({});
+    const podsumowanie = doc.slice(doc.indexOf('<table class="of-sum">'));
+    expect(podsumowanie).not.toContain('of-sum-sub');
+  });
+
+  it('nazwa produktu w podsumowaniu jest escapowana', () => {
+    const doc = require('./printingOffer').buildOfferHtml(
+      oferta([tabela([poz('Roleta <b>XL</b>', '100'), poz('Żaluzja', '200')])], {
+        discountRules: [regula('żaluzja', '5')]
+      }),
+      require('./storage').DEFAULT_STATE.settings
+    ) as string;
+    expect(doc).not.toContain('<b>XL</b>');
+    expect(doc).toContain('&lt;b&gt;XL&lt;/b&gt;');
   });
 });

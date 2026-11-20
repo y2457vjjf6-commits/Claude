@@ -1313,6 +1313,9 @@ export default function OfferEditorView({
               Rabat {l.percent.toLocaleString('pl-PL')}%{' '}
               {sumy.discounts.length > 1 && <span className="muted">od {formatMoney(l.base)}</span>}:{' '}
               <strong>−{formatMoney(l.amount)}</strong>
+              {!l.coversAll && l.products.length > 0 && (
+                <span className="muted discount-products"> {l.products.join(' · ')}</span>
+              )}
             </div>
           ))}
           <div className="offer-summary-total">
@@ -1591,6 +1594,9 @@ export default function OfferEditorView({
                   <div key={l.percent}>
                     Rabat {l.percent.toLocaleString('pl-PL')}% od {formatMoney(l.base)}:{' '}
                     <strong>−{formatMoney(l.amount)}</strong>
+                    {!l.coversAll && l.products.length > 0 && (
+                      <span className="muted discount-products"> {l.products.join(' · ')}</span>
+                    )}
                   </div>
                 ))
               )}

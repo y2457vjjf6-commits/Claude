@@ -62,6 +62,11 @@ export interface DiscountLine {
   base: number;
   /** Kwota rabatu */
   amount: number;
+  /** Produkty objęte tą stawką — po nich klient poznaje, czego rabat dotyczy */
+  products: string[];
+  /** Czy ta stawka obejmuje wszystko, co jest w wycenie. Wtedy wyliczanie
+   *  nazw byłoby przepisywaniem całej oferty do podsumowania. */
+  coversAll: boolean;
 }
 
 /** Rabat rozbity na stawki — jedna linia na każdy użyty procent.
@@ -72,15 +77,31 @@ export interface DiscountLine {
  *  o grosz przy ponownym wydruku.
  */
 export function discountLines(items: OfferItem[], offer: DiscountSettings): DiscountLine[] {
-  const wedlugStawki = new Map<number, number>();
+  const wedlugStawki = new Map<number, { base: number; produkty: Map<string, string> }>();
+  // nazwy wszystkich wycenionych produktów — do rozpoznania stawki „na wszystko"
+  const wszystkie = new Map<string, string>();
+
   for (const it of items) {
+    const nazwa = String(it.name || '').trim();
+    const kwota = itemTotal(it);
+    if (nazwa && kwota) wszystkie.set(normalizujNazwe(nazwa), nazwa);
     const p = itemDiscountPercent(it, offer);
     if (!p) continue;
-    wedlugStawki.set(p, (wedlugStawki.get(p) || 0) + itemTotal(it));
+    const grupa = wedlugStawki.get(p) || { base: 0, produkty: new Map<string, string>() };
+    grupa.base += kwota;
+    if (nazwa) grupa.produkty.set(normalizujNazwe(nazwa), nazwa);
+    wedlugStawki.set(p, grupa);
   }
+
   return Array.from(wedlugStawki.entries())
     .sort((a, b) => b[0] - a[0])
-    .map(([percent, base]) => ({ percent, base, amount: Math.round(base * percent) / 100 }));
+    .map(([percent, grupa]) => ({
+      percent,
+      base: grupa.base,
+      amount: Math.round(grupa.base * percent) / 100,
+      products: Array.from(grupa.produkty.values()),
+      coversAll: grupa.produkty.size > 0 && grupa.produkty.size === wszystkie.size
+    }));
 }
 
 /** Łączna kwota rabatu dla podanych pozycji. */

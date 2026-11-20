@@ -38,17 +38,22 @@ dopłatą, a powyżej 100% oferta robi się ujemna.
 ## Co widzi klient
 
 Rabaty nie stoją przy pozycjach. W podsumowaniu dokumentu jest **osobna linia
-na każdą użytą stawkę**, a gdy stawek jest kilka — z podaną podstawą:
+na każdą użytą stawkę**, a pod nią **nazwy produktów, których dotyczy**. Gdy
+stawek jest kilka, w linii stoi też podstawa, żeby dało się sprawdzić rachunek:
 
 ```
-Wartość pozycji                      3421,00 zł
-Rabat 10% od 591,00 zł                −59,10 zł
-Rabat 5% od 1280,00 zł                −64,00 zł
-CENA CAŁKOWITA                       3297,90 zł
+Wartość pozycji                                        5940,00 zł
+Rabat 10% od 3150,00 zł
+Moskitiera plisowana                                   −315,00 zł
+Rabat 5% od 2620,00 zł
+Żaluzje plisowane · Żaluzje plisowane - Dzień i Noc     −131,00 zł
+CENA CAŁKOWITA                                         5494,00 zł
 ```
 
-Przy jednym rabacie na wszystko linia jest jedna i wygląda dokładnie tak, jak
-przed wprowadzeniem stawek produktowych.
+Nazw nie wyliczamy przy rabacie, który obejmuje **całą** wycenę — byłoby to
+przepisanie całej oferty do podsumowania. Przy jednym rabacie na wszystko
+linia jest jedna i wygląda dokładnie tak, jak przed wprowadzeniem stawek
+produktowych.
 
 ## Rabaty a opcje do wyboru
 

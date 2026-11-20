@@ -1,4 +1,5 @@
 import { Offer, OfferGroup, OfferItem, OfferOption, ProductPhoto, Settings } from '../types';
+import type { DiscountLine } from './discounts';
 import { LOGO_LECHROL } from '../assets/logo';
 import {
   columnHeaderLabel,
@@ -336,6 +337,20 @@ function platnosc(settings: Settings): string {
   return `Zaliczka ${esc(String(settings.offerDepositPercent).trim())}% przy złożeniu zamówienia, reszta przy odbiorze`;
 }
 
+/** Opis linii rabatu w podsumowaniu.
+ *
+ *  Sama stawka nie mówi klientowi, za co dostał upust — przy kilku stawkach
+ *  dwie linijki „Rabat 10%" i „Rabat 5%" to zagadka. Dlatego pod stawką
+ *  wypisujemy produkty, których dotyczy, a obok niej podstawę, żeby dało się
+ *  sprawdzić rachunek. Rabat obejmujący całą wycenę nazw nie potrzebuje:
+ *  byłoby to przepisanie całej oferty do podsumowania.
+ */
+function opisRabatu(l: DiscountLine, ile: number): string {
+  const stawka = ile > 1 ? `Rabat ${procentPl(l.percent)}% od ${formatMoney(l.base)}` : `Rabat ${procentPl(l.percent)}%`;
+  if (l.coversAll || !l.products.length) return esc(stawka);
+  return `${esc(stawka)}<span class="of-sum-sub">${esc(l.products.join(' · '))}</span>`;
+}
+
 /** Para „co — jakie" w warunkach oferty i w identyfikacji dokumentu. */
 function para(etykieta: string, wartosc: string): string {
   if (!wartosc) return '';
@@ -453,8 +468,10 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
     : sumy.optionGroups.length
       ? zOpcja
       : 'Cena całkowita';
+  // `opis` bywa gotowym HTML-em (nazwy produktów przy rabacie), więc escapuje
+  // go ten, kto go składa — inaczej znaczniki wyszłyby na dokument jako tekst.
   const linia = (opis: string, kwota: string, klasa = '') =>
-    `<tr${klasa ? ` class="${klasa}"` : ''}><th>${esc(opis)}</th><td>${kwota}</td></tr>`;
+    `<tr${klasa ? ` class="${klasa}"` : ''}><th>${opis}</th><td>${kwota}</td></tr>`;
 
   const podsumowanie =
     sumy.itemsSum > 0 || !warianty.length
@@ -465,21 +482,10 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
              // stawkach produktowych klient widzi, co po ile dostał.
              sumy.discounts.length
                ? linia('Wartość pozycji', formatMoney(sumy.itemsSum)) +
-                 sumy.discounts
-                   .map((l) =>
-                     linia(
-                       // Przy jednej stawce wiadomo, od czego liczona; przy kilku
-                       // trzeba podać podstawę, inaczej klient nie sprawdzi rachunku.
-                       sumy.discounts.length > 1
-                         ? `Rabat ${procentPl(l.percent)}% od ${formatMoney(l.base)}`
-                         : `Rabat ${procentPl(l.percent)}%`,
-                       `−${formatMoney(l.amount)}`
-                     )
-                   )
-                   .join('')
+                 sumy.discounts.map((l) => linia(opisRabatu(l, sumy.discounts.length), `−${formatMoney(l.amount)}`)).join('')
                : ''
            }
-           ${linia(etykietaCeny, formatMoney(sumy.total), 'of-grand')}
+           ${linia(esc(etykietaCeny), formatMoney(sumy.total), 'of-grand')}
            ${
              offer.vatBreakdown
                ? linia('W tym netto', formatMoney(vat.netto)) + linia(`VAT ${vat.rate}%`, formatMoney(vat.vat))

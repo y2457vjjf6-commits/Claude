@@ -1835,6 +1835,10 @@ kbd {
   font-size: var(--text-xs);
 }
 
+.discount-products {
+  font-size: var(--text-xs);
+}
+
 /* ----------------------------------------------------------- powiadomienie */
 
 .toast {

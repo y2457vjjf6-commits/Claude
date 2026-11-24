@@ -57,6 +57,33 @@ wspólne plus po jednej opcji z każdej grupy. W tabeli danej grupy kwoty
 odpowiadają na pytanie „ile wyjdzie, jeśli wezmę tę opcję, a reszta zostanie
 bez zmian”.
 
+### Komplety
+
+Przy dwóch pomieszczeniach klient pyta zwykle o co innego: **ile wyjdzie,
+jeśli wszędzie wezmę tańszą wersję**. Dlatego pod podsumowaniem staje
+zestawienie kompletów — po jednej opcji z każdej grupy, kolumna obok kolumny:
+
+```
+Cena całkowita przy wyborze całego kompletu
+
+Pomieszczenie     Wszystkie opcje A          Wszystkie opcje B
+Sypialnia         materiał dzień-noc         materiał zaciemniający
+Kuchnia           przesuwna                  plisowana
+CENA CAŁKOWITA    1719,50 zł                 2080,50 zł
+```
+
+Pod każdym kompletem widać, z czego się składa, więc klient nie musi zgadywać,
+co znaczy „opcja A”. Mieszanie dalej jest możliwe — wtedy cenę czyta się
+z tabel przy pomieszczeniach.
+
+Zestawienie pojawia się tylko wtedy, gdy grup opcji jest **co najmniej dwie**
+i da się z nich ułożyć więcej niż jeden komplet. Przy jednej grupie tabela
+przy niej mówi już dokładnie to samo.
+
+Gdy jedna grupa ma mniej opcji niż inne (np. trzy kontra dwie), w dalszych
+kompletach zostaje przy swojej ostatniej — w tabeli widać wtedy wprost, która
+opcja do kompletu weszła.
+
 ## Stare warianty alternatywne
 
 Wcześniejszy mechanizm („Wariant alternatywny — poza ceną całkowitą”) pokazywał

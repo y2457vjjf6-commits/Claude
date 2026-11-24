@@ -127,6 +127,32 @@ export interface OfferOptionGroupTotals {
   options: OfferOptionTotal[];
 }
 
+/** Jedna opcja wchodząca w skład kompletu. */
+export interface OfferBundlePick {
+  groupId: string;
+  /** Podpis grupy — zwykle pomieszczenie */
+  groupLabel: string;
+  /** Nazwa opcji wziętej z tej grupy do tego kompletu */
+  optionLabel: string;
+}
+
+/** Komplet: ta sama litera opcji wzięta ze wszystkich grup naraz.
+ *
+ *  Tabela przy grupie odpowiada na pytanie „ile wyjdzie, jeśli zmienię tę
+ *  jedną rzecz”. Komplet odpowiada na inne: „ile wyjdzie, jeśli wszędzie
+ *  wezmę tańszą wersję”. Przy dwóch pomieszczeniach to już nie to samo,
+ *  a klient i tak liczy to sobie na kartce. */
+export interface OfferBundleTotal {
+  /** 0 = A, 1 = B… */
+  index: number;
+  /** „Wszystkie opcje A”, albo wspólna nazwa, gdy grupy nazwały ją tak samo */
+  label: string;
+  /** Cena całkowita oferty przy tym komplecie, po rabatach */
+  total: number;
+  /** Z czego komplet się składa — grupa po grupie */
+  picks: OfferBundlePick[];
+}
+
 export interface OfferTotals {
   /** Suma pozycji podstawowych (bez wariantów), przed rabatem.
    *  Grupa opcji wchodzi tu kwotą swojej wybranej opcji — opcje są
@@ -145,6 +171,10 @@ export interface OfferTotals {
    *  Przy jednym rabacie na całość jest to jedna linia i dokument wygląda
    *  tak jak dotąd. */
   discounts: DiscountLine[];
+  /** Komplety opcji — tylko gdy grup opcji jest co najmniej dwie i da się
+   *  z nich ułożyć więcej niż jeden komplet. Przy jednej grupie tabela
+   *  porównawcza mówi już wszystko i drugie zestawienie byłoby powtórką. */
+  optionBundles: OfferBundleTotal[];
 }
 
 /** Rabat liczony od pozycji: każdy produkt swoją stawką. Pozycje podajemy
@@ -206,8 +236,45 @@ export function offerTotals(offer: Offer): OfferTotals {
       };
     });
 
+  // Komplety: litera A ze wszystkich grup naraz, potem B, potem C.
+  // Grupa, która nie ma opcji na danej pozycji, zostaje przy swojej ostatniej
+  // — komplet ma być policzalny, a w tabeli i tak widać, co do niego weszło.
+  const grupyOpcji = podstawowe.map((g, i) => ({ g, i })).filter(({ g }) => isOptionGroup(g));
+  const ileKompletow = grupyOpcji.length
+    ? Math.max(...grupyOpcji.map(({ g }) => (g.options || []).length))
+    : 0;
+  const optionBundles: OfferBundleTotal[] = [];
+  if (grupyOpcji.length >= 2 && ileKompletow >= 2) {
+    for (let i = 0; i < ileKompletow; i++) {
+      const picks: OfferBundlePick[] = [];
+      const tytuly: string[] = [];
+      const pozycje = podstawowe.flatMap((g) => {
+        if (!isOptionGroup(g)) return g.items;
+        const opcje = g.options || [];
+        const oi = Math.min(i, opcje.length - 1);
+        const o = opcje[oi];
+        picks.push({
+          groupId: g.id,
+          groupLabel: groupLabel(grupy, grupy.indexOf(g)) || `Opcje ${picks.length + 1}`,
+          optionLabel: optionLabel(o, oi)
+        });
+        tytuly.push(String(o.title || '').trim());
+        return o.items.map((it, j) => fullOptionItem(g.items[j] || it, it));
+      });
+      // Gdy wszystkie grupy nazwały tę opcję tak samo („dzień-noc”), nazwa
+      // mówi więcej niż litera.
+      const wspolna = tytuly.every((t) => t && t === tytuly[0]) ? tytuly[0] : '';
+      optionBundles.push({
+        index: i,
+        label: wspolna || `Wszystkie opcje ${String.fromCharCode(65 + i)}`,
+        total: poRabacie(pozycje, offer).net,
+        picks
+      });
+    }
+  }
+
   const deliveryAmount = offer.deliveryEnabled ? parseNumber(offer.deliveryPrice) : 0;
-  return { itemsSum, discountAmount, total, deliveryAmount, variants, optionGroups, discounts };
+  return { itemsSum, discountAmount, total, deliveryAmount, variants, optionGroups, discounts, optionBundles };
 }
 
 /* ------------------------------ VAT ------------------------------ */

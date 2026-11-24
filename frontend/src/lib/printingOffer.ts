@@ -1,5 +1,6 @@
 import { Offer, OfferGroup, OfferItem, OfferOption, ProductPhoto, Settings } from '../types';
 import type { DiscountLine } from './discounts';
+import type { OfferBundleTotal } from './offers';
 import { LOGO_LECHROL } from '../assets/logo';
 import {
   columnHeaderLabel,
@@ -320,6 +321,56 @@ function specyfikacjeOpcji(g: OfferGroup, numery: string[]): string {
   return bloki ? `<section class="of-opt-specs">${bloki}</section>` : '';
 }
 
+/** Zestawienie kompletów: ta sama litera opcji wzięta we wszystkich grupach.
+ *
+ *  Tabela przy grupie odpowiada na pytanie „ile wyjdzie, jeśli zmienię tę
+ *  jedną roletę”. Przy dwóch pomieszczeniach klient pyta o co innego: ile
+ *  wyjdzie, jeśli wszędzie weźmie tańszą wersję. Dotąd musiał to sobie
+ *  dodawać na kartce — teraz komplety stoją obok siebie, a pod każdym
+ *  widać, z czego się składa.
+ */
+function tabelaKompletow(bundles: OfferBundleTotal[]): string {
+  if (bundles.length < 2) return '';
+  const grupy = bundles[0].picks;
+  const wiersze = grupy
+    .map((_, gi) => {
+      const podpis = bundles[0].picks[gi]?.groupLabel || '';
+      return (
+        '<tr class="of-item">' +
+        `<td class="of-name"><span class="of-name-main">${esc(podpis)}</span></td>` +
+        bundles
+          .map((b) => `<td class="of-opt">${esc(b.picks[gi]?.optionLabel || '—')}</td>`)
+          .join('') +
+        '</tr>'
+      );
+    })
+    .join('');
+
+  return `
+       <section class="of-bundles">
+         <h2 class="of-section-title">Cena całkowita przy wyborze całego kompletu</h2>
+         <p class="of-section-note">
+           Każda kolumna to jeden komplet — po jednej opcji z każdego pomieszczenia.
+           Wolno też mieszać: wtedy cena wychodzi z tabel przy pomieszczeniach.
+         </p>
+         <table class="of-items of-compare of-bundle-table">
+           <thead>
+             <tr>
+               <th class="of-name">Pomieszczenie</th>
+               ${bundles.map((b) => `<th class="of-opt">${esc(b.label)}</th>`).join('')}
+             </tr>
+           </thead>
+           <tbody>
+             ${wiersze}
+             <tr class="of-opt-total">
+               <th>Cena całkowita oferty</th>
+               ${bundles.map((b) => `<td class="of-opt">${formatMoney(b.total)}</td>`).join('')}
+             </tr>
+           </tbody>
+         </table>
+       </section>`;
+}
+
 /** Telefon pod podpisem — pomijany, gdy to ten sam numer co firmowy. */
 function telefonPodpisu(offer: Offer, s: Settings['seller']): string {
   const cyfry = (x: string) => String(x || '').replace(/\D/g, '');
@@ -578,6 +629,7 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
     ${specOpcji}
     ${tabelaWariantow}
     ${podsumowanie}
+    ${tabelaKompletow(sumy.optionBundles)}
 
     ${warunki ? `<section class="of-terms"><h2 class="of-section-title">Warunki</h2>${warunki}</section>` : ''}
 

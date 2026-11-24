@@ -634,6 +634,25 @@
   color: var(--of-ink);
 }
 
+/* ---------- Komplety opcji ---------- */
+/* Stoi pod podsumowaniem, bo odpowiada na pytanie zadawane na końcu:
+   „a ile wyjdzie, jeśli wszędzie wezmę tańszą wersję”. */
+
+.of-bundles {
+  margin-top: 14pt;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.of-bundles .of-items { margin-top: 5pt; }
+
+.of-bundle-table .of-name { width: auto; }
+
+.of-bundle-table td.of-opt {
+  font-weight: 500;
+  color: var(--of-ink);
+}
+
 /* ---------- Specyfikacja opcji ---------- */
 /* Pod tabelą, bo w kolumnie z ceną nie ma na nią miejsca — a to właśnie
    w parametrach siedzi różnica, za którą klient dopłaca. */

@@ -1288,7 +1288,7 @@ export default function OfferEditorView({
               <input type="checkbox" data-testid="offer-delivery-enabled" checked={offer.deliveryEnabled} onChange={(e) => set({ deliveryEnabled: e.target.checked })} />
               <span>Dostawa kurierem</span>
             </label>
-            {offer.deliveryEnabled && (
+          {offer.deliveryEnabled && (
               <label className="field" style={{ marginTop: 8 }}>
                 <span>Szacunkowy koszt dostawy</span>
                 <SuffixField
@@ -1360,6 +1360,24 @@ export default function OfferEditorView({
               )}
             </div>
           ))}
+          {/* Komplety: ta sama litera opcji we wszystkich pomieszczeniach naraz.
+              Odpowiadają na pytanie zadawane na końcu — „a ile wyjdzie, jeśli
+              wszędzie wezmę tańszą wersję”. Przy jednej grupie opcji tabela
+              przy niej mówi już dokładnie to samo. */}
+          {sumy.optionBundles.length > 1 && (
+            <div className="offer-bundles" data-testid="offer-bundles">
+              <div className="muted">Cały komplet:</div>
+              {sumy.optionBundles.map((b) => (
+                <div className="offer-option-row" key={b.index} data-testid={`offer-bundle-${b.index}`}>
+                  <span>{b.label}</span>
+                  <strong>{formatMoney(b.total)}</strong>
+                  <span className="muted offer-option-diff">
+                    {b.picks.map((x) => `${x.groupLabel}: ${x.optionLabel}`).join(' · ')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
           {offer.deliveryEnabled && (
             <div className="muted">
               Dostawa: {offer.deliveryPrice.trim() ? formatMoney(sumy.deliveryAmount) : 'nie dotyczy'} (osobno, poza ceną

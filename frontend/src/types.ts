@@ -64,6 +64,32 @@ export interface Smtp {
   from: string;
 }
 
+/** Skrzynka odbiorcza, z której program czyta wiadomości z pomiarami.
+ *
+ *  Osobno od `Smtp`, bo wysyłka i odbiór chodzą po innych serwerach i portach
+ *  — ale u większości dostawców na tym samym loginie, stąd `sameAsSmtp`. */
+export interface Imap {
+  host: string;
+  port: number;
+  user: string;
+  pass: string;
+  /** Folder na serwerze; puste znaczy „INBOX" */
+  folder?: string;
+  /** Login i hasło brać z ustawień wysyłki (SMTP) zamiast własnych */
+  sameAsSmtp?: boolean;
+}
+
+/** Jedna wiadomość na liście do wyboru — bez treści, żeby lista ładowała się
+ *  szybko nawet przy dużej skrzynce. */
+export interface MailHeader {
+  uid: number;
+  subject: string;
+  from: string;
+  /** Data w ISO; pusta, gdy serwer jej nie podał */
+  date: string;
+  seen: boolean;
+}
+
 export interface Seller {
   name: string;
   address: string;
@@ -112,6 +138,8 @@ export interface Settings {
   seller: Seller;
   place: string;
   smtp: Smtp;
+  /** Skrzynka odbiorcza do importu pomiarów; brak = funkcja wyłączona */
+  imap?: Imap;
   emailSubject: string;
   emailBody: string;
   /** Adres, na który trafia ukryta kopia (UDW) każdej wysłanej WZ */
@@ -250,6 +278,20 @@ declare global {
         filename: string;
       }) => Promise<{ ok: boolean; error?: string }>;
       testEmail: (smtp: Smtp) => Promise<{ ok: boolean; error?: string }>;
+      /** Sprawdza połączenie ze skrzynką odbiorczą, nic nie pobierając */
+      mailTest: (imap: Imap, smtp: Smtp) => Promise<{ ok: boolean; error?: string; count?: number }>;
+      /** Nagłówki ostatnich wiadomości, od najnowszej */
+      mailList: (
+        imap: Imap,
+        smtp: Smtp,
+        limit?: number
+      ) => Promise<{ ok: boolean; error?: string; messages?: MailHeader[] }>;
+      /** Treść tekstowa jednej wiadomości */
+      mailFetch: (
+        imap: Imap,
+        smtp: Smtp,
+        uid: number
+      ) => Promise<{ ok: boolean; error?: string; subject?: string; from?: string; date?: string; text?: string }>;
       chooseBackupFolder: () => Promise<{ ok: boolean; folder?: string; canceled?: boolean }>;
       backupNow: (payload: { state: AppState; folder: string }) => Promise<{ ok: boolean; file?: string; error?: string }>;
       restoreBackup: (folder: string) => Promise<{ ok: boolean; state?: AppState; canceled?: boolean; error?: string }>;

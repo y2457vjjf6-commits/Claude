@@ -39,6 +39,12 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
     mUser: st.smtp.user,
     mPass: st.smtp.pass,
     mFrom: st.smtp.from,
+    iHost: st.imap?.host || '',
+    iPort: st.imap?.port ? String(st.imap.port) : '',
+    iUser: st.imap?.user || '',
+    iPass: st.imap?.pass || '',
+    iFolder: st.imap?.folder || '',
+    iSame: st.imap?.sameAsSmtp !== false,
     mSubject: st.emailSubject,
     mCopyTo: st.emailCopyTo || '',
     backupFolder: st.backupFolder || '',
@@ -72,6 +78,7 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
     'firma' | 'oferty' | 'produkcja' | 'biblioteki' | 'konta' | 'poczta' | 'dane'
   >('firma');
   const [testing, setTesting] = useState(false);
+  const [testingBox, setTestingBox] = useState(false);
 
   useEffect(() => {
     if (hasApi) dataLocation().then(setLocation);
@@ -94,6 +101,14 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
       user: form.mUser.trim(),
       pass: form.mPass,
       from: form.mFrom.trim()
+    };
+    next.settings.imap = {
+      host: form.iHost.trim(),
+      port: Number(form.iPort) || 993,
+      user: form.iUser.trim(),
+      pass: form.iPass,
+      folder: form.iFolder.trim(),
+      sameAsSmtp: form.iSame
     };
     next.settings.emailSubject = form.mSubject;
     next.settings.emailCopyTo = form.mCopyTo.trim();
@@ -241,6 +256,39 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
       else toast(res.error || 'Nie udało się połączyć z serwerem poczty.', true);
     } finally {
       setTesting(false);
+    }
+  };
+
+  const testSkrzynki = async () => {
+    if (!hasApi || !window.wzApi) {
+      toast('Test skrzynki działa tylko w aplikacji na komputerze.', true);
+      return;
+    }
+    if (!form.iHost.trim()) {
+      toast('Podaj serwer skrzynki odbiorczej, zanim sprawdzisz połączenie.', true);
+      return;
+    }
+    setTestingBox(true);
+    try {
+      const res = await window.wzApi.mailTest(
+        {
+          host: form.iHost.trim(),
+          port: Number(form.iPort) || 993,
+          user: form.iUser.trim(),
+          pass: form.iPass,
+          folder: form.iFolder.trim(),
+          sameAsSmtp: form.iSame
+        },
+        { host: form.mHost.trim(), port: Number(form.mPort) || 587, user: form.mUser.trim(), pass: form.mPass, from: form.mFrom.trim() }
+      );
+      if (res.ok) {
+        const ile = res.count ?? 0;
+        toast(`Połączenie ze skrzynką działa — widzę ${ile} ${ile === 1 ? 'wiadomość' : 'wiadomości'} w tym folderze.`);
+      } else {
+        toast(res.error || 'Nie udało się połączyć ze skrzynką.', true);
+      }
+    } finally {
+      setTestingBox(false);
     }
   };
 
@@ -1270,6 +1318,92 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
             {testing ? 'Sprawdzam połączenie…' : 'Testuj połączenie'}
           </button>
           <span className="muted">Sprawdza dane skrzynki bez wysyłania wiadomości.</span>
+        </div>
+      </div>
+
+      <div className="card">
+        <h3 className="card-title">Skrzynka odbiorcza (pomiary z poczty)</h3>
+        <p className="muted card-note">
+          Opcjonalne. Pozwala wybrać wiadomość z pomiarem wprost w programie, zamiast zapisywać ją na dysk.
+          Program tylko czyta: nie kasuje, nie przenosi i nie oznacza wiadomości jako przeczytanej.
+        </p>
+        <div className="grid2">
+          <label className="field">
+            <span>Serwer odbiorczy IMAP (np. imap.gmail.com)</span>
+            <input
+              type="text"
+              className="input"
+              data-testid="imap-host-input"
+              value={form.iHost}
+              onChange={(e) => set({ iHost: e.target.value })}
+            />
+          </label>
+          <label className="field">
+            <span>Port (993 lub 143)</span>
+            <input
+              type="number"
+              className="input"
+              data-testid="imap-port-input"
+              placeholder="993"
+              value={form.iPort}
+              onChange={(e) => set({ iPort: e.target.value })}
+            />
+          </label>
+          <label className="field">
+            <span>Folder na serwerze</span>
+            <input
+              type="text"
+              className="input"
+              data-testid="imap-folder-input"
+              placeholder="INBOX (domyślnie)"
+              value={form.iFolder}
+              onChange={(e) => set({ iFolder: e.target.value })}
+            />
+            <span className="field-hint">
+              Zostaw puste, żeby czytać ze skrzynki odbiorczej. Wpisz nazwę folderu, jeśli pomiary trafiają
+              do osobnego — wtedy lista nie miesza się z resztą poczty.
+            </span>
+          </label>
+        </div>
+        <label className="checkbox-field" style={{ marginTop: 14 }}>
+          <input
+            type="checkbox"
+            data-testid="imap-same-check"
+            checked={form.iSame}
+            onChange={(e) => set({ iSame: e.target.checked })}
+          />
+          <span>Login i hasło jak przy wysyłce</span>
+        </label>
+        {!form.iSame && (
+          <div className="grid2" style={{ marginTop: 14 }}>
+            <label className="field">
+              <span>Login (adres e-mail)</span>
+              <input
+                type="text"
+                className="input"
+                data-testid="imap-user-input"
+                value={form.iUser}
+                onChange={(e) => set({ iUser: e.target.value })}
+              />
+            </label>
+            <label className="field">
+              <span>Hasło</span>
+              <input
+                type="password"
+                className="input"
+                data-testid="imap-pass-input"
+                value={form.iPass}
+                onChange={(e) => set({ iPass: e.target.value })}
+              />
+            </label>
+          </div>
+        )}
+        <div className="actions-bar" style={{ marginTop: 16 }}>
+          <button className="btn" data-testid="test-imap-btn" onClick={testSkrzynki} disabled={testingBox}>
+            {testingBox ? <Loader2 className="icon icon-spin" /> : <PlugZap className="icon" />}
+            {testingBox ? 'Sprawdzam skrzynkę…' : 'Testuj skrzynkę'}
+          </button>
+          <span className="muted">Łączy się i liczy wiadomości — niczego nie pobiera.</span>
         </div>
       </div>
         </div>

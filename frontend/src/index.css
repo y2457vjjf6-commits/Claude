@@ -3768,3 +3768,87 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
   flex: none;
   margin-top: 1px;
 }
+
+/* Lista wiadomości ze skrzynki w oknie importu */
+.import-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.import-box-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.import-box-head > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.import-box-head strong {
+  display: block;
+  font-size: var(--text-sm);
+}
+
+.import-box-head p {
+  margin: var(--sp-1) 0 0;
+  font-size: var(--text-xs);
+}
+
+.import-mail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 180px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+/* Temat w jednej linii, nadawca i data drobniejsze pod spodem — przy
+   dwudziestu wiadomościach liczy się, żeby dało się je przebiec wzrokiem. */
+.import-mail {
+  display: block;
+  width: 100%;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease-out);
+}
+
+.import-mail:hover {
+  background: var(--surface);
+}
+
+.import-mail.is-picked {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.import-mail-subject {
+  display: block;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  color: var(--text);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.import-mail-meta {
+  display: block;
+  overflow: hidden;
+  font-size: var(--text-xs);
+  color: var(--muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

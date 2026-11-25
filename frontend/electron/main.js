@@ -297,6 +297,159 @@ function describeSmtpError(err) {
   return msg;
 }
 
+/* ----------------------- skrzynka odbiorcza (IMAP) -----------------------
+ *
+ *  Pomiary przychodzą mailem, więc program umie je stamtąd wziąć sam. Czyta
+ *  i tylko czyta: nie kasuje, nie przenosi i nie oznacza wiadomości jako
+ *  przeczytanej (`FETCH` idzie w trybie `peek`). Skrzynka pomiarowca ma
+ *  wyglądać tak samo przed i po imporcie.
+ */
+
+/** Dane logowania do odbioru. Dostawcy zwykle mają jeden login do wysyłki
+ *  i odbioru, więc domyślnie bierzemy je z ustawień SMTP — żeby nie wpisywać
+ *  tego samego hasła dwa razy i nie pilnować dwóch kopii przy zmianie. */
+function daneImap(imap, smtp) {
+  const user = imap.sameAsSmtp === false ? imap.user : (smtp && smtp.user) || imap.user;
+  const pass = imap.sameAsSmtp === false ? imap.pass : (smtp && smtp.pass) || imap.pass;
+  const port = Number(imap.port) || 993;
+  return {
+    host: String(imap.host || '').trim(),
+    port,
+    // 993 to połączenie szyfrowane od początku, 143 szyfrowane dopiero po STARTTLS
+    secure: port !== 143,
+    auth: { user: String(user || '').trim(), pass: String(pass || '') },
+    folder: String(imap.folder || '').trim() || 'INBOX'
+  };
+}
+
+/** Jedno połączenie na jedną operację: program pracuje offline i zagląda do
+ *  skrzynki rzadko, więc trzymanie otwartego połączenia tylko mnożyłoby
+ *  sposoby, na jakie może się zerwać. */
+async function zeSkrzynka(imap, smtp, praca) {
+  const d = daneImap(imap, smtp);
+  if (!d.host || !d.auth.user) {
+    return { ok: false, error: 'Uzupełnij serwer skrzynki odbiorczej i login w Ustawieniach → Poczta.' };
+  }
+  const { ImapFlow } = require('imapflow');
+  const client = new ImapFlow({
+    host: d.host,
+    port: d.port,
+    secure: d.secure,
+    auth: d.auth,
+    logger: false,
+    emitLogs: false,
+    socketTimeout: 45000,
+    greetingTimeout: 20000
+  });
+  try {
+    await client.connect();
+  } catch (err) {
+    return { ok: false, error: opiszBladImap(err) };
+  }
+  let lock = null;
+  try {
+    lock = await client.getMailboxLock(d.folder);
+    return await praca(client);
+  } catch (err) {
+    return { ok: false, error: opiszBladImap(err) };
+  } finally {
+    if (lock) { try { lock.release(); } catch {} }
+    try { await client.logout(); } catch { try { client.close(); } catch {} }
+  }
+}
+
+function opiszBladImap(err) {
+  const kod = (err && (err.code || err.responseStatus)) || '';
+  const tresc = String((err && err.message) || err);
+  if (/AUTHENTICATIONFAILED/i.test(tresc) || kod === 'AUTHENTICATIONFAILED') {
+    return 'Serwer odrzucił login lub hasło. Sprawdź, czy jako login podajesz pełny adres e-mail, a przy Gmailu — czy używasz hasła do aplikacji.';
+  }
+  if (kod === 'ENOTFOUND' || kod === 'EDNS') {
+    return 'Nie znaleziono takiego serwera. Sprawdź pisownię adresu skrzynki odbiorczej (zwykle zaczyna się od „imap.").';
+  }
+  if (kod === 'ETIMEDOUT' || kod === 'ECONNECTION' || kod === 'ESOCKET' || kod === 'ECONNREFUSED') {
+    return 'Brak połączenia ze skrzynką. Sprawdź adres i port (993 albo 143) oraz połączenie z internetem. Port mógł też zostać zablokowany przez zaporę lub antywirus. Szczegóły: ' + tresc;
+  }
+  if (/\[NONEXISTENT\]|Mailbox doesn't exist|no such mailbox/i.test(tresc)) {
+    return 'Na serwerze nie ma takiego folderu. Zostaw pole puste, żeby czytać ze skrzynki odbiorczej (INBOX).';
+  }
+  return tresc;
+}
+
+/** Nadawca w postaci, jaką widać w poczcie: „Jan Kowalski <jan@...>”. */
+function nadawca(koperta) {
+  const kto = (koperta && koperta.from && koperta.from[0]) || null;
+  if (!kto) return '';
+  const adres = kto.address || '';
+  const imie = (kto.name || '').trim();
+  return imie && imie !== adres ? `${imie} <${adres}>` : adres;
+}
+
+ipcMain.handle('mail:test', async (_ev, imap, smtp) => {
+  return zeSkrzynka(imap, smtp, async (client) => ({
+    ok: true,
+    count: (client.mailbox && client.mailbox.exists) || 0
+  }));
+});
+
+ipcMain.handle('mail:list', async (_ev, imap, smtp, limit) => {
+  const ile = Math.min(Math.max(Number(limit) || 30, 1), 200);
+  return zeSkrzynka(imap, smtp, async (client) => {
+    const wszystkich = (client.mailbox && client.mailbox.exists) || 0;
+    if (!wszystkich) return { ok: true, messages: [] };
+    // numery porządkowe, nie UID-y: ostatnie `ile` wiadomości w folderze
+    const od = Math.max(1, wszystkich - ile + 1);
+    const messages = [];
+    for await (const m of client.fetch(`${od}:*`, { uid: true, envelope: true, flags: true })) {
+      const koperta = m.envelope || {};
+      messages.push({
+        uid: m.uid,
+        subject: koperta.subject || '(bez tematu)',
+        from: nadawca(koperta),
+        date: koperta.date ? new Date(koperta.date).toISOString() : '',
+        seen: !!(m.flags && m.flags.has && m.flags.has('\\Seen'))
+      });
+    }
+    messages.reverse(); // najnowsze na górze
+    return { ok: true, messages };
+  });
+});
+
+ipcMain.handle('mail:fetch', async (_ev, imap, smtp, uid) => {
+  return zeSkrzynka(imap, smtp, async (client) => {
+    // `source` bez zdejmowania flagi „przeczytane” — zaglądamy, nie czytamy
+    const wiadomosc = await client.fetchOne(String(uid), { uid: true, source: true, envelope: true }, { uid: true });
+    if (!wiadomosc || !wiadomosc.source) {
+      return { ok: false, error: 'Nie udało się pobrać tej wiadomości. Mogła zostać w międzyczasie przeniesiona.' };
+    }
+    const { simpleParser } = require('mailparser');
+    const mail = await simpleParser(wiadomosc.source);
+    const tekst = (mail.text || '').trim() || odHtml(mail.html || '');
+    return {
+      ok: true,
+      subject: mail.subject || (wiadomosc.envelope && wiadomosc.envelope.subject) || '',
+      from: (mail.from && mail.from.text) || nadawca(wiadomosc.envelope),
+      date: mail.date ? new Date(mail.date).toISOString() : '',
+      text: tekst
+    };
+  });
+});
+
+/** Wiadomość wysłana wyłącznie w HTML-u też ma oddać wymiary, a nie puste okno. */
+function odHtml(html) {
+  return String(html || '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|tr|li|h\d)>/gi, '\n')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+    .trim();
+}
+
 ipcMain.handle('doc:email', async (_ev, payload) => {
   const { smtp, to, bcc, subject, text, filename } = payload;
   if (!smtp || !smtp.host || !smtp.user) {

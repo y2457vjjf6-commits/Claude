@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, FileUp, Loader2, X } from 'lucide-react';
-import { AppState, Offer } from '../types';
+import { AlertTriangle, FileUp, Inbox, Loader2, RefreshCw, X } from 'lucide-react';
+import { AppState, MailHeader, Offer } from '../types';
 import { parseEml } from '../lib/eml';
 import { groupsFromMeasurement, parseMeasurementMail, withoutPrice } from '../lib/measurementMail';
 import { blankOffer, formatMoney, itemTotal } from '../lib/offers';
 import { priceTablesFor } from '../lib/cennik';
 import { todayStr } from '../lib/dates';
+import { formatDatePl } from '../lib/printing';
+import { fetchMailText, listMailbox, mailboxReady } from '../lib/mailbox';
 
 interface Props {
   state: AppState;
@@ -28,6 +30,9 @@ export default function MeasurementImport({ state, onCreate, onClose }: Props) {
   const [blad, setBlad] = useState('');
   const [nadPolem, setNadPolem] = useState(false);
   const wejscie = useRef<HTMLInputElement>(null);
+  const [listaMaili, setListaMaili] = useState<MailHeader[] | null>(null);
+  const [ladujeListe, setLadujeListe] = useState(false);
+  const [wybranyUid, setWybranyUid] = useState<number | null>(null);
 
   useEffect(() => {
     const onKey = (ev: KeyboardEvent) => {
@@ -38,6 +43,42 @@ export default function MeasurementImport({ state, onCreate, onClose }: Props) {
   }, [onClose]);
 
   const tabele = useMemo(() => priceTablesFor(state.priceTables), [state.priceTables]);
+
+  // Skrzynka jest opcjonalna: bez niej zostaje plik i wklejenie, więc zamiast
+  // błędu pokazujemy, gdzie się ją ustawia.
+  const skrzynka = state.settings.imap;
+  const maSkrzynke = mailboxReady(state.settings);
+
+  async function pobierzListe() {
+    setLadujeListe(true);
+    setBlad('');
+    try {
+      const res = await listMailbox(state.settings, 30);
+      setListaMaili(res.messages || []);
+      if (!res.ok) setBlad(res.error || 'Nie udało się pobrać listy wiadomości.');
+    } finally {
+      setLadujeListe(false);
+    }
+  }
+
+  async function wczytajZeSkrzynki(m: MailHeader) {
+    setCzyta(true);
+    setBlad('');
+    try {
+      const res = await fetchMailText(state.settings, m.uid);
+      if (!res.ok) {
+        setBlad(res.error || 'Nie udało się pobrać tej wiadomości.');
+        return;
+      }
+      setWybranyUid(m.uid);
+      setPlik('');
+      setTemat(res.subject || m.subject);
+      setTresc(res.text || '');
+      setProdukt('');
+    } finally {
+      setCzyta(false);
+    }
+  }
 
   const pomiar = useMemo(() => parseMeasurementMail(temat, tresc), [temat, tresc]);
   // Nazwa produktu jest jedna na całą wiadomość, więc poprawia się ją raz:
@@ -64,6 +105,7 @@ export default function MeasurementImport({ state, onCreate, onClose }: Props) {
         setBlad('W tym pliku nie ma treści tekstowej. Otwórz wiadomość w poczcie i wklej jej treść poniżej.');
       } else {
         setPlik(f.name);
+        setWybranyUid(null);
         setTemat(mail.subject || f.name.replace(/\.eml$/i, ''));
         setTresc(mail.text);
         setProdukt('');
@@ -99,6 +141,57 @@ export default function MeasurementImport({ state, onCreate, onClose }: Props) {
         </div>
 
         <div className="import-body">
+          {maSkrzynke && (
+            <div className="import-box" data-testid="import-mailbox">
+              <div className="import-box-head">
+                <Inbox className="icon" />
+                <div>
+                  <strong>Weź wiadomość ze skrzynki</strong>
+                  <p className="muted">
+                    {skrzynka?.folder?.trim() || 'INBOX'} — program tylko czyta, nie oznacza wiadomości jako
+                    przeczytanej.
+                  </p>
+                </div>
+                <button
+                  className="btn btn-light"
+                  data-testid="import-mail-refresh"
+                  onClick={pobierzListe}
+                  disabled={ladujeListe}
+                >
+                  {ladujeListe ? <Loader2 className="icon icon-spin" /> : <RefreshCw className="icon" />}
+                  {listaMaili ? 'Odśwież' : 'Pokaż wiadomości'}
+                </button>
+              </div>
+
+              {listaMaili && listaMaili.length === 0 && !ladujeListe && (
+                <p className="muted" data-testid="import-mail-empty">
+                  W tym folderze nie ma wiadomości.
+                </p>
+              )}
+
+              {listaMaili && listaMaili.length > 0 && (
+                <ul className="import-mail-list" data-testid="import-mail-list">
+                  {listaMaili.map((m) => (
+                    <li key={m.uid}>
+                      <button
+                        type="button"
+                        className={'import-mail' + (wybranyUid === m.uid ? ' is-picked' : '')}
+                        data-testid={`import-mail-${m.uid}`}
+                        onClick={() => void wczytajZeSkrzynki(m)}
+                      >
+                        <span className="import-mail-subject">{m.subject}</span>
+                        <span className="import-mail-meta">
+                          {m.from}
+                          {m.date ? ` · ${formatDatePl(m.date.slice(0, 10))}` : ''}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
           <div
             className={'import-drop' + (nadPolem ? ' is-over' : '')}
             data-testid="import-drop"
@@ -138,6 +231,12 @@ export default function MeasurementImport({ state, onCreate, onClose }: Props) {
             />
           </div>
 
+          {!maSkrzynke && (
+            <p className="muted" data-testid="import-no-mailbox">
+              Skrzynkę odbiorczą ustawisz w Ustawieniach → Poczta — wtedy wiadomość wybierzesz tutaj z listy,
+              bez zapisywania jej na dysk.
+            </p>
+          )}
           {plik && (
             <p className="muted" data-testid="import-file-name">
               Wczytano: {plik}

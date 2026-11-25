@@ -12,6 +12,7 @@ export const DEFAULT_STATE: AppState = {
     },
     place: 'Łomianki',
     smtp: { host: '', port: 587, user: '', pass: '', from: '' },
+    imap: { host: '', port: 993, user: '', pass: '', folder: '', sameAsSmtp: true },
     emailSubject: 'Dokument WZ {numer} — Lechrol',
     emailCopyTo: 'lechrol@lechrol.pl',
     backupFolder: '',

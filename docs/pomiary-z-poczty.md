@@ -11,8 +11,11 @@ człowiek, który widzi, czego brakuje.
 
 ## Jak to uruchomić
 
-**Oferty cenowe → Pomiar z poczty.** Dalej dwie drogi:
+**Oferty cenowe → Pomiar z poczty.** Dalej trzy drogi:
 
+- **wprost ze skrzynki** — *Pokaż wiadomości* wypisuje trzydzieści ostatnich
+  z Waszej poczty, od najnowszej. Klikasz tę z pomiarem i wczytuje się sama.
+  Wymaga jednorazowego ustawienia skrzynki (niżej);
 - **plik `.eml`** — w poczcie zapisz wiadomość na dysk i przeciągnij ją do
   okna (albo *Wybierz plik*). Temat i treść wczytają się same;
 - **wklejenie** — zaznacz treść wiadomości w poczcie, wklej w pole
@@ -75,9 +78,33 @@ wpisaniu wymiaru ręcznie w edytorze — czyli po kratce, w którą wymiar wpada
 wymiar poza tabelą albo produkt nazwany inaczej niż w cenniku — zostaje bez
 ceny, a okno importu podaje, ile ich jest.
 
+## Ustawienie skrzynki
+
+**Ustawienia → Poczta → Skrzynka odbiorcza.** Potrzebne raz:
+
+- **Serwer odbiorczy IMAP** — zwykle ten sam dostawca co przy wysyłce, tylko
+  adres zaczyna się od `imap.` zamiast `smtp.`;
+- **Port** — 993 (połączenie szyfrowane od początku) albo 143;
+- **Folder** — puste znaczy skrzynkę odbiorczą. Jeśli pomiary trafiają u Was
+  do osobnego folderu, wpisz jego nazwę: lista nie będzie się wtedy mieszać
+  z resztą poczty;
+- **Login i hasło jak przy wysyłce** — włączone bierze dane z ustawień SMTP,
+  bo u większości dostawców to jedna skrzynka. Wyłącz, gdy odbiór ma własne
+  konto.
+
+*Testuj skrzynkę* łączy się i liczy wiadomości, niczego nie pobierając.
+
+Przy Gmailu zwykłe hasło nie zadziała — trzeba hasła do aplikacji.
+
+### Co program robi ze skrzynką
+
+**Tylko czyta.** Nie kasuje, nie przenosi, nie odpowiada i **nie oznacza
+wiadomości jako przeczytanej** — pobiera ją w trybie podglądu, więc skrzynka
+pomiarowca wygląda po imporcie tak samo jak przed. Hasło leży w ustawieniach
+programu, na tym komputerze; połączenie z serwerem jest szyfrowane.
+
 ## Czego to jeszcze nie robi
 
-Program **nie łączy się sam ze skrzynką**. Wiadomość trzeba podać: plikiem
-albo wklejeniem. Automatyczne pobieranie poczty (IMAP) wymaga dołożenia do
-programu bibliotek pocztowych — treść tej strony się wtedy nie zmieni, dojdzie
-tylko lista wiadomości do wyboru zamiast przeciągania pliku.
+Program **nie sprawdza poczty sam z siebie** — zagląda do skrzynki dopiero
+wtedy, gdy klikniesz *Pokaż wiadomości*. Nie ma też powiadomienia „przyszedł
+nowy pomiar"; jeśli okaże się potrzebne, da się dołożyć.

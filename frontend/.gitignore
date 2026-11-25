@@ -10,6 +10,8 @@
 
 # production
 /build
+# spakowana aplikacja z `yarn dist` — kilkaset MB, nie do repozytorium
+/dist
 
 # misc
 .DS_Store

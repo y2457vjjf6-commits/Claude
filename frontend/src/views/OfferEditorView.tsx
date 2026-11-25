@@ -496,8 +496,10 @@ export default function OfferEditorView({
       toast('Podaj datę oferty.', true);
       return null;
     }
-    if (!offer.client.trim()) {
-      toast('Podaj klienta, dla którego wystawiasz ofertę.', true);
+    // Ofertę wystawia się na obiekt albo na sam adres e-mail — klient
+    // napisał i czeka na wycenę, a adresu jeszcze nie znamy.
+    if (!offer.client.trim() && !offer.clientEmail.trim()) {
+      toast('Podaj klienta albo adres e-mail, na który wystawiasz ofertę.', true);
       return null;
     }
     const nowIso = new Date().toISOString();
@@ -647,7 +649,7 @@ export default function OfferEditorView({
         </div>
         <div className="grid2">
           <label className="field">
-            <span>Klient lub obiekt *</span>
+            <span>Klient lub obiekt</span>
             <input
               type="text"
               className="input"
@@ -659,7 +661,20 @@ export default function OfferEditorView({
           </label>
           <label className="field">
             <span>E-mail klienta</span>
-            <input type="email" className="input" data-testid="offer-client-email" value={offer.clientEmail} onChange={(e) => set({ clientEmail: e.target.value })} />
+            <input
+              type="email"
+              className="input"
+              data-testid="offer-client-email"
+              list="podpowiedzi-mail"
+              placeholder="na ten adres pójdzie oferta"
+              value={offer.clientEmail}
+              onChange={(e) => set({ clientEmail: e.target.value })}
+            />
+            <span className="muted field-hint">
+              {offer.client.trim()
+                ? 'Drukuje się na ofercie pod nazwą odbiorcy.'
+                : 'Wystarczy sam e-mail — stanie wtedy na ofercie jako adresat.'}
+            </span>
           </label>
           <label className="field">
             <span>Adres odbiorcy</span>
@@ -727,6 +742,21 @@ export default function OfferEditorView({
       <datalist id="podpowiedzi-produktow">
         {Array.from(new Set(podpowiedziNazw)).map((n) => (
           <option key={n} value={n} />
+        ))}
+      </datalist>
+
+      {/* Adresy, na które już coś szło — ofertę wystawia się wtedy wyborem
+          z listy, bez przepisywania maila z wiadomości. */}
+      <datalist id="podpowiedzi-mail">
+        {Array.from(
+          new Set(
+            [
+              ...state.contractors.map((k) => (k.email || '').trim()),
+              ...state.offers.map((o) => (o.clientEmail || '').trim())
+            ].filter(Boolean)
+          )
+        ).map((mail) => (
+          <option key={mail} value={mail} />
         ))}
       </datalist>
 

@@ -212,18 +212,49 @@ ipcMain.handle('doc:print', async () => {
   });
 });
 
-ipcMain.handle('doc:savePdf', async (_ev, suggestedName) => {
-  const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
-    title: 'Zapisz dokument WZ jako PDF',
-    defaultPath: path.join(app.getPath('documents'), suggestedName),
-    filters: [{ name: 'PDF', extensions: ['pdf'] }]
+ipcMain.handle('folder:choose', async (_ev, tytul) => {
+  const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+    title: tytul || 'Wybierz folder',
+    properties: ['openDirectory', 'createDirectory']
   });
-  if (canceled || !filePath) return { ok: false, canceled: true };
+  if (canceled || !filePaths.length) return { ok: false, canceled: true };
+  return { ok: true, folder: filePaths[0] };
+});
+
+/** Zapis PDF-u. Ze wskazanym folderem idzie tam od razu, bez okna wyboru —
+ *  to jest ten „wyznaczony folder na oferty”. Bez folderu pyta jak dotąd.
+ *
+ *  Nie otwieramy Eksploratora przy zapisie do folderu: przy kilku ofertach
+ *  pod rząd okno wyskakiwałoby za każdym razem. Przy ręcznym zapisie, gdzie
+ *  człowiek sam wskazał miejsce, pokazujemy plik tak jak wcześniej.
+ */
+ipcMain.handle('doc:savePdf', async (_ev, suggestedName, folder) => {
+  let filePath = '';
+  const doFolderu = String(folder || '').trim();
+  if (doFolderu) {
+    try {
+      fs.mkdirSync(doFolderu, { recursive: true });
+      filePath = path.join(doFolderu, suggestedName);
+    } catch (err) {
+      // Folder zniknął albo dysk odłączony — nie gubimy dokumentu, tylko
+      // pytamy, gdzie go położyć.
+      filePath = '';
+    }
+  }
+  if (!filePath) {
+    const wybor = await dialog.showSaveDialog(mainWindow, {
+      title: 'Zapisz dokument jako PDF',
+      defaultPath: path.join(app.getPath('documents'), suggestedName),
+      filters: [{ name: 'PDF', extensions: ['pdf'] }]
+    });
+    if (wybor.canceled || !wybor.filePath) return { ok: false, canceled: true };
+    filePath = wybor.filePath;
+  }
   try {
     const pdf = await renderDocumentPdf();
     fs.writeFileSync(filePath, pdf);
-    shell.showItemInFolder(filePath);
-    return { ok: true, filePath };
+    if (!doFolderu) shell.showItemInFolder(filePath);
+    return { ok: true, filePath, auto: !!doFolderu };
   } catch (err) {
     return { ok: false, error: String(err.message || err) };
   }

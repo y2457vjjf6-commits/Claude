@@ -7,17 +7,18 @@ import {
   ToastFn
 } from './docActions';
 import { buildOfferHtml } from './printingOffer';
-import { formatMoney, offerFileName, offerTotals } from './offers';
+import { formatMoney, offerFileName, offerRecipient, offerTotals } from './offers';
 import { formatDatePl } from './printing';
 
 /** Treść wiadomości z ofertą — krótka, z kwotą i datą. */
 export function buildOfferEmail(offer: Offer, settings: Settings): { subject: string; text: string } {
   const kwota = formatMoney(offerTotals(offer).total);
-  const subject = `Oferta cenowa ${formatDatePl(offer.date)} — ${offer.client}`;
+  const adresat = offerRecipient(offer);
+  const subject = `Oferta cenowa ${formatDatePl(offer.date)}${adresat ? ` — ${adresat}` : ''}`;
   const text =
     `Dzień dobry,\n\n` +
     `w załączniku przesyłamy ofertę cenową z dnia ${formatDatePl(offer.date)}` +
-    `${offer.client ? ` dla: ${offer.client}` : ''}.\n` +
+    `${offer.client.trim() ? ` dla: ${offer.client.trim()}` : ''}.\n` +
     `Wartość oferty: ${kwota}.\n\n` +
     `Pozdrawiamy,\n${offer.issuedBy || settings.seller.name}\n` +
     // numer osoby wystawiającej, a gdy go nie ma — firmowy
@@ -35,7 +36,7 @@ export function offerPrintable(offer: Offer, settings: Settings): PrintableDocum
     recipient: offer.clientEmail || '',
     subject,
     body: text,
-    label: `ofertę dla „${offer.client}”`,
+    label: `ofertę dla „${offerRecipient(offer)}”`,
     missingRecipientMessage: 'Klient nie ma podanego adresu e-mail. Uzupełnij go w ofercie.'
   };
 }
@@ -43,8 +44,10 @@ export function offerPrintable(offer: Offer, settings: Settings): PrintableDocum
 export const printOffer = (offer: Offer, settings: Settings, toast: ToastFn) =>
   printPrintable(offerPrintable(offer, settings), toast);
 
+/** PDF oferty. Gdy w Ustawieniach wskazano folder na oferty, plik ląduje
+ *  w nim bez pytania — po to ten folder jest. */
 export const savePdfOffer = (offer: Offer, settings: Settings, toast: ToastFn) =>
-  savePdfPrintable(offerPrintable(offer, settings), toast);
+  savePdfPrintable(offerPrintable(offer, settings), toast, settings.offerPdfFolder);
 
 export const emailOffer = (
   offer: Offer,

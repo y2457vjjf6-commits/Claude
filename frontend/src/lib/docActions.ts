@@ -40,11 +40,17 @@ export async function printPrintable(doc: PrintableDocument, toast: ToastFn): Pr
   return false;
 }
 
-export async function savePdfPrintable(doc: PrintableDocument, toast: ToastFn): Promise<boolean> {
+/** Zapis dokumentu do PDF. Ze wskazanym folderem plik ląduje w nim od razu,
+ *  bez pytania — ofertę zapisuje się wtedy jednym kliknięciem. */
+export async function savePdfPrintable(
+  doc: PrintableDocument,
+  toast: ToastFn,
+  folder?: string
+): Promise<boolean> {
   fillPrintArea(doc.html);
   if (hasApi && window.wzApi) {
-    const res = await window.wzApi.savePdf(doc.fileName);
-    if (res.ok) toast('Zapisano PDF: ' + res.filePath);
+    const res = await window.wzApi.savePdf(doc.fileName, folder);
+    if (res.ok) toast((res.auto ? 'Zapisano w folderze ofert: ' : 'Zapisano PDF: ') + res.filePath);
     else if (!res.canceled) toast('Nie udało się zapisać PDF: ' + res.error, true);
     return !!res.ok;
   }

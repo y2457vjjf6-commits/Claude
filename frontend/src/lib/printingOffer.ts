@@ -12,6 +12,7 @@ import {
   isItemEmpty,
   itemTotal,
   offerTotals,
+  offerRecipient,
   offerVat,
   offerVatRate,
   validUntil
@@ -581,8 +582,14 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
     .map((c) => `<div>${esc(String(c))}</div>`)
     .join('');
 
+  // E-mail stoi na dokumencie obok adresu: klient widzi, na którą skrzynkę
+  // oferta poszła, a przy ofercie wystawionej na sam e-mail jest on jedyną
+  // identyfikacją odbiorcy. Nie powtarzamy go, gdy sam jest nazwą adresata.
+  const nazwaAdresata = offerRecipient(offer);
+  const mail = String(offer.clientEmail || '').trim();
   const odbiorca = [
     esc(String(offer.clientAddress || '').trim()),
+    mail && mail !== nazwaAdresata ? esc(mail) : '',
     String(offer.clientNip || '').trim() ? `NIP ${esc(offer.clientNip)}` : ''
   ].filter(Boolean);
 
@@ -620,7 +627,7 @@ export function buildOfferHtml(offer: Offer, settings: Settings): string {
 
     <section class="of-buyer">
       <div class="of-buyer-label">Oferta dla</div>
-      <div class="of-buyer-name">${esc(offer.client || '')}</div>
+      <div class="of-buyer-name">${esc(nazwaAdresata)}</div>
       ${odbiorca.length ? `<div class="of-buyer-sub">${odbiorca.join(' · ')}</div>` : ''}
     </section>
 

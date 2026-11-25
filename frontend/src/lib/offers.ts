@@ -383,11 +383,20 @@ export function columnHeaderLabel(header: OfferColumnHeader): string {
   return NAGLOWKI[header] || NAGLOWKI.material;
 }
 
+/** Jak nazwać adresata oferty.
+ *
+ *  Ofertę wystawia się zwykle na obiekt („Akacjowa 12”), ale bywa, że zna się
+ *  tylko adres e-mail — klient napisał i czeka na wycenę. Wtedy to e-mail
+ *  jest adresatem i on staje na dokumencie, zamiast pustego miejsca. */
+export function offerRecipient(offer: Pick<Offer, 'client' | 'clientEmail'>): string {
+  return String(offer.client || '').trim() || String(offer.clientEmail || '').trim();
+}
+
 /** Nazwa pliku PDF w formacie stosowanym dotąd przez firmę. */
 export function offerFileName(offer: Offer): string {
   const [r, m, d] = (offer.date || '').split('-');
   const data = r && m && d ? `${d}.${m}.${r}` : '';
-  const klient = (offer.client || 'oferta')
+  const klient = (offerRecipient(offer) || 'oferta')
     .replace(/[\\/:*?"<>|]/g, '-')
     .trim()
     .replace(/\s+/g, '_');

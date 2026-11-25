@@ -118,6 +118,9 @@ export interface Settings {
   emailCopyTo: string;
   /** Folder, do którego trafiają kopie zapasowe danych (pusty = wyłączone) */
   backupFolder: string;
+  /** Folder, do którego same trafiają PDF-y ofert. Puste = program pyta,
+   *  gdzie zapisać, czyli tak jak działał wcześniej. */
+  offerPdfFolder?: string;
   /** Osoby wystawiające oferty (imiona i nazwiska) */
   issuers: string[];
   /** Telefon przypisany do osoby wystawiającej: imię i nazwisko → numer */
@@ -233,7 +236,11 @@ declare global {
       saveData: (state: AppState) => Promise<{ ok: boolean }>;
       dataLocation: () => Promise<string>;
       printDoc: () => Promise<{ ok: boolean; error?: string }>;
-      savePdf: (suggestedName: string) => Promise<{ ok: boolean; canceled?: boolean; filePath?: string; error?: string }>;
+      savePdf: (
+        suggestedName: string,
+        folder?: string
+      ) => Promise<{ ok: boolean; canceled?: boolean; filePath?: string; auto?: boolean; error?: string }>;
+      chooseFolder: (tytul?: string) => Promise<{ ok: boolean; folder?: string; canceled?: boolean }>;
       sendEmail: (payload: {
         smtp: Smtp;
         to: string;

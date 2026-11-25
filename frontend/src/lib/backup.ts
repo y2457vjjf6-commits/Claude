@@ -7,6 +7,13 @@ export async function chooseBackupFolder(): Promise<string | null> {
   return res.ok && res.folder ? res.folder : null;
 }
 
+/** Wskazanie dowolnego folderu — używane też przy folderze na oferty. */
+export async function chooseFolder(tytul: string): Promise<string | null> {
+  if (!hasApi || !window.wzApi) return null;
+  const res = await window.wzApi.chooseFolder(tytul);
+  return res.ok && res.folder ? res.folder : null;
+}
+
 export async function backupNow(state: AppState): Promise<{ ok: boolean; file?: string; error?: string }> {
   const folder = (state.settings.backupFolder || '').trim();
   if (!folder) return { ok: false, error: 'Nie wskazano folderu kopii zapasowych.' };

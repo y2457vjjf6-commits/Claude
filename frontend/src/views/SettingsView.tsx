@@ -11,7 +11,7 @@ import UsersCard from '../components/UsersCard';
 import { uid } from '../lib/storage';
 import { AppState, UserAccount } from '../types';
 import { dataLocation, hasApi } from '../lib/storage';
-import { backupNow, chooseBackupFolder, restoreBackup } from '../lib/backup';
+import { backupNow, chooseBackupFolder, chooseFolder, restoreBackup } from '../lib/backup';
 import { MAX_BOK, resizePhoto } from '../lib/photos';
 import { RYSUNKI_PRODUKTOW } from '../assets/productIcons';
 import { AskConfirm } from '../types';
@@ -60,6 +60,7 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
     offerClosingText: st.offerClosingText || '',
     offerCheckText: st.offerCheckText || '',
     offerDepositPercent: st.offerDepositPercent || '',
+    offerPdfFolder: st.offerPdfFolder || '',
     offerFollowUpDays: st.offerFollowUpDays || '7',
     showCosts: st.showCosts !== false,
     mBody: st.emailBody
@@ -132,6 +133,7 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
     next.settings.offerClosingText = form.offerClosingText;
     next.settings.offerCheckText = form.offerCheckText;
     next.settings.offerDepositPercent = form.offerDepositPercent.trim();
+    next.settings.offerPdfFolder = form.offerPdfFolder.trim();
     next.settings.offerFollowUpDays = form.offerFollowUpDays.trim() || '0';
     next.settings.showCosts = form.showCosts;
     next.settings.emailBody = form.mBody;
@@ -179,6 +181,16 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
     await onPersist(next);
     const res = await backupNow(next);
     toast(res.ok ? `Folder ustawiony, kopia zapisana: ${res.file}` : `Folder ustawiony, ale kopia się nie udała: ${res.error}`, !res.ok);
+  };
+
+  const wybierzFolderOfert = async () => {
+    const folder = await chooseFolder('Wybierz folder na oferty');
+    if (!folder) return;
+    set({ offerPdfFolder: folder });
+    const next = structuredClone(state);
+    next.settings.offerPdfFolder = folder;
+    await onPersist(next);
+    toast('Oferty będą zapisywane w: ' + folder);
   };
 
   const zapiszKopie = async () => {
@@ -460,6 +472,31 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
             Drukowane pod warunkami oferty, na każdym dokumencie. Każdy wiersz to osobna linia;
             znak • na początku wiersza robi punkt listy. Puste pole wyłącza ten tekst.
           </span>
+        </label>
+        <label className="field" style={{ marginTop: 14 }}>
+          <span>Folder na pliki ofert</span>
+          <input
+            type="text"
+            className="input"
+            data-testid="offer-folder-input"
+            placeholder="puste — program pyta, gdzie zapisać"
+            value={form.offerPdfFolder}
+            onChange={(e) => set({ offerPdfFolder: e.target.value })}
+          />
+          <span className="muted field-hint">
+            PDF oferty trafia tu od razu, bez pytania o miejsce — nazwa pliku niesie numer
+            oferty, więc ponowny zapis tej samej oferty nadpisuje jej plik, a nie dokłada
+            kolejny. Puste pole zostawia pytanie przy każdym zapisie.
+          </span>
+          <button
+            className="btn btn-light"
+            data-testid="offer-folder-choose"
+            style={{ marginTop: 8, alignSelf: 'flex-start' }}
+            onClick={wybierzFolderOfert}
+          >
+            <FolderOpen className="icon" />
+            Wybierz folder
+          </button>
         </label>
         <div className="grid2" style={{ marginTop: 14 }}>
           <label className="field">

@@ -8,6 +8,7 @@ import { AppState, AskConfirm, Offer, OfferColumnHeader, OfferDiscountRule, Offe
 import { uid } from '../lib/storage';
 import { todayStr } from '../lib/dates';
 import {
+  blankOffer,
   columnHeaderLabel,
   filledSpec,
   formatMoney,
@@ -110,38 +111,10 @@ export default function OfferEditorView({
   const initRef = useRef<string | null>('__none__');
 
   function initOffer(o: Offer | null): Offer {
-    const d = state.settings.offerDefaults;
     // Kopia oferty przychodzi gotowa — ma już wszystko poza numerem, który
     // nada się przy zapisie, bo edytor pracuje tu w trybie nowej oferty.
     if (!o && prefill) return structuredClone(prefill);
-    return o
-      ? structuredClone(o)
-      : ({
-          id: '',
-          date: todayStr(),
-          place: state.settings.place,
-          client: '',
-          clientEmail: '',
-          groups: [NEW_GROUP()],
-          continuousNumbering: true,
-          discountEnabled: false,
-          discountPercent: '',
-          deliveryEnabled: false,
-          deliveryPrice: '',
-          installationIncluded: d.installationIncluded,
-          deadlineDays: d.deadlineDays,
-          validityEnabled: d.validityEnabled ?? false,
-          validityDays: d.validityDays,
-          notes: '',
-          issuedBy: availableIssuers(state)[0] || '',
-          issuedByPhone: issuerPhone(state, availableIssuers(state)[0] || ''),
-          // Rysunek produktu ma każda nowa oferta: program niesie wbudowane
-          // ikony, więc nie ma już czego czekać na wgranie zdjęć.
-          showPhotos: true,
-          status: 'szkic',
-          createdAt: '',
-          updatedAt: ''
-        } as Offer);
+    return o ? structuredClone(o) : blankOffer(state, todayStr(), [NEW_GROUP()]);
   }
 
   const [offer, setOffer] = useState<Offer>(() => initOffer(existing));

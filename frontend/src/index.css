@@ -3631,3 +3631,140 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
   color: var(--warn);
   font-size: var(--text-xs);
 }
+
+/* --------------------------------------------- import pomiaru z poczty */
+
+.import-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(760px, 100%);
+  max-height: min(88vh, 1000px);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+  animation: modal-wejscie var(--t-slow) var(--ease-out);
+}
+
+.import-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--hairline);
+  background: var(--surface-2);
+}
+
+.import-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Treść przewija się, a przyciski zostają na wierzchu: podglądu bywa
+   dwadzieścia kilka wierszy i „Utwórz szkic" nie ma po co uciekać w dół. */
+.import-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-5);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Treść przewijana w kolumnie flex nie może się kurczyć: podgląd pomiaru ma
+   dwadzieścia kilka wierszy i bez tego tabela wyjeżdża poza okno, zamiast
+   wejść w przewijanie. */
+.import-body > * {
+  flex: none;
+}
+
+.import-modal .modal-actions {
+  margin: 0;
+  padding: var(--sp-4) var(--sp-5);
+  border-top: 1px solid var(--hairline);
+  background: var(--surface-2);
+}
+
+.import-drop {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-5);
+  border: 1px dashed var(--hairline-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  transition: border-color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out);
+}
+
+.import-drop > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.import-drop strong {
+  display: block;
+  font-size: var(--text-sm);
+}
+
+.import-drop p {
+  margin: var(--sp-1) 0 0;
+  font-size: var(--text-xs);
+}
+
+.import-drop.is-over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.import-text {
+  min-height: 9rem;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.import-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  font-size: var(--text-sm);
+  color: var(--text-mid);
+}
+
+/* Puste listy miały po jednym przycisku; odkąd ofertę można też wczytać
+   z pomiaru, stoją obok siebie i muszą mieć odstęp. */
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+}
+
+/* W oknie importu ostrzeżenie to jedno zdanie, nie nagłówek z treścią pod
+   spodem — stąd bez odstępu dolnego, a ikona trzyma się pierwszej linijki. */
+.import-body .notice-card {
+  padding: var(--sp-3) var(--sp-4);
+}
+
+.import-body .notice-head {
+  align-items: flex-start;
+  margin-bottom: 0;
+  font-weight: 450;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.import-body .notice-head .icon {
+  flex: none;
+  margin-top: 1px;
+}

@@ -28,6 +28,7 @@ import Sidebar from './components/Sidebar';
 import Toast, { ToastState } from './components/Toast';
 import ConfirmDialog, { ConfirmRequest } from './components/ConfirmDialog';
 import PreviewModal from './components/PreviewModal';
+import MeasurementImport from './components/MeasurementImport';
 import CommandPalette from './components/CommandPalette';
 import DocumentsView from './views/DocumentsView';
 import EditorView from './views/EditorView';
@@ -50,6 +51,7 @@ export default function App() {
   const [wzPrefillSeq, setWzPrefillSeq] = useState(0);
   // Oferta skopiowana do nowej — ta sama sztuczka z licznikiem co przy WZ.
   const [offerPrefill, setOfferPrefill] = useState<Offer | null>(null);
+  const [importPomiaru, setImportPomiaru] = useState(false);
   const [offerPrefillSeq, setOfferPrefillSeq] = useState(0);
   // Schowek na specyfikację. Siedzi tutaj, a nie w edytorze, bo edytor znika
   // przy wyjściu do listy — a skopiowaną specyfikację chce się wkleić także
@@ -260,6 +262,14 @@ export default function App() {
     setOfferPrefill(duplicateOffer(zrodlo, todayStr()));
     setOfferPrefillSeq((n) => n + 1);
     setEditingOfferId(null);
+    setView('offerEdit');
+  }, []);
+
+  const szkicZPomiaru = useCallback((szkic: Offer) => {
+    setOfferPrefill(szkic);
+    setOfferPrefillSeq((n) => n + 1);
+    setEditingOfferId(null);
+    setImportPomiaru(false);
     setView('offerEdit');
   }, []);
 
@@ -562,6 +572,7 @@ export default function App() {
             onIssueWz={issueWzFromOffer}
             onEdit={(id) => openOfferEditor(id)}
             onNewOffer={() => openOfferEditor(null)}
+            onImport={() => setImportPomiaru(true)}
             onCopy={copyOfferToNew}
             onProduce={orderFromOfferFn}
             onPreview={(offer, lista) => setPreviewOffer({ lista, idx: lista.indexOf(offer) })}
@@ -686,6 +697,9 @@ export default function App() {
       )}
       <Toast toast={toastState} />
       {confirmReq && <ConfirmDialog request={confirmReq} onClose={closeConfirm} />}
+      {importPomiaru && (
+        <MeasurementImport state={state} onCreate={szkicZPomiaru} onClose={() => setImportPomiaru(false)} />
+      )}
       {previewDoc && previewDoc.lista[previewDoc.idx] && (
         <PreviewModal
           title={`Podgląd WZ ${previewDoc.lista[previewDoc.idx].number}`}

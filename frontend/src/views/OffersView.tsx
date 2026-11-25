@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import {
   Search, Plus, Eye, Pencil, Mail, Trash2, FileSpreadsheet, FileOutput, BellRing, Printer, FileDown, ChevronDown,
-  Copy, Factory
+  Copy, Factory, MailOpen
 } from 'lucide-react';
 import { Offer } from '../types';
 import { formatDatePl } from '../lib/printing';
@@ -27,6 +27,8 @@ interface Props {
   onCopy: (offer: Offer) => void;
   onProduce: (offer: Offer) => void;
   onNewOffer: () => void;
+  /** Wczytanie pomiaru z wiadomości i założenie z niego szkicu oferty */
+  onImport: () => void;
   onPreview: (offer: Offer, lista: Offer[]) => void;
   onPrint: (offer: Offer) => void;
   onPdf: (offer: Offer) => void;
@@ -66,7 +68,7 @@ function wartoscKolumny(o: Offer, key: string): unknown {
 }
 
 export default function OffersView(props: Props) {
-  const { offers, followUpDays, showCosts, onIssueWz, onEdit, onNewOffer, onCopy, onProduce, onPreview, onPrint, onPdf, onEmail, onDelete, onStatusChange } = props;
+  const { offers, followUpDays, showCosts, onIssueWz, onEdit, onNewOffer, onImport, onCopy, onProduce, onPreview, onPrint, onPdf, onEmail, onDelete, onStatusChange } = props;
   const [q, setQ] = useState('');
   const [filtr, setFiltr] = useState<Filtr>('wszystkie');
   const [sort, setSort] = useState<SortState>({ key: 'data', dir: 'desc' });
@@ -150,6 +152,10 @@ export default function OffersView(props: Props) {
             ))}
           </div>
           <span className="spacer" />
+          <button className="btn btn-light" data-testid="import-measurement-btn" onClick={onImport}>
+            <MailOpen className="icon" />
+            Pomiar z poczty
+          </button>
           <button className="btn btn-primary" data-testid="new-offer-btn" onClick={onNewOffer}>
             <Plus className="icon" />
             Nowa oferta
@@ -313,10 +319,16 @@ export default function OffersView(props: Props) {
           <FileSpreadsheet className="icon" />
           <h2 className="empty-title">Nie ma jeszcze żadnej oferty</h2>
           <p>Wyceny zebrane w jednym miejscu: wyślesz je mailem i sprawdzisz, na które klient nie odpowiedział.</p>
-          <button className="btn btn-primary" data-testid="offers-empty-new-btn" onClick={onNewOffer}>
-            <Plus className="icon" />
-            Nowa oferta
-          </button>
+          <div className="empty-actions">
+            <button className="btn btn-light" data-testid="offers-empty-import-btn" onClick={onImport}>
+              <MailOpen className="icon" />
+              Pomiar z poczty
+            </button>
+            <button className="btn btn-primary" data-testid="offers-empty-new-btn" onClick={onNewOffer}>
+              <Plus className="icon" />
+              Nowa oferta
+            </button>
+          </div>
         </div>
       )}
     </section>

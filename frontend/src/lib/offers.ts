@@ -492,3 +492,51 @@ export function movedBy<T>(lista: T[], i: number, krok: number): T[] {
   kopia.splice(cel, 0, wyjety);
   return kopia;
 }
+
+/** Świeża, pusta oferta — jedna dla edytora i dla importu pomiarów.
+ *
+ *  Żyła wcześniej tylko w edytorze. Przeniesiona tutaj, bo pomiar z poczty
+ *  tworzy ofertę bez otwierania formularza, a dwie kopie tych samych
+ *  domyślnych ustawień rozjechałyby się przy pierwszej zmianie. */
+export function blankOffer(
+  state: {
+    settings: {
+      place: string;
+      offerDefaults: { installationIncluded: boolean; deadlineDays: string; validityEnabled?: boolean; validityDays: string };
+      issuers: string[];
+      issuerPhones?: Record<string, string>;
+    };
+    contractors: { name: string; employees?: { name: string; phone?: string }[] }[];
+  },
+  today: string,
+  groups: OfferGroup[]
+): Offer {
+  const d = state.settings.offerDefaults;
+  const kto = availableIssuers(state)[0] || '';
+  return {
+    id: '',
+    date: today,
+    place: state.settings.place,
+    client: '',
+    clientEmail: '',
+    groups,
+    continuousNumbering: true,
+    discountEnabled: false,
+    discountPercent: '',
+    deliveryEnabled: false,
+    deliveryPrice: '',
+    installationIncluded: d.installationIncluded,
+    deadlineDays: d.deadlineDays,
+    validityEnabled: d.validityEnabled ?? false,
+    validityDays: d.validityDays,
+    notes: '',
+    issuedBy: kto,
+    issuedByPhone: issuerPhone(state, kto),
+    // Rysunek produktu ma każda nowa oferta: program niesie wbudowane ikony,
+    // więc nie ma już czego czekać na wgranie zdjęć.
+    showPhotos: true,
+    status: 'szkic',
+    createdAt: '',
+    updatedAt: ''
+  };
+}

@@ -283,7 +283,11 @@ export default function SettingsView({ state, currentUser, onPersist, toast, ask
       );
       if (res.ok) {
         const ile = res.count ?? 0;
-        toast(`Połączenie ze skrzynką działa — widzę ${ile} ${ile === 1 ? 'wiadomość' : 'wiadomości'} w tym folderze.`);
+        const info = `Połączenie ze skrzynką działa — widzę ${ile} ${ile === 1 ? 'wiadomość' : 'wiadomości'} w tym folderze.`;
+        // Działa, ale nie tak, jak wpisano: lepiej powiedzieć to od razu, niż
+        // zostawić ustawienie, które przy każdym pobraniu traci kilkanaście sekund.
+        if (res.hint) toast(`${info} ${res.hint}`, true);
+        else toast(info);
       } else {
         toast(res.error || 'Nie udało się połączyć ze skrzynką.', true);
       }

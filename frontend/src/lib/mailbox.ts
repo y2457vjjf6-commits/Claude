@@ -13,6 +13,8 @@ export interface MailListResult {
   ok: boolean;
   error?: string;
   messages?: MailHeader[];
+  /** Podpowiedź do ustawień — np. że port trzeba poprawić, choć działa */
+  hint?: string;
 }
 
 export interface MailTextResult {
@@ -20,6 +22,7 @@ export interface MailTextResult {
   error?: string;
   subject?: string;
   text?: string;
+  hint?: string;
 }
 
 const BRAK_APLIKACJI = 'Pobieranie poczty działa tylko w aplikacji na komputerze.';
@@ -46,7 +49,7 @@ export async function listMailbox(settings: Settings, limit = 30): Promise<MailL
   try {
     const res = await window.wzApi.mailList(konto, settings.smtp, limit);
     if (!res.ok) return { ok: false, error: res.error || 'Nie udało się pobrać listy wiadomości.' };
-    return { ok: true, messages: res.messages || [] };
+    return { ok: true, messages: res.messages || [], hint: res.hint };
   } catch (err) {
     return { ok: false, error: String((err as Error)?.message || err) };
   }
@@ -67,7 +70,7 @@ export async function fetchMailText(settings: Settings, uid: number): Promise<Ma
         error: 'Ta wiadomość nie ma treści tekstowej. Otwórz ją w poczcie i wklej treść poniżej.'
       };
     }
-    return { ok: true, subject: res.subject || '', text: res.text || '' };
+    return { ok: true, subject: res.subject || '', text: res.text || '', hint: res.hint };
   } catch (err) {
     return { ok: false, error: String((err as Error)?.message || err) };
   }

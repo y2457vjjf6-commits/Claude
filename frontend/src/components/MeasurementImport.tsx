@@ -56,6 +56,7 @@ export default function MeasurementImport({ state, onCreate, onClose }: Props) {
       const res = await listMailbox(state.settings, 30);
       setListaMaili(res.messages || []);
       if (!res.ok) setBlad(res.error || 'Nie udało się pobrać listy wiadomości.');
+      else if (res.hint) setBlad(res.hint);
     } finally {
       setLadujeListe(false);
     }

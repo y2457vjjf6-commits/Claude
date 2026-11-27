@@ -279,19 +279,30 @@ declare global {
       }) => Promise<{ ok: boolean; error?: string }>;
       testEmail: (smtp: Smtp) => Promise<{ ok: boolean; error?: string }>;
       /** Sprawdza połączenie ze skrzynką odbiorczą, nic nie pobierając */
-      mailTest: (imap: Imap, smtp: Smtp) => Promise<{ ok: boolean; error?: string; count?: number }>;
+      mailTest: (
+        imap: Imap,
+        smtp: Smtp
+      ) => Promise<{ ok: boolean; error?: string; count?: number; hint?: string }>;
       /** Nagłówki ostatnich wiadomości, od najnowszej */
       mailList: (
         imap: Imap,
         smtp: Smtp,
         limit?: number
-      ) => Promise<{ ok: boolean; error?: string; messages?: MailHeader[] }>;
+      ) => Promise<{ ok: boolean; error?: string; messages?: MailHeader[]; hint?: string }>;
       /** Treść tekstowa jednej wiadomości */
       mailFetch: (
         imap: Imap,
         smtp: Smtp,
         uid: number
-      ) => Promise<{ ok: boolean; error?: string; subject?: string; from?: string; date?: string; text?: string }>;
+      ) => Promise<{
+        ok: boolean;
+        error?: string;
+        subject?: string;
+        from?: string;
+        date?: string;
+        text?: string;
+        hint?: string;
+      }>;
       chooseBackupFolder: () => Promise<{ ok: boolean; folder?: string; canceled?: boolean }>;
       backupNow: (payload: { state: AppState; folder: string }) => Promise<{ ok: boolean; file?: string; error?: string }>;
       restoreBackup: (folder: string) => Promise<{ ok: boolean; state?: AppState; canceled?: boolean; error?: string }>;

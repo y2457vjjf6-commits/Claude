@@ -84,7 +84,10 @@ ceny, a okno importu podaje, ile ich jest.
 
 - **Serwer odbiorczy IMAP** — zwykle ten sam dostawca co przy wysyłce, tylko
   adres zaczyna się od `imap.` zamiast `smtp.`;
-- **Port** — 993 (połączenie szyfrowane od początku) albo 143;
+- **Port** — 993 (szyfrowanie od pierwszego bajtu) albo 143 (szyfrowanie po
+  komendzie STARTTLS). Pomyłka nie jest groźna: program próbuje obu sposobów
+  i jeśli zadziała ten drugi, połączy się mimo wszystko i podpowie, jaki port
+  wpisać, żeby następne pobrania nie traciły czasu;
 - **Folder** — puste znaczy skrzynkę odbiorczą. Jeśli pomiary trafiają u Was
   do osobnego folderu, wpisz jego nazwę: lista nie będzie się wtedy mieszać
   z resztą poczty;
@@ -101,7 +104,11 @@ Przy Gmailu zwykłe hasło nie zadziała — trzeba hasła do aplikacji.
 **Tylko czyta.** Nie kasuje, nie przenosi, nie odpowiada i **nie oznacza
 wiadomości jako przeczytanej** — pobiera ją w trybie podglądu, więc skrzynka
 pomiarowca wygląda po imporcie tak samo jak przed. Hasło leży w ustawieniach
-programu, na tym komputerze; połączenie z serwerem jest szyfrowane.
+programu, na tym komputerze.
+
+Połączenie jest **zawsze szyfrowane**. Gdyby serwer szyfrowania nie oferował,
+program się rozłącza i mówi o tym wprost, zamiast wysłać hasło do firmowej
+skrzynki otwartym tekstem.
 
 ## Czego to jeszcze nie robi
 

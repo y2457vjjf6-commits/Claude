@@ -311,15 +311,93 @@ function describeSmtpError(err) {
 function daneImap(imap, smtp) {
   const user = imap.sameAsSmtp === false ? imap.user : (smtp && smtp.user) || imap.user;
   const pass = imap.sameAsSmtp === false ? imap.pass : (smtp && smtp.pass) || imap.pass;
-  const port = Number(imap.port) || 993;
   return {
     host: String(imap.host || '').trim(),
-    port,
-    // 993 to połączenie szyfrowane od początku, 143 szyfrowane dopiero po STARTTLS
-    secure: port !== 143,
+    port: Number(imap.port) || 993,
     auth: { user: String(user || '').trim(), pass: String(pass || '') },
     folder: String(imap.folder || '').trim() || 'INBOX'
   };
+}
+
+/* Dwa sposoby szyfrowania, których używa poczta:
+ *
+ *  - port 993: szyfrowanie od pierwszego bajtu;
+ *  - port 143: rozmowa zaczyna się otwartym tekstem i przechodzi na szyfrowaną
+ *    komendą STARTTLS.
+ *
+ *  Numer portu to tylko podpowiedź, nie gwarancja — dostawcy bywają ustawieni
+ *  inaczej, a człowiek wpisuje to z pamięci. Gdy pierwszy sposób odbije się od
+ *  serwera, próbujemy drugiego, zamiast pokazywać błąd z wnętrzności biblioteki
+ *  szyfrującej i kazać zgadywać.
+ *
+ *  `doSTARTTLS: true` jest tu obowiązkowe: bez tego biblioteka, gdy serwer nie
+ *  zaproponuje szyfrowania, prowadzi rozmowę otwartym tekstem — a tą rozmową
+ *  leci hasło do firmowej skrzynki.
+ */
+const SZYFROWANIE_OD_RAZU = { secure: true };
+const SZYFROWANIE_PO_STARTTLS = { secure: false, doSTARTTLS: true };
+
+function trybyPolaczenia(port) {
+  return port === 143 || port === 1143
+    ? [SZYFROWANIE_PO_STARTTLS, SZYFROWANIE_OD_RAZU]
+    : [SZYFROWANIE_OD_RAZU, SZYFROWANIE_PO_STARTTLS];
+}
+
+/** Czy to ten rodzaj błędu, przy którym warto spróbować drugiego sposobu
+ *  szyfrowania. Rozpoznajemy po tym, że rozmowa rozsypała się zanim serwer
+ *  w ogóle się przedstawił — czyli strony mówiły do siebie różnymi językami. */
+function niezgodneSzyfrowanie(err) {
+  const kod = String((err && err.code) || '');
+  const tresc = String((err && err.message) || err);
+  return (
+    /ERR_SSL|WRONG_VERSION_NUMBER|PACKET_LENGTH_TOO_LONG|SSL routines/i.test(kod + ' ' + tresc) ||
+    kod === 'ETIMEDOUT' ||
+    /greeting/i.test(tresc)
+  );
+}
+
+function nowyKlient(d, tryb) {
+  const { ImapFlow } = require('imapflow');
+  return new ImapFlow({
+    host: d.host,
+    port: d.port,
+    ...tryb,
+    auth: d.auth,
+    logger: false,
+    emitLogs: false,
+    socketTimeout: 45000,
+    // krótko, bo przy niezgodnym szyfrowaniu to jest właśnie ten moment,
+    // w którym czekamy na przedstawienie się serwera i nigdy go nie dostaniemy
+    greetingTimeout: 12000,
+    connectionTimeout: 15000
+  });
+}
+
+/** Połączenie z serwerem — z próbą drugiego sposobu szyfrowania, gdy pierwszy
+ *  odpadł. Zwraca też, który sposób zadziałał, żeby dało się podpowiedzieć
+ *  poprawny port zamiast zostawiać działające-ale-dziwne ustawienie. */
+async function polacz(d) {
+  const [pierwszy, drugi] = trybyPolaczenia(d.port);
+  let blad = null;
+  for (const tryb of [pierwszy, drugi]) {
+    const client = nowyKlient(d, tryb);
+    try {
+      await client.connect();
+      return { client, tryb, zmienionyTryb: tryb !== pierwszy };
+    } catch (err) {
+      try { client.close(); } catch {}
+      // hasło odrzucone znaczy, że szyfrowanie było dobre — drugi sposób nic tu nie da
+      if (!blad) blad = err;
+      if (!niezgodneSzyfrowanie(err)) break;
+    }
+  }
+  throw blad;
+}
+
+/** Podpowiedź do ustawień, gdy połączenie udało się dopiero drugim sposobem. */
+function poradaOPorcie(d, tryb) {
+  const dobry = tryb === SZYFROWANIE_PO_STARTTLS ? 143 : 993;
+  return `Połączyłem się, ale dopiero po zmianie sposobu szyfrowania. Wpisz w ustawieniach port ${dobry} zamiast ${d.port} — inaczej każde pobranie poczty będzie trwało dłużej.`;
 }
 
 /** Jedno połączenie na jedną operację: program pracuje offline i zagląda do
@@ -330,45 +408,50 @@ async function zeSkrzynka(imap, smtp, praca) {
   if (!d.host || !d.auth.user) {
     return { ok: false, error: 'Uzupełnij serwer skrzynki odbiorczej i login w Ustawieniach → Poczta.' };
   }
-  const { ImapFlow } = require('imapflow');
-  const client = new ImapFlow({
-    host: d.host,
-    port: d.port,
-    secure: d.secure,
-    auth: d.auth,
-    logger: false,
-    emitLogs: false,
-    socketTimeout: 45000,
-    greetingTimeout: 20000
-  });
+  let polaczenie = null;
   try {
-    await client.connect();
+    polaczenie = await polacz(d);
   } catch (err) {
-    return { ok: false, error: opiszBladImap(err) };
+    return { ok: false, error: opiszBladImap(err, d) };
   }
+  const { client, tryb, zmienionyTryb } = polaczenie;
   let lock = null;
   try {
     lock = await client.getMailboxLock(d.folder);
-    return await praca(client);
+    const wynik = await praca(client);
+    return zmienionyTryb && wynik && wynik.ok ? { ...wynik, hint: poradaOPorcie(d, tryb) } : wynik;
   } catch (err) {
-    return { ok: false, error: opiszBladImap(err) };
+    return { ok: false, error: opiszBladImap(err, d) };
   } finally {
     if (lock) { try { lock.release(); } catch {} }
     try { await client.logout(); } catch { try { client.close(); } catch {} }
   }
 }
 
-function opiszBladImap(err) {
+function opiszBladImap(err, dane) {
   const kod = (err && (err.code || err.responseStatus)) || '';
   const tresc = String((err && err.message) || err);
+  const port = (dane && dane.port) || 993;
+  const drugiPort = port === 143 ? 993 : 143;
+
+  // Błąd z wnętrzności biblioteki szyfrującej („WRONG_VERSION_NUMBER") znaczy
+  // zawsze to samo: na tym porcie serwer mówi innym językiem, niż próbujemy.
+  // Program spróbował już obu sposobów, więc skoro tu jesteśmy — nie zgadza
+  // się sam adres albo port.
+  if (/ERR_SSL|WRONG_VERSION_NUMBER|PACKET_LENGTH_TOO_LONG|SSL routines/i.test(kod + ' ' + tresc)) {
+    return `Serwer na porcie ${port} nie rozmawia tak, jak rozmawia poczta — program spróbował obu sposobów szyfrowania i żaden nie chwycił. Najczęściej znaczy to, że port powinien być ${drugiPort}, albo że w polu serwera stoi adres do wysyłki (zaczynający się od „smtp.") zamiast do odbioru („imap.").`;
+  }
   if (/AUTHENTICATIONFAILED/i.test(tresc) || kod === 'AUTHENTICATIONFAILED') {
     return 'Serwer odrzucił login lub hasło. Sprawdź, czy jako login podajesz pełny adres e-mail, a przy Gmailu — czy używasz hasła do aplikacji.';
+  }
+  if (/STARTTLS/i.test(tresc)) {
+    return `Serwer na porcie ${port} nie oferuje szyfrowania, a bez niego hasło leciałoby otwartym tekstem — dlatego program się rozłączył. Spróbuj portu ${drugiPort}.`;
   }
   if (kod === 'ENOTFOUND' || kod === 'EDNS') {
     return 'Nie znaleziono takiego serwera. Sprawdź pisownię adresu skrzynki odbiorczej (zwykle zaczyna się od „imap.").';
   }
   if (kod === 'ETIMEDOUT' || kod === 'ECONNECTION' || kod === 'ESOCKET' || kod === 'ECONNREFUSED') {
-    return 'Brak połączenia ze skrzynką. Sprawdź adres i port (993 albo 143) oraz połączenie z internetem. Port mógł też zostać zablokowany przez zaporę lub antywirus. Szczegóły: ' + tresc;
+    return `Brak połączenia ze skrzynką. Sprawdź adres i port (993 albo 143) oraz połączenie z internetem. Port mógł też zostać zablokowany przez zaporę lub antywirus. Szczegóły: ${tresc}`;
   }
   if (/\[NONEXISTENT\]|Mailbox doesn't exist|no such mailbox/i.test(tresc)) {
     return 'Na serwerze nie ma takiego folderu. Zostaw pole puste, żeby czytać ze skrzynki odbiorczej (INBOX).';
